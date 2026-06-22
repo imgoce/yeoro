@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>여로 - 세종시 맞춤형 무장애 큐레이션</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* yeoro 로고 기반 컬러 시스템 */
+            --yeoro-navy:    #1B3A6B;   /* 짙은 네이비 — 로고 강 색 */
+            --yeoro-blue:    #2E5FA3;   /* 중간 블루 — CTA / 포인트 */
+            --yeoro-sky:     #BDD9EF;   /* 연한 하늘 — 로고 배경 */
+            --yeoro-mist:    #E8F4FB;   /* 더 연한 미스트 — 카드 배경 */
+            --yeoro-white:   #FFFFFF;
+            --yeoro-bg:      #EDF5FB;   /* 전체 배경 */
+            --yeoro-text:    #0F2240;   /* 주 텍스트 */
+            --yeoro-sub:     #3A5580;   /* 보조 텍스트 */
+            --yeoro-muted:   #7A97B8;   /* 흐린 텍스트 */
+            --yeoro-border:  #C8DEEE;   /* 테두리 */
+            --app-font-size: 100%;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #C8DEEE;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            color: var(--yeoro-text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .phone-wrapper {
+            width: 100%;
+            max-width: 430px;
+            height: 100vh;
+            background-color: var(--yeoro-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(27,58,107,0.18);
+            font-size: var(--app-font-size);
+        }
+
+        /* ── 헤더 ── */
+        .app-header {
+            background-color: var(--yeoro-white);
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            border-bottom: 1px solid var(--yeoro-border);
+        }
+        .app-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--yeoro-sky);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .logo-icon svg { width: 22px; height: 22px; }
+        .logo-text {
+            font-size: 1.25em;
+            font-weight: 800;
+            color: var(--yeoro-navy);
+            letter-spacing: -0.5px;
+        }
+        .header-action {
+            font-size: 0.82em;
+            font-weight: 600;
+            color: var(--yeoro-muted);
+            cursor: pointer;
+        }
+
+        /* ── 스크롤 영역 ── */
+        .app-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 18px;
+            padding-bottom: 96px;
+        }
+        .app-content::-webkit-scrollbar { display: none; }
+
+        /* ── 페이지 타이틀 ── */
+        .page-title {
+            font-size: 1.5em;
+            font-weight: 800;
+            line-height: 1.35;
+            margin-bottom: 22px;
+            color: var(--yeoro-navy);
+            letter-spacing: -0.3px;
+        }
+
+        /* ── 카드 ── */
+        .y-card {
+            background-color: var(--yeoro-white);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 12px;
+            border: 1px solid var(--yeoro-border);
+            box-shadow: 0 2px 10px rgba(27,58,107,0.05);
+        }
+
+        /* ── 로그인 라디오 ── */
+        .y-radio-group .form-check {
+            padding: 14px 16px;
+            border-radius: 14px;
+            background-color: var(--yeoro-mist);
+            margin-bottom: 8px;
+            border: 1.5px solid transparent;
+            display: flex;
+            align-items: center;
+            transition: border-color 0.15s;
+        }
+        .y-radio-group .form-check:has(input:checked) {
+            border-color: var(--yeoro-blue);
+            background-color: #E0EEF8;
+        }
+        .y-radio-group .form-check-input {
+            margin-right: 12px;
+            width: 1.1rem;
+            height: 1.1rem;
+            accent-color: var(--yeoro-blue);
+        }
+        .y-radio-group .form-check-input:checked {
+            background-color: var(--yeoro-blue);
+            border-color: var(--yeoro-blue);
+        }
+
+        /* ── 버튼 ── */
+        .y-btn-primary {
+            background: linear-gradient(135deg, var(--yeoro-blue) 0%, var(--yeoro-navy) 100%);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 16px;
+            font-size: 0.95em;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            transition: opacity 0.15s;
+        }
+        .y-btn-primary:active { opacity: 0.82; }
+
+        .y-btn-secondary {
+            background-color: var(--yeoro-mist);
+            color: var(--yeoro-blue);
+            border: 1.5px solid var(--yeoro-border);
+            width: 100%;
+            padding: 13px;
+            border-radius: 16px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        /* ── 히어로 배너 ── */
+        .hero-banner {
+            border-radius: 22px;
+            background: linear-gradient(145deg, var(--yeoro-navy) 0%, #2a5298 60%, var(--yeoro-blue) 100%);
+            padding: 24px 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: -20px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: rgba(189,217,239,0.15);
+        }
+        .hero-banner::after {
+            content: '';
+            position: absolute;
+            right: 30px;
+            bottom: -30px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: rgba(189,217,239,0.10);
+        }
+        .hero-banner-text {
+            color: white;
+            font-size: 1.15em;
+            font-weight: 700;
+            line-height: 1.5;
+            position: relative;
+            z-index: 1;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(189,217,239,0.22);
+            color: var(--yeoro-sky);
+            font-size: 0.75em;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* ── 메뉴 리스트 ── */
+        .menu-row {
+            display: flex;
+            align-items: center;
+            padding: 13px 4px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--yeoro-mist);
+            transition: background 0.1s;
+        }
+        .menu-row:last-child { border-bottom: none; }
+        .menu-icon-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background-color: var(--yeoro-mist);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        .menu-icon-box .material-icons { font-size: 1.3rem; }
+        .icon-blue   { color: var(--yeoro-blue); }
+        .icon-teal   { color: #2A8FA8; }
+        .icon-amber  { color: #C07A20; }
+        .icon-green  { color: #2A7A4A; }
+        .menu-title  { font-weight: 700; font-size: 0.98em; color: var(--yeoro-text); }
+        .menu-sub    { font-size: 0.78em; color: var(--yeoro-muted); margin-top: 2px; }
+        .menu-arrow  { margin-left: auto; color: var(--yeoro-border); }
+
+        /* ── 카테고리 탭 ── */
+        .cat-tabs {
+            display: flex;
+            background-color: var(--yeoro-border);
+            padding: 3px;
+            border-radius: 14px;
+            margin-bottom: 16px;
+        }
+        .cat-tab {
+            flex: 1;
+            text-align: center;
+            background: none;
+            color: var(--yeoro-sub);
+            border: none;
+            padding: 8px 4px;
+            border-radius: 11px;
+            font-size: 0.82em;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .cat-tab.active {
+            background-color: var(--yeoro-white);
+            color: var(--yeoro-navy);
+            box-shadow: 0 2px 8px rgba(27,58,107,0.10);
+        }
+
+        /* ── 장소 카드 ── */
+        .place-card {
+            background: var(--yeoro-white);
+            border-radius: 18px;
+            padding: 16px;
+            margin-bottom: 10px;
+            border: 1px solid var(--yeoro-border);
+            position: relative;
+        }
+        .place-name  { font-size: 1.05em; font-weight: 700; color: var(--yeoro-navy); margin-bottom: 3px; }
+        .place-meta  { font-size: 0.8em; color: var(--yeoro-muted); margin-bottom: 6px; }
+        .place-desc  { font-size: 0.82em; color: var(--yeoro-sub); font-weight: 500; margin-bottom: 8px; }
+        .place-tag   {
+            font-size: 0.75em;
+            background-color: var(--yeoro-mist);
+            color: var(--yeoro-blue);
+            padding: 3px 9px;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: 600;
+            border: 1px solid var(--yeoro-border);
+        }
+        .add-btn {
+            background: linear-gradient(135deg, var(--yeoro-blue), var(--yeoro-navy));
+            color: white;
+            border: none;
+            padding: 5px 14px;
+            border-radius: 10px;
+            font-size: 0.78em;
+            font-weight: 700;
+            position: absolute;
+            right: 16px;
+            top: 16px;
+        }
+
+        /* ── 타임라인 ── */
+        .timeline-node {
+            position: relative;
+            padding-left: 24px;
+            border-left: 2px solid var(--yeoro-border);
+            margin-left: 8px;
+            padding-bottom: 24px;
+        }
+        .timeline-node:last-child { border-left-color: transparent; }
+        .timeline-node::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--yeoro-blue);
+            box-shadow: 0 0 0 3px rgba(46,95,163,0.18);
+        }
+        .timeline-title { font-weight: 700; font-size: 1em; margin-bottom: 2px; color: var(--yeoro-navy); }
+        .timeline-sub   { font-size: 0.8em; color: var(--yeoro-muted); }
+
+        /* ── 바텀 내비 ── */
+        .app-bottom-nav {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 76px;
+            background-color: rgba(255,255,255,0.97);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--yeoro-border);
+            z-index: 10;
+            padding-bottom: 10px;
+        }
+        .nav-item { text-align: center; color: var(--yeoro-border); cursor: pointer; flex: 1; transition: color 0.15s; }
+        .nav-item.active { color: var(--yeoro-navy); }
+        .nav-item .material-icons { font-size: 1.55rem; display: block; margin-bottom: 2px; }
+        .nav-label { font-size: 0.68rem; font-weight: 600; display: block; }
+
+        /* ── 플로팅 카트 ── */
+        .floating-cart {
+            position: absolute;
+            left: 18px; right: 18px;
+            bottom: 90px;
+            background: linear-gradient(135deg, var(--yeoro-navy) 0%, #2a5298 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 6px 20px rgba(27,58,107,0.25);
+            z-index: 99;
+            cursor: pointer;
+        }
+        .cart-highlight { color: var(--yeoro-sky); font-weight: 700; font-size: 0.85em; }
+
+        /* ── 바텀시트 모달 ── */
+        .modal.fade .modal-dialog { transform: translateY(100%); transition: transform 0.25s ease-out; }
+        .modal.show .modal-dialog { transform: translateY(0); }
+        .bottom-sheet {
+            margin: auto 0 0 0 !important;
+            max-width: 430px !important;
+            width: 100%;
+        }
+        .bottom-sheet .modal-content { border-radius: 24px 24px 0 0; border: none; }
+
+        /* ── 폰트 사이즈 선택 ── */
+        .size-row {
+            padding: 16px;
+            background-color: var(--yeoro-mist);
+            border-radius: 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1.5px solid transparent;
+            color: var(--yeoro-sub);
+        }
+        .size-row.active {
+            background-color: #D8EEFA;
+            color: var(--yeoro-navy);
+            border-color: var(--yeoro-blue);
+        }
+
+        .hidden { display: none !important; }
+
+        /* 섹션 레이블 */
+        .section-label {
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: var(--yeoro-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="phone-wrapper" id="app-root-wrapper">
+
+    <!-- 헤더 -->
+    <div class="app-header">
+        <div class="logo" onclick="changeScreen('main')">
+            <img src="data:image/png;base64,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" style="height:36px; width:36px; border-radius:9px; object-fit:cover;" alt="yeoro logo">
+            <span class="logo-text">여로</span>
+        </div>
+        <div class="header-action" id="user-profile-indicator" onclick="changeScreen('login')">시작하기</div>
+    </div>
+
+    <!-- 콘텐츠 -->
+    <div class="app-content" id="main-app-content">
+
+        <!-- 로그인 화면 -->
+        <div id="screen-login" class="py-2">
+            <div class="page-title">세종시 무장애 여행,<br>여로와 함께하세요</div>
+
+            <div class="y-card mb-4">
+                <div class="section-label mb-3">여행 모드 선택</div>
+                <div class="y-radio-group">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="loginTargetRadio" id="radio5060" value="5060" checked>
+                        <label class="form-check-label fw-semibold" for="radio5060" style="font-size:0.9em;">👨‍🦳 5060 액티브 시니어 산책 모드</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="loginTargetRadio" id="radioFamily" value="family">
+                        <label class="form-check-label fw-semibold" for="radioFamily" style="font-size:0.9em;">👶 영유아 동반 부모 코스 모드</label>
+                    </div>
+                </div>
+            </div>
+
+            <button class="y-btn-primary mb-2" onclick="processPreAuthenticationFlow(true)">카카오로 시작하기</button>
+            <button class="y-btn-secondary mt-1" onclick="processPreAuthenticationFlow(false)">둘러보기</button>
+        </div>
+
+        <!-- 메인 화면 -->
+        <div id="screen-main" class="hidden">
+            <div class="hero-banner mb-4">
+                <div class="hero-badge">
+                    <span class="material-icons" style="font-size:0.9em;">gps_fixed</span>
+                    현위치 기반 안내
+                </div>
+                <div class="hero-banner-text" id="main-welcome-msg">
+                    안전하고 편안한<br>세종 무장애 인프라 가이드
+                </div>
+            </div>
+
+            <div class="section-label">무엇을 찾으시나요?</div>
+            <div class="y-card" style="padding: 6px 14px;">
+                <div class="menu-row" onclick="loadUnifiedCategory('관광지')">
+                    <div class="menu-icon-box"><span class="material-icons icon-blue">landscape</span></div>
+                    <div>
+                        <div class="menu-title">관광 명소</div>
+                        <div class="menu-sub">경사도가 낮은 평지형 랜드마크</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="loadUnifiedCategory('먹거리')">
+                    <div class="menu-icon-box"><span class="material-icons icon-amber">restaurant</span></div>
+                    <div>
+                        <div class="menu-title">추천 맛집</div>
+                        <div class="menu-sub">휠체어·유모차 진입 가능한 식당</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="loadUnifiedCategory('축제')">
+                    <div class="menu-icon-box"><span class="material-icons icon-teal">festival</span></div>
+                    <div>
+                        <div class="menu-title">지역 축제</div>
+                        <div class="menu-sub">장애물 없는 안전한 행사 공간</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="loadUnifiedCategory('의료기관')">
+                    <div class="menu-icon-box"><span class="material-icons icon-green">local_hospital</span></div>
+                    <div>
+                        <div class="menu-title">실시간 종합의료</div>
+                        <div class="menu-sub">돌발 상황 대비 전문 응급 인프라</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 일정 화면 -->
+        <div id="screen-schedule" class="hidden">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="fw-bold" style="font-size:1.15em; color: var(--yeoro-navy);">오늘의 최적 일정</div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-blue); border:1px solid var(--yeoro-border);" onclick="generateRandomSchedule()">🎲 랜덤 추천</button>
+                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-sub); border:1px solid var(--yeoro-border);" onclick="recalculateAndSortRoute()">🔄 재정렬</button>
+                </div>
+            </div>
+            <div id="schedule-timeline-box" class="y-card">
+                <p class="text-center py-4 small m-0" style="color:var(--yeoro-muted);">장바구니에 장소를 담거나<br><strong style="color:var(--yeoro-sub);">'🎲 랜덤 추천'</strong> 버튼을 눌러보세요.</p>
+            </div>
+        </div>
+
+        <!-- 장소 목록 화면 -->
+        <div id="screen-api-list" class="hidden">
+            <div class="cat-tabs">
+                <button class="cat-tab" id="tab-관광지" onclick="loadUnifiedCategory('관광지')">관광지</button>
+                <button class="cat-tab" id="tab-먹거리" onclick="loadUnifiedCategory('먹거리')">먹거리</button>
+                <button class="cat-tab" id="tab-축제" onclick="loadUnifiedCategory('축제')">축제</button>
+                <button class="cat-tab" id="tab-의료기관" onclick="loadUnifiedCategory('의료기관')">의료</button>
+            </div>
+            <div id="dynamic-api-cards-injection-box"></div>
+        </div>
+
+        <!-- 여행 로그 화면 -->
+        <div id="screen-history" class="hidden">
+            <div class="page-title">나의 무장애 여정</div>
+            <div class="y-card text-center py-5">
+                <span class="material-icons mb-2" style="font-size:2.5rem; color:var(--yeoro-border);">lock</span>
+                <p class="fw-bold m-0 small" style="color:var(--yeoro-sub);">비회원 상태에서는 기록이 저장되지 않아요.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 플로팅 카트 -->
+    <div class="floating-cart hidden" id="toss-omni-floating-cart" onclick="openOmniCartModal()">
+        <div class="d-flex align-items-center gap-2">
+            <span class="material-icons" style="font-size:1.25rem;">shopping_bag</span>
+            <span class="fw-bold small"><span id="omni-cart-counter-badge">0</span>개의 장소가 담겼어요</span>
+        </div>
+        <span class="cart-highlight">보기 ›</span>
+    </div>
+
+    <!-- 바텀 내비 -->
+    <div class="app-bottom-nav">
+        <div class="nav-item active" onclick="changeScreen('main')">
+            <span class="material-icons">home</span>
+            <span class="nav-label">홈</span>
+        </div>
+        <div class="nav-item" onclick="changeScreen('schedule')">
+            <span class="material-icons">near_me</span>
+            <span class="nav-label">추천일정</span>
+        </div>
+        <div class="nav-item" onclick="changeScreen('history')">
+            <span class="material-icons">history</span>
+            <span class="nav-label">여행로그</span>
+        </div>
+        <div class="nav-item" onclick="changeScreen('login')">
+            <span class="material-icons">face</span>
+            <span class="nav-label">내 정보</span>
+        </div>
+    </div>
+</div>
+
+<!-- 폰트 사이즈 모달 -->
+<div class="modal fade" id="fontSizeSettingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <div class="page-title" style="font-size:1.25em; margin-bottom:10px;">글자 크기 선택</div>
+                <p class="small mb-4" style="color:var(--yeoro-muted);">가장 보기 편한 크기를 골라주세요.</p>
+                <div class="size-row" id="size-card-normal" onclick="selectFontSizePreference('100%')">
+                    <span>기본 크기</span>
+                    <span style="font-size:1rem; color:var(--yeoro-muted);">가나다</span>
+                </div>
+                <div class="size-row active" id="size-card-large" onclick="selectFontSizePreference('120%')">
+                    <span>크게 보기 (시니어 추천)</span>
+                    <span style="font-size:1.25rem; color:var(--yeoro-navy);">가나다</span>
+                </div>
+                <button class="y-btn-primary mt-4" onclick="confirmFontSizeAndGoHome()">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 카트 모달 -->
+<div class="modal fade" id="omniCartModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <div class="page-title" style="font-size:1.15em; margin-bottom:14px;">선택한 장소 목록</div>
+                <div id="omni-cart-items-list-box" style="max-height:220px; overflow-y:auto;" class="mb-4"></div>
+                <button class="y-btn-primary" onclick="injectCartToTimelineRoute()">현위치 동선 최적화하기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const rawUnifiedDataset = [
+        { id: 1, category: "관광지", name: "세종 이응다리 (금강보행교)", addr: "세종특별자치시 세종동 29-111", lat: 36.4852, lng: 127.2910, desc: "♿ 1.4km 완전 평면 동선 및 야간 안심 유도등 구비" },
+        { id: 2, category: "관광지", name: "국립세종수목원 사계절온실", addr: "세종특별자치시 연기면 수목원로 136", lat: 36.4961, lng: 127.2935, desc: "👶 무료 유모차 대여 인프라 및 넓은 수유실 인접" },
+        { id: 3, category: "먹거리", name: "더사랑 차반 (한정식)", addr: "세종 장군면 월현윗길 38-31 1층", lat: 36.4941, lng: 127.2045, desc: "♿ 입구 턱이 없는 완만한 슬로프 휠체어 진입 전용로 보장" },
+        { id: 4, category: "먹거리", name: "만선 (생선구이)", addr: "세종 금남면 발산1길 41 1층", lat: 36.4682, lng: 127.2812, desc: "👶 영유아 동반 가족 안심 좌식 의자 및 주차장 구비" },
+        { id: 5, category: "축제", name: "세종시 낙화 축제 (시즌 한정)", addr: "세종특별자치시 중앙공원 일원", lat: 36.4912, lng: 127.2711, desc: "🌳 넓은 중앙녹지 공간 연계로 턱이 없는 인도 확보" },
+        { id: 6, category: "의료기관", name: "세종충남대학교병원", addr: "세종특별자치시 보람1로 16", lat: 36.5184, lng: 127.2592, desc: "🚑 24시간 응급 진료 체계 및 소아청소년과 전문의 상주" },
+        { id: 7, category: "의료기관", name: "엔케이세종병원", addr: "세종특별자치시 한누리대로 249", lat: 36.4842, lng: 127.2588, desc: "🚑 야간 급체 및 골절 등 돌발 외상 안전 진료 인프라" }
+    ];
+
+    let userAuthenticationSession = { loggedIn: false, targetGroup: "5060", nickname: "비회원" };
+    let globalOmniCartArray = [];
+    let userRealTimeLocationCoords = { lat: 36.4800, lng: 127.2890 };
+    let temporaryFontSizeChoice = "120%";
+
+    function changeScreen(screenId) {
+        ['login','main','schedule','api-list','history'].forEach(s => {
+            const el = document.getElementById('screen-' + s);
+            if(el) el.classList.add('hidden');
+        });
+        document.getElementById('screen-' + screenId).classList.remove('hidden');
+        const tabs = document.querySelectorAll('.nav-item');
+        tabs.forEach(t => t.classList.remove('active'));
+        if(screenId === 'main')     tabs[0].classList.add('active');
+        if(screenId === 'schedule') tabs[1].classList.add('active');
+        if(screenId === 'history')  tabs[2].classList.add('active');
+        if(screenId === 'login')    tabs[3].classList.add('active');
+    }
+
+    function processPreAuthenticationFlow(isKakao) {
+        const val = document.querySelector('input[name="loginTargetRadio"]:checked').value;
+        userAuthenticationSession.targetGroup = val;
+        userAuthenticationSession.nickname = isKakao ? "카카오 회원" : "비회원";
+        if (val === "5060") {
+            new bootstrap.Modal(document.getElementById('fontSizeSettingModal')).show();
+        } else {
+            document.getElementById('app-root-wrapper').style.setProperty('--app-font-size', '100%');
+            executeAuthenticationFinalization();
+        }
+    }
+
+    function selectFontSizePreference(sizePercent) {
+        temporaryFontSizeChoice = sizePercent;
+        document.getElementById('size-card-normal').classList.remove('active');
+        document.getElementById('size-card-large').classList.remove('active');
+        document.getElementById(sizePercent === '100%' ? 'size-card-normal' : 'size-card-large').classList.add('active');
+    }
+
+    function confirmFontSizeAndGoHome() {
+        document.getElementById('app-root-wrapper').style.setProperty('--app-font-size', temporaryFontSizeChoice);
+        const m = bootstrap.Modal.getInstance(document.getElementById('fontSizeSettingModal'));
+        if (m) m.hide();
+        executeAuthenticationFinalization();
+    }
+
+    function executeAuthenticationFinalization() {
+        document.getElementById('user-profile-indicator').innerText = userAuthenticationSession.nickname;
+        document.getElementById('main-welcome-msg').innerHTML =
+            `반갑습니다, ${userAuthenticationSession.nickname}님<br><span style="font-size:0.82em; font-weight:500; opacity:0.88;">현위치 기반 무장애 맞춤 가이드가 켜졌어요.</span>`;
+        changeScreen('main');
+    }
+
+    function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        return parseFloat((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1));
+    }
+
+    function loadUnifiedCategory(categoryKey) {
+        document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+        const t = document.getElementById(`tab-${categoryKey}`);
+        if(t) t.classList.add('active');
+        const box = document.getElementById('dynamic-api-cards-injection-box');
+        box.innerHTML = "";
+        rawUnifiedDataset.filter(i => i.category === categoryKey).forEach(item => {
+            const dist = calculateHaversineDistanceKm(userRealTimeLocationCoords.lat, userRealTimeLocationCoords.lng, item.lat, item.lng);
+            const card = document.createElement('div');
+            card.className = "place-card";
+            card.innerHTML = `
+                <div class="place-name">${item.name}</div>
+                <div class="place-meta">내 위치에서 ${dist}km · 세종시</div>
+                <div class="place-desc">${item.desc}</div>
+                <span class="place-tag">${item.category}</span>
+                <button class="add-btn" onclick="pushItemToOmniCart(${item.id})">추가</button>`;
+            box.appendChild(card);
+        });
+        changeScreen('api-list');
+    }
+
+    function pushItemToOmniCart(id) {
+        const item = rawUnifiedDataset.find(d => d.id === id);
+        if(globalOmniCartArray.some(c => c.id === id)) return;
+        globalOmniCartArray.push(item);
+        document.getElementById('omni-cart-counter-badge').innerText = globalOmniCartArray.length;
+        document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+    }
+
+    function openOmniCartModal() {
+        const box = document.getElementById('omni-cart-items-list-box');
+        box.innerHTML = globalOmniCartArray.length === 0
+            ? `<p class="text-center py-3 m-0 small" style="color:var(--yeoro-muted);">추가한 장소가 없어요.</p>`
+            : globalOmniCartArray.map((item, i) => `
+                <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--yeoro-border);">
+                    <div>
+                        <span class="fw-bold" style="color:var(--yeoro-navy); font-size:0.93em;">${item.name}</span>
+                        <span class="ms-2" style="font-size:0.78em; color:var(--yeoro-muted);">${item.category}</span>
+                    </div>
+                    <span class="material-icons" style="cursor:pointer; font-size:1.15rem; color:var(--yeoro-muted);" onclick="removeCartItem(${i})">close</span>
+                </div>`).join('');
+        new bootstrap.Modal(document.getElementById('omniCartModal')).show();
+    }
+
+    function removeCartItem(index) {
+        globalOmniCartArray.splice(index, 1);
+        document.getElementById('omni-cart-counter-badge').innerText = globalOmniCartArray.length;
+        if(globalOmniCartArray.length === 0) {
+            document.getElementById('toss-omni-floating-cart').classList.add('hidden');
+            const m = bootstrap.Modal.getInstance(document.getElementById('omniCartModal'));
+            if(m) m.hide();
+        } else { openOmniCartModal(); }
+    }
+
+    function injectCartToTimelineRoute() {
+        const m = bootstrap.Modal.getInstance(document.getElementById('omniCartModal'));
+        if(m) m.hide();
+        recalculateAndSortRoute();
+        changeScreen('schedule');
+    }
+
+    function generateRandomSchedule() {
+        globalOmniCartArray = [];
+        ["관광지","먹거리","축제"].forEach(cat => {
+            const pool = rawUnifiedDataset.filter(i => i.category === cat);
+            if(pool.length > 0) globalOmniCartArray.push(pool[Math.floor(Math.random()*pool.length)]);
+        });
+        document.getElementById('omni-cart-counter-badge').innerText = globalOmniCartArray.length;
+        document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+        recalculateAndSortRoute();
+    }
+
+    function recalculateAndSortRoute() {
+        if(globalOmniCartArray.length === 0) return;
+        globalOmniCartArray.forEach(item => {
+            item._currentDist = calculateHaversineDistanceKm(userRealTimeLocationCoords.lat, userRealTimeLocationCoords.lng, item.lat, item.lng);
+        });
+        globalOmniCartArray.sort((a,b) => a._currentDist - b._currentDist);
+        const box = document.getElementById('schedule-timeline-box');
+        box.innerHTML = "";
+        globalOmniCartArray.forEach(item => {
+            const url = `https://map.kakao.com/link/to/${encodeURIComponent(item.name)},${item.lat},${item.lng}`;
+            const node = document.createElement('div');
+            node.className = "timeline-node";
+            node.innerHTML = `
+                <div class="timeline-title">${item.name}</div>
+                <div class="timeline-sub">직선거리 ${item._currentDist}km · ${item.category}</div>
+                <button class="btn btn-sm mt-2 px-3 fw-bold rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-blue); border:1px solid var(--yeoro-border);" onclick="window.open('${url}')">길찾기</button>`;
+            box.appendChild(node);
+        });
+    }
+</script>
+</body>
+</html>
