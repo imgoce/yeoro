@@ -50,33 +50,30 @@
 
         /* ── 헤더 ── */
         .app-header {
-            background-color: var(--yeoro-white);
-            padding: 14px 20px;
+            background: #fff;
+            padding: 12px 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 10;
             border-bottom: 1px solid var(--yeoro-border);
+            z-index: 10;
         }
-        .app-header .logo {
+        .logo {
             display: flex;
             align-items: center;
             gap: 8px;
             cursor: pointer;
+            text-decoration: none;
         }
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: var(--yeoro-sky);
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+        .logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
         }
-        .logo-icon svg { width: 22px; height: 22px; }
         .logo-text {
-            font-size: 1.25em;
+            font-size: 1.2em;
             font-weight: 800;
             color: var(--yeoro-navy);
             letter-spacing: -0.5px;
@@ -413,6 +410,7 @@
             margin-bottom: 8px;
         }
     </style>
+<script type="text/plain" id="logo-data">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</script>
 </head>
 <body>
 <div class="phone-wrapper" id="app-root-wrapper">
@@ -420,10 +418,10 @@
     <!-- 헤더 -->
     <div class="app-header">
         <div class="logo" onclick="changeScreen('main')">
-            <img src="data:image/png;base64,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" style="height:36px; width:36px; border-radius:9px; object-fit:cover;" alt="yeoro logo">
+            <img id="yeoro-logo" alt="여로 로고">
             <span class="logo-text">여로</span>
         </div>
-        <div class="header-action" id="user-profile-indicator" onclick="changeScreen('login')">시작하기</div>
+        <span class="header-action" id="user-profile-indicator" onclick="changeScreen('login')">시작하기</span>
     </div>
 
     <!-- 콘텐츠 -->
@@ -447,7 +445,7 @@
                 </div>
             </div>
 
-            <button class="y-btn-primary mb-2" onclick="processPreAuthenticationFlow(true)">카카오로 시작하기</button>
+            <button class="y-btn-primary mb-2" onclick="startKakaoOAuth()">카카오로 시작하기</button>
             <button class="y-btn-secondary mt-1" onclick="processPreAuthenticationFlow(false)">둘러보기</button>
         </div>
 
@@ -465,11 +463,11 @@
 
             <div class="section-label">무엇을 찾으시나요?</div>
             <div class="y-card" style="padding: 6px 14px;">
-                <div class="menu-row" onclick="loadUnifiedCategory('관광지')">
+                <div class="menu-row" onclick="loadUnifiedCategory('관광명소')">
                     <div class="menu-icon-box"><span class="material-icons icon-blue">landscape</span></div>
                     <div>
-                        <div class="menu-title">관광 명소</div>
-                        <div class="menu-sub">경사도가 낮은 평지형 랜드마크</div>
+                        <div class="menu-title">관광명소</div>
+                        <div class="menu-sub">국문관광정보 + 웰니스 관광 API 연동</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
@@ -485,15 +483,15 @@
                     <div class="menu-icon-box"><span class="material-icons icon-teal">festival</span></div>
                     <div>
                         <div class="menu-title">지역 축제</div>
-                        <div class="menu-sub">장애물 없는 안전한 행사 공간</div>
+                        <div class="menu-sub">세종시 장애물 없는 안전 행사</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
                 <div class="menu-row" onclick="loadUnifiedCategory('의료기관')">
                     <div class="menu-icon-box"><span class="material-icons icon-green">local_hospital</span></div>
                     <div>
-                        <div class="menu-title">실시간 종합의료</div>
-                        <div class="menu-sub">돌발 상황 대비 전문 응급 인프라</div>
+                        <div class="menu-title">의료기관 정보</div>
+                        <div class="menu-sub">돌발 상황 대비 실시간 의료 정보</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
@@ -517,10 +515,10 @@
         <!-- 장소 목록 화면 -->
         <div id="screen-api-list" class="hidden">
             <div class="cat-tabs">
-                <button class="cat-tab" id="tab-관광지" onclick="loadUnifiedCategory('관광지')">관광지</button>
+                <button class="cat-tab" id="tab-관광명소" onclick="loadUnifiedCategory('관광명소')">관광명소</button>
                 <button class="cat-tab" id="tab-먹거리" onclick="loadUnifiedCategory('먹거리')">먹거리</button>
                 <button class="cat-tab" id="tab-축제" onclick="loadUnifiedCategory('축제')">축제</button>
-                <button class="cat-tab" id="tab-의료기관" onclick="loadUnifiedCategory('의료기관')">의료</button>
+                <button class="cat-tab" id="tab-의료기관" onclick="loadUnifiedCategory('의료기관')">의료기관</button>
             </div>
             <div id="dynamic-api-cards-injection-box"></div>
         </div>
@@ -602,166 +600,500 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const rawUnifiedDataset = [
-        { id: 1, category: "관광지", name: "세종 이응다리 (금강보행교)", addr: "세종특별자치시 세종동 29-111", lat: 36.4852, lng: 127.2910, desc: "♿ 1.4km 완전 평면 동선 및 야간 안심 유도등 구비" },
-        { id: 2, category: "관광지", name: "국립세종수목원 사계절온실", addr: "세종특별자치시 연기면 수목원로 136", lat: 36.4961, lng: 127.2935, desc: "👶 무료 유모차 대여 인프라 및 넓은 수유실 인접" },
-        { id: 3, category: "먹거리", name: "더사랑 차반 (한정식)", addr: "세종 장군면 월현윗길 38-31 1층", lat: 36.4941, lng: 127.2045, desc: "♿ 입구 턱이 없는 완만한 슬로프 휠체어 진입 전용로 보장" },
-        { id: 4, category: "먹거리", name: "만선 (생선구이)", addr: "세종 금남면 발산1길 41 1층", lat: 36.4682, lng: 127.2812, desc: "👶 영유아 동반 가족 안심 좌식 의자 및 주차장 구비" },
-        { id: 5, category: "축제", name: "세종시 낙화 축제 (시즌 한정)", addr: "세종특별자치시 중앙공원 일원", lat: 36.4912, lng: 127.2711, desc: "🌳 넓은 중앙녹지 공간 연계로 턱이 없는 인도 확보" },
-        { id: 6, category: "의료기관", name: "세종충남대학교병원", addr: "세종특별자치시 보람1로 16", lat: 36.5184, lng: 127.2592, desc: "🚑 24시간 응급 진료 체계 및 소아청소년과 전문의 상주" },
-        { id: 7, category: "의료기관", name: "엔케이세종병원", addr: "세종특별자치시 한누리대로 249", lat: 36.4842, lng: 127.2588, desc: "🚑 야간 급체 및 골절 등 돌발 외상 안전 진료 인프라" }
-    ];
+/* ════════════════════════════════════════════════════════════════════
+   여로(Yero) — 세종시 무장애 큐레이션 앱
+   ─ API 키를 API_CONFIG에 채우면 실제 API가 연동됩니다.
+   ─ 키가 없어도 로컬 폴백 데이터로 모든 기능이 정상 동작합니다.
+   ════════════════════════════════════════════════════════════════════ */
 
-    let userAuthenticationSession = { loggedIn: false, targetGroup: "5060", nickname: "비회원" };
-    let globalOmniCartArray = [];
-    let userRealTimeLocationCoords = { lat: 36.4800, lng: 127.2890 };
-    let temporaryFontSizeChoice = "120%";
+/* ── ① API 키 설정 ──────────────────────────────────────────────── */
+/* ── 로고 이미지 (base64, PNG) ─────────────────────────────────── */
+const LOGO_SRC = 'data:image/png;base64,' + document.getElementById('logo-data').textContent.trim();
 
-    function changeScreen(screenId) {
-        ['login','main','schedule','api-list','history'].forEach(s => {
-            const el = document.getElementById('screen-' + s);
-            if(el) el.classList.add('hidden');
+const API_CONFIG = {
+    /*
+     * ┌─────────────────────────────────────────────────────────────┐
+     * │              API 키 입력 위치 안내                           │
+     * ├─────────────────────────────────────────────────────────────┤
+     * │ DATA_GO_KR_KEY                                               │
+     * │   발급처: https://www.data.go.kr                            │
+     * │   검색어: "한국관광공사_국문 관광정보 서비스"                   │
+     * │   → 활용신청 → 승인 후 [마이페이지 > 인증키 발급현황]에서 복사  │
+     * │   → Decoding(일반) 키를 붙여넣으세요                          │
+     * │                                                              │
+     * │ KAKAO_REST_KEY                                               │
+     * │   발급처: https://developers.kakao.com                       │
+     * │   → 내 애플리케이션 > 앱 키 > REST API 키                    │
+     * │   → 카카오맵 검색 + 카카오 로그인에 사용                       │
+     * │                                                              │
+     * │ KAKAO_JS_KEY                                                 │
+     * │   → 내 애플리케이션 > 앱 키 > JavaScript 키                  │
+     * │   → 지도 SDK 확장용 (선택)                                    │
+     * │                                                              │
+     * │ ※ 키를 넣지 않아도 폴백 데이터로 정상 동작합니다              │
+     * └─────────────────────────────────────────────────────────────┘
+     */
+    DATA_GO_KR_KEY: '',    // ← 공공데이터 인증키 (Decoding)
+    KAKAO_REST_KEY: '',    // ← 카카오 REST API 키
+    KAKAO_JS_KEY:   '',    // ← 카카오 JavaScript 키 (선택)
+
+    /* 아래는 수정하지 않아도 됩니다 */
+    KAKAO_REDIRECT_URI: window.location.origin + window.location.pathname,
+    TOUR_AREA_CODE: '8',   // 세종시 지역코드
+    DEFAULT_LAT: 36.4800,
+    DEFAULT_LNG: 127.2890,
+    HTTP_TIMEOUT: 6000,
+};
+
+/* ── ② 로컬 폴백 데이터 (API 미설정/실패 시 자동 사용) ────────────── */
+const LOCAL_FALLBACK = {
+    '관광명소': [
+        { id:'T1', name:'세종 이응다리 (금강보행교)', addr:'세종특별자치시 세종동 29-111', lat:36.4852, lng:127.2910, desc:'♿ 1.4km 완전 평면 동선 및 야간 안심 유도등 구비' },
+        { id:'T2', name:'국립세종수목원 사계절온실', addr:'세종특별자치시 연기면 수목원로 136', lat:36.4961, lng:127.2935, desc:'👶 무료 유모차 대여 인프라 및 넓은 수유실 인접' },
+        { id:'T3', name:'베어트리파크 힐링숲길', addr:'세종특별자치시 전동면 신송로 217', lat:36.6181, lng:127.2447, desc:'🧘 평탄한 산책로와 정원 테라피 — 웰니스 힐링 명소' },
+        { id:'T4', name:'세종호수공원 물맞이 명상터', addr:'세종특별자치시 세종동', lat:36.5006, lng:127.2589, desc:'🌿 호수 둘레 무장애 데크길과 휴게 쉼터로 힐링 산책' },
+        { id:'T5', name:'세종 중앙공원', addr:'세종특별자치시 보람동', lat:36.4897, lng:127.2650, desc:'🌳 넓은 잔디광장과 평탄한 산책로 — 무장애 접근 가능' },
+    ],
+    '먹거리': [
+        { id:'F1', name:'더사랑 차반 (한정식)', addr:'세종 장군면 월현윗길 38-31 1층', lat:36.4941, lng:127.2045, desc:'♿ 입구 턱 없는 완만한 슬로프, 휠체어 전용 진입로' },
+        { id:'F2', name:'만선 (생선구이)', addr:'세종 금남면 발산1길 41 1층', lat:36.4682, lng:127.2812, desc:'👶 영유아 동반 가족 안심 좌식 의자 및 넓은 주차장' },
+        { id:'F3', name:'세종 어울림 식당', addr:'세종특별자치시 한누리대로 123', lat:36.4820, lng:127.2700, desc:'♿ 넓은 통로와 장애인 편의시설 완비된 한식당' },
+    ],
+    '축제': [
+        { id:'V1', name:'세종시 낙화 축제 (시즌 한정)', addr:'세종특별자치시 중앙공원 일원', lat:36.4912, lng:127.2711, desc:'🌳 넓은 중앙녹지 연계 — 턱 없는 인도 확보' },
+        { id:'V2', name:'세종 호수공원 빛 축제', addr:'세종특별자치시 세종동 호수공원', lat:36.5006, lng:127.2589, desc:'✨ 무장애 데크 산책로에서 즐기는 야간 조명 축제' },
+    ],
+    '의료기관': [
+        { id:'M1', name:'세종충남대학교병원', addr:'세종특별자치시 보람1로 16', lat:36.5184, lng:127.2592, desc:'🚑 24시간 응급 진료 체계 및 소아청소년과 전문의 상주', tel:'044-995-4000' },
+        { id:'M2', name:'엔케이세종병원', addr:'세종특별자치시 한누리대로 249', lat:36.4842, lng:127.2588, desc:'🚑 야간 급체·골절 등 돌발 외상 안전 진료', tel:'044-866-0001' },
+        { id:'M3', name:'세종 연세내과의원', addr:'세종특별자치시 도움1로 46', lat:36.4780, lng:127.2640, desc:'🏥 내과·가정의학과 — 여행 중 건강 이상 시 빠른 진료', tel:'044-862-5200' },
+    ],
+};
+
+/* ── ③ 앱 상태 ──────────────────────────────────────────────────── */
+let userSession  = { loggedIn:false, targetGroup:'5060', nickname:'비회원' };
+let cart         = [];
+let userLoc      = { lat: API_CONFIG.DEFAULT_LAT, lng: API_CONFIG.DEFAULT_LNG };
+let fontChoice   = '120%';
+let apiCache     = {};   // { 카테고리명: [place, ...] }
+
+/* ── ④ 유틸 ─────────────────────────────────────────────────────── */
+const haversine = (la1,lo1,la2,lo2) => {
+    const R=6371, d=v=>v*Math.PI/180;
+    const a=Math.sin(d(la2-la1)/2)**2+Math.cos(d(la1))*Math.cos(d(la2))*Math.sin(d(lo2-lo1)/2)**2;
+    return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))*10)/10;
+};
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function showToast(msg, type='info') {
+    const d=document.createElement('div');
+    d.style.cssText=`position:fixed;top:20px;left:50%;transform:translateX(-50%);
+        background:${type==='error'?'#c0392b':'#1B3A6B'};color:#fff;padding:10px 18px;
+        border-radius:12px;font-size:0.82em;font-weight:600;z-index:9999;
+        box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none;`;
+    d.textContent=msg; document.body.appendChild(d);
+    setTimeout(()=>d.remove(),2800);
+}
+function sourceBadge(src) {
+    const m={tourapi:['관광API','#E8F3FF','#2E5FA3'],wellness:['웰니스API','#E6F9F0','#10A37F'],
+             kakao:['카카오맵','#FEF7C3','#A98600'],local:['기본정보','#F2F4F6','#7A97B8']};
+    const [lbl,bg,col]=m[src]||m.local;
+    return `<span style="font-size:.7em;font-weight:700;padding:2px 7px;border-radius:6px;
+                background:${bg};color:${col};margin-left:6px;vertical-align:middle;">${lbl}</span>`;
+}
+
+/* ── ⑤ 화면 전환 ────────────────────────────────────────────────── */
+function changeScreen(id) {
+    ['login','main','schedule','api-list','history'].forEach(s=>
+        document.getElementById('screen-'+s)?.classList.add('hidden'));
+    document.getElementById('screen-'+id)?.classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach((t,i)=>t.classList.toggle('active',
+        (id==='main'&&i===0)||(id==='schedule'&&i===1)||(id==='history'&&i===2)||(id==='login'&&i===3)));
+}
+
+/* ── ⑥ GPS ──────────────────────────────────────────────────────── */
+function initGeolocation() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+        p=>{userLoc={lat:p.coords.latitude,lng:p.coords.longitude};},
+        ()=>{}, {timeout:5000});
+}
+
+/* ── ⑦ 카카오 OAuth 로그인 ─────────────────────────────────────────
+   흐름: startKakaoOAuth() → 카카오 페이지 → ?code= 콜백
+   → handleKakaoCallback() → Flask /auth/kakao/callback 으로 code 전달
+   (토큰 교환은 CORS 때문에 반드시 Flask 서버에서 처리)
+   ─────────────────────────────────────────────────────────────────*/
+function startKakaoOAuth() {
+    const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
+    userSession.targetGroup=group;
+    if (!API_CONFIG.KAKAO_REST_KEY) {
+        showToast('카카오 키 미설정 → 둘러보기로 진행합니다');
+        browseAsGuest(); return;
+    }
+    const state=btoa(JSON.stringify({group,r:Math.random().toString(36).slice(2)}));
+    sessionStorage.setItem('oauth_state',state);
+    const p=new URLSearchParams({client_id:API_CONFIG.KAKAO_REST_KEY,
+        redirect_uri:API_CONFIG.KAKAO_REDIRECT_URI,response_type:'code',state});
+    window.location.href='https://kauth.kakao.com/oauth/authorize?'+p;
+}
+function handleKakaoCallback() {
+    const p=new URLSearchParams(window.location.search);
+    const code=p.get('code'), state=p.get('state'), error=p.get('error');
+    if (!code) return;
+    window.history.replaceState({},'',window.location.pathname);
+    if (error){showToast('카카오 로그인 취소됨');return;}
+    if (sessionStorage.getItem('oauth_state')!==state){showToast('보안 검증 실패','error');return;}
+    sessionStorage.removeItem('oauth_state');
+    let group='5060';
+    try{group=JSON.parse(atob(state)).group;}catch(e){}
+    userSession={loggedIn:true,targetGroup:group,nickname:'카카오 회원'};
+    /* Flask 연동 시: fetch('/auth/kakao/callback?code='+code+'&state='+state) */
+    afterAuth();
+}
+function browseAsGuest() {
+    const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
+    userSession={loggedIn:false,targetGroup:group,nickname:'비회원'};
+    afterAuth();
+}
+function afterAuth() {
+    if(userSession.targetGroup==='5060') new bootstrap.Modal(document.getElementById('fontSizeSettingModal')).show();
+    else { setFont('100%'); finalizeAuth(); }
+}
+function selectFontSizePreference(s){
+    fontChoice=s;
+    document.getElementById('size-card-normal').classList.toggle('active',s==='100%');
+    document.getElementById('size-card-large').classList.toggle('active',s!=='100%');
+}
+function confirmFontSizeAndGoHome(){
+    setFont(fontChoice);
+    bootstrap.Modal.getInstance(document.getElementById('fontSizeSettingModal'))?.hide();
+    finalizeAuth();
+}
+function setFont(s){document.getElementById('app-root-wrapper').style.setProperty('--app-font-size',s);}
+function finalizeAuth() {
+    document.getElementById('user-profile-indicator').textContent=userSession.nickname;
+    const guide=userSession.targetGroup==='5060'
+        ?'현위치 기반 무장애 맞춤 가이드가 켜졌어요.'
+        :'영유아 동반 코스 가이드가 켜졌어요.';
+    document.getElementById('main-welcome-msg').innerHTML=
+        `반갑습니다, ${esc(userSession.nickname)}님<br>
+         <span style="font-size:.82em;font-weight:500;opacity:.88;">${guide}</span>`;
+    changeScreen('main');
+    initGeolocation();
+}
+
+/* ── ⑧ API 호출 함수들 ───────────────────────────────────────────────
+   모든 함수는 실패 시 null/[] 반환 — 절대 예외를 밖으로 던지지 않음
+   ─────────────────────────────────────────────────────────────────*/
+
+/* 공통 fetch 래퍼 (타임아웃 + 에러 흡수) */
+async function safeFetch(url, options={}) {
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(()=>controller.abort(), API_CONFIG.HTTP_TIMEOUT);
+        const res = await fetch(url, {...options, signal:controller.signal});
+        clearTimeout(timer);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch(e) {
+        console.warn(`[API] 실패: ${url.substring(0,60)}... (${e.message})`);
+        return null;
+    }
+}
+
+/* 공공데이터 응답에서 item 배열 안전 추출 */
+function extractItems(json) {
+    try {
+        const items = json?.response?.body?.items?.item;
+        if (!items) return [];
+        return Array.isArray(items) ? items : [items];
+    } catch(e) { return []; }
+}
+
+/* 국문관광정보 API — contentTypeId: 12=관광지, 14=문화시설, 15=축제, 39=음식점 */
+async function callTourApi(contentTypeId, rows=15) {
+    if (!API_CONFIG.DATA_GO_KR_KEY) return null;
+    const url = 'https://apis.data.go.kr/B551011/KorService2/locationBasedList2?' +
+        new URLSearchParams({
+            serviceKey:    API_CONFIG.DATA_GO_KR_KEY,
+            numOfRows: rows, pageNo:1,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json',
+            mapX: userLoc.lng, mapY: userLoc.lat,
+            radius: 20000, contentTypeId, arrange:'E',
         });
-        document.getElementById('screen-' + screenId).classList.remove('hidden');
-        const tabs = document.querySelectorAll('.nav-item');
-        tabs.forEach(t => t.classList.remove('active'));
-        if(screenId === 'main')     tabs[0].classList.add('active');
-        if(screenId === 'schedule') tabs[1].classList.add('active');
-        if(screenId === 'history')  tabs[2].classList.add('active');
-        if(screenId === 'login')    tabs[3].classList.add('active');
+    const json = await safeFetch(url);
+    if (!json) return null;
+    return extractItems(json).map(it=>({
+        id:    'tour-'+(it.contentid||it.title),
+        name:  (it.title||'').trim(),
+        addr:  ((it.addr1||'')+' '+(it.addr2||'')).trim(),
+        lat:   parseFloat(it.mapy)||null,
+        lng:   parseFloat(it.mapx)||null,
+        desc:  it.cat3||it.cat2||'한국관광공사 제공',
+        tel:   it.tel||'',
+        image: it.firstimage||it.firstimage2||'',
+        source:'tourapi',
+    })).filter(p=>p.name);
+}
+
+/* 웰니스 관광 API */
+async function callWellnessApi(rows=10) {
+    if (!API_CONFIG.DATA_GO_KR_KEY) return null;
+    const url = 'https://apis.data.go.kr/B551011/wellnessTourInfo/wellnessList?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.DATA_GO_KR_KEY,
+            numOfRows:rows, pageNo:1,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json',
+            areaCode: API_CONFIG.TOUR_AREA_CODE,
+        });
+    const json = await safeFetch(url);
+    if (!json) return null;
+    return extractItems(json).map(it=>({
+        id:    'wellness-'+(it.contentid||it.title),
+        name:  (it.title||it.name||'').trim(),
+        addr:  (it.addr1||it.address||'').trim(),
+        lat:   parseFloat(it.mapy||it.latitude)||null,
+        lng:   parseFloat(it.mapx||it.longitude)||null,
+        desc:  it.overview||it.cat3||'🧘 웰니스 힐링 추천 장소',
+        tel:   it.tel||'',
+        source:'wellness',
+    })).filter(p=>p.name);
+}
+
+/* 카카오맵 로컬 검색 — 카테고리 코드: FD6=음식점, HP8=병원, AT4=관광명소 */
+async function callKakaoCategory(code, size=15) {
+    if (!API_CONFIG.KAKAO_REST_KEY) return null;
+    const url = 'https://dapi.kakao.com/v2/local/search/category.json?' +
+        new URLSearchParams({
+            category_group_code: code,
+            x: userLoc.lng, y: userLoc.lat,
+            radius: 10000, size: Math.min(size,15), sort:'distance',
+        });
+    const json = await safeFetch(url, {headers:{Authorization:'KakaoAK '+API_CONFIG.KAKAO_REST_KEY}});
+    if (!json) return null;
+    return (json.documents||[]).map(d=>({
+        id:    'kakao-'+d.id,
+        name:  d.place_name||'',
+        addr:  d.road_address_name||d.address_name||'',
+        lat:   parseFloat(d.y)||null,
+        lng:   parseFloat(d.x)||null,
+        desc:  d.category_name||'카카오맵 제공',
+        tel:   d.phone||'',
+        source:'kakao',
+    })).filter(p=>p.name);
+}
+
+/* 카카오 키워드 검색 */
+async function callKakaoKeyword(keyword, size=10) {
+    if (!API_CONFIG.KAKAO_REST_KEY) return null;
+    const url = 'https://dapi.kakao.com/v2/local/search/keyword.json?' +
+        new URLSearchParams({query:keyword, x:userLoc.lng, y:userLoc.lat,
+            radius:10000, size:Math.min(size,15)});
+    const json = await safeFetch(url, {headers:{Authorization:'KakaoAK '+API_CONFIG.KAKAO_REST_KEY}});
+    if (!json) return null;
+    return (json.documents||[]).map(d=>({
+        id:'kakao-kw-'+d.id, name:d.place_name||'',
+        addr:d.road_address_name||d.address_name||'',
+        lat:parseFloat(d.y)||null, lng:parseFloat(d.x)||null,
+        desc:d.category_name||'카카오맵 제공', tel:d.phone||'',
+        source:'kakao',
+    })).filter(p=>p.name);
+}
+
+/* ── ⑨ 카테고리별 데이터 로딩 ──────────────────────────────────────
+   각 카테고리마다 1~2개 API를 호출 → 병합 → 실패 시 폴백
+   ─────────────────────────────────────────────────────────────────*/
+async function getPlaces(category) {
+    if (apiCache[category]) return apiCache[category];
+
+    let places = null;
+
+    try {
+        if (category === '관광명소') {
+            /* 국문관광정보(관광지12 + 문화시설14) + 웰니스 API 병렬 호출 */
+            const [tour, culture, wellness] = await Promise.all([
+                callTourApi('12', 12),
+                callTourApi('14', 8),
+                callWellnessApi(8),
+            ]);
+            const combined = [...(tour||[]), ...(culture||[]), ...(wellness||[])];
+            if (combined.length > 0) places = combined;
+        }
+        else if (category === '먹거리') {
+            /* 국문관광정보(음식점39) + 카카오맵(FD6 음식점) 병렬 호출 */
+            const [tourFood, kakaoFood] = await Promise.all([
+                callTourApi('39', 10),
+                callKakaoCategory('FD6', 10),
+            ]);
+            const combined = [...(tourFood||[]), ...(kakaoFood||[])];
+            if (combined.length > 0) places = combined;
+        }
+        else if (category === '축제') {
+            /* 국문관광정보(축제15) */
+            const tourFest = await callTourApi('15', 15);
+            if (tourFest && tourFest.length > 0) places = tourFest;
+        }
+        else if (category === '의료기관') {
+            /* 카카오맵(HP8 병원) + 키워드 검색 보조 */
+            const [kakaoHosp, keyword] = await Promise.all([
+                callKakaoCategory('HP8', 12),
+                callKakaoKeyword('세종 병원 응급', 5),
+            ]);
+            const combined = [...(kakaoHosp||[]), ...(keyword||[])];
+            // 중복 제거
+            const seen = new Set();
+            const deduped = combined.filter(p=>{
+                if (seen.has(p.name)) return false;
+                seen.add(p.name); return true;
+            });
+            if (deduped.length > 0) places = deduped;
+        }
+    } catch(e) {
+        console.warn('[getPlaces] 예외:', e.message);
+        places = null;
     }
 
-    function processPreAuthenticationFlow(isKakao) {
-        const val = document.querySelector('input[name="loginTargetRadio"]:checked').value;
-        userAuthenticationSession.targetGroup = val;
-        userAuthenticationSession.nickname = isKakao ? "카카오 회원" : "비회원";
-        if (val === "5060") {
-            new bootstrap.Modal(document.getElementById('fontSizeSettingModal')).show();
-        } else {
-            document.getElementById('app-root-wrapper').style.setProperty('--app-font-size', '100%');
-            executeAuthenticationFinalization();
+    /* API 실패 또는 키 없음 → 로컬 폴백 */
+    if (!places || places.length === 0) {
+        places = (LOCAL_FALLBACK[category]||[]).map(p=>({...p, category}));
+        if (places.length === 0) {
+            console.info(`[폴백] ${category}: 데이터 없음`);
         }
     }
 
-    function selectFontSizePreference(sizePercent) {
-        temporaryFontSizeChoice = sizePercent;
-        document.getElementById('size-card-normal').classList.remove('active');
-        document.getElementById('size-card-large').classList.remove('active');
-        document.getElementById(sizePercent === '100%' ? 'size-card-normal' : 'size-card-large').classList.add('active');
+    /* 거리 계산 + 정렬 */
+    places = places
+        .map(p=>({...p, category, _dist:(p.lat&&p.lng)
+            ? haversine(userLoc.lat,userLoc.lng,p.lat,p.lng) : null}))
+        .sort((a,b)=>(a._dist===null)-(b._dist===null)||(a._dist||0)-(b._dist||0));
+
+    apiCache[category] = places;
+    return places;
+}
+
+/* ── ⑩ 카드 렌더링 ──────────────────────────────────────────────── */
+async function loadUnifiedCategory(categoryKey) {
+    document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+    document.getElementById(`tab-${categoryKey}`)?.classList.add('active');
+    changeScreen('api-list');
+
+    const box = document.getElementById('dynamic-api-cards-injection-box');
+    box.innerHTML = `<div style="text-align:center;padding:48px 0;color:var(--yeoro-muted);">
+        <div style="font-size:2em;margin-bottom:8px;">🔍</div>
+        <div style="font-size:.85em;font-weight:600;">불러오는 중...</div>
+        <div style="font-size:.75em;margin-top:4px;opacity:.7;">API 연동 중이에요</div></div>`;
+
+    const places = await getPlaces(categoryKey);
+
+    if (!places.length) {
+        box.innerHTML=`<div style="text-align:center;padding:48px 0;color:var(--yeoro-muted);">
+            <div style="font-size:2em;margin-bottom:8px;">📭</div>
+            <div style="font-size:.85em;">표시할 장소가 없어요.</div></div>`;
+        return;
     }
 
-    function confirmFontSizeAndGoHome() {
-        document.getElementById('app-root-wrapper').style.setProperty('--app-font-size', temporaryFontSizeChoice);
-        const m = bootstrap.Modal.getInstance(document.getElementById('fontSizeSettingModal'));
-        if (m) m.hide();
-        executeAuthenticationFinalization();
-    }
-
-    function executeAuthenticationFinalization() {
-        document.getElementById('user-profile-indicator').innerText = userAuthenticationSession.nickname;
-        document.getElementById('main-welcome-msg').innerHTML =
-            `반갑습니다, ${userAuthenticationSession.nickname}님<br><span style="font-size:0.82em; font-weight:500; opacity:0.88;">현위치 기반 무장애 맞춤 가이드가 켜졌어요.</span>`;
-        changeScreen('main');
-    }
-
-    function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
-        const R = 6371;
-        const dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
-        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-        return parseFloat((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1));
-    }
-
-    function loadUnifiedCategory(categoryKey) {
-        document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
-        const t = document.getElementById(`tab-${categoryKey}`);
-        if(t) t.classList.add('active');
-        const box = document.getElementById('dynamic-api-cards-injection-box');
-        box.innerHTML = "";
-        rawUnifiedDataset.filter(i => i.category === categoryKey).forEach(item => {
-            const dist = calculateHaversineDistanceKm(userRealTimeLocationCoords.lat, userRealTimeLocationCoords.lng, item.lat, item.lng);
-            const card = document.createElement('div');
-            card.className = "place-card";
-            card.innerHTML = `
-                <div class="place-name">${item.name}</div>
-                <div class="place-meta">내 위치에서 ${dist}km · 세종시</div>
-                <div class="place-desc">${item.desc}</div>
-                <span class="place-tag">${item.category}</span>
-                <button class="add-btn" onclick="pushItemToOmniCart(${item.id})">추가</button>`;
-            box.appendChild(card);
+    box.innerHTML = '';
+    places.forEach(item => {
+        const inCart = cart.some(c=>c.id===item.id);
+        const dist   = item._dist!=null ? `내 위치에서 ${item._dist}km · ` : '';
+        const card   = document.createElement('div');
+        card.className = 'place-card';
+        card.innerHTML = `
+            <div class="place-name">${esc(item.name)}${sourceBadge(item.source||'local')}</div>
+            <div class="place-meta">${dist}세종시</div>
+            <div class="place-desc">${esc(item.desc||'')}</div>
+            ${item.tel?`<div style="font-size:.78em;color:var(--yeoro-muted);margin-bottom:6px;">📞 ${esc(item.tel)}</div>`:''}
+            <span class="place-tag">${esc(item.category)}</span>
+            <button class="add-btn" ${inCart?'disabled style="opacity:.5"':''}>
+                ${inCart?'담김':'추가'}</button>`;
+        card.querySelector('.add-btn').addEventListener('click', e=>{
+            if(inCart) return;
+            pushToCart(item);
+            e.target.disabled=true; e.target.textContent='담김'; e.target.style.opacity='.5';
         });
-        changeScreen('api-list');
-    }
+        box.appendChild(card);
+    });
+}
 
-    function pushItemToOmniCart(id) {
-        const item = rawUnifiedDataset.find(d => d.id === id);
-        if(globalOmniCartArray.some(c => c.id === id)) return;
-        globalOmniCartArray.push(item);
-        document.getElementById('omni-cart-counter-badge').innerText = globalOmniCartArray.length;
-        document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
-    }
+/* ── ⑪ 장바구니 ─────────────────────────────────────────────────── */
+function pushToCart(item) {
+    if (cart.some(c=>c.id===item.id)) return;
+    cart.push(item);
+    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
+    document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+}
+function removeCartItem(i) {
+    cart.splice(i,1);
+    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
+    if(cart.length===0){
+        document.getElementById('toss-omni-floating-cart').classList.add('hidden');
+        bootstrap.Modal.getInstance(document.getElementById('omniCartModal'))?.hide();
+    } else openOmniCartModal();
+}
+function openOmniCartModal() {
+    const box=document.getElementById('omni-cart-items-list-box');
+    box.innerHTML=cart.length===0
+        ?`<p class="text-center py-3 m-0 small" style="color:var(--yeoro-muted);">추가한 장소가 없어요.</p>`
+        :cart.map((item,i)=>`
+            <div class="d-flex justify-content-between align-items-center py-2"
+                 style="border-bottom:1px solid var(--yeoro-border);">
+                <div>
+                    <span class="fw-bold" style="color:var(--yeoro-navy);font-size:.93em;">${esc(item.name)}</span>
+                    <span class="ms-2" style="font-size:.78em;color:var(--yeoro-muted);">${esc(item.category)}</span>
+                </div>
+                <span class="material-icons" onclick="removeCartItem(${i})"
+                    style="cursor:pointer;font-size:1.15rem;color:var(--yeoro-muted);">close</span>
+            </div>`).join('');
+    new bootstrap.Modal(document.getElementById('omniCartModal')).show();
+}
+function injectCartToTimelineRoute() {
+    bootstrap.Modal.getInstance(document.getElementById('omniCartModal'))?.hide();
+    recalculateAndSortRoute();
+    changeScreen('schedule');
+}
 
-    function openOmniCartModal() {
-        const box = document.getElementById('omni-cart-items-list-box');
-        box.innerHTML = globalOmniCartArray.length === 0
-            ? `<p class="text-center py-3 m-0 small" style="color:var(--yeoro-muted);">추가한 장소가 없어요.</p>`
-            : globalOmniCartArray.map((item, i) => `
-                <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--yeoro-border);">
-                    <div>
-                        <span class="fw-bold" style="color:var(--yeoro-navy); font-size:0.93em;">${item.name}</span>
-                        <span class="ms-2" style="font-size:0.78em; color:var(--yeoro-muted);">${item.category}</span>
-                    </div>
-                    <span class="material-icons" style="cursor:pointer; font-size:1.15rem; color:var(--yeoro-muted);" onclick="removeCartItem(${i})">close</span>
-                </div>`).join('');
-        new bootstrap.Modal(document.getElementById('omniCartModal')).show();
+/* ── ⑫ 일정·동선 ────────────────────────────────────────────────── */
+async function generateRandomSchedule() {
+    const box=document.getElementById('schedule-timeline-box');
+    box.innerHTML=`<div style="text-align:center;padding:32px;color:var(--yeoro-muted);">🎲 일정 생성 중...</div>`;
+    changeScreen('schedule');
+    cart=[];
+    for (const cat of ['관광명소','먹거리','축제']) {
+        const pool=await getPlaces(cat);
+        if(pool.length) cart.push(pool[Math.floor(Math.random()*pool.length)]);
     }
+    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
+    document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+    recalculateAndSortRoute();
+}
+function recalculateAndSortRoute() {
+    if(!cart.length) return;
+    cart.forEach(item=>{item._dist=(item.lat&&item.lng)
+        ?haversine(userLoc.lat,userLoc.lng,item.lat,item.lng):null;});
+    cart.sort((a,b)=>(a._dist===null)-(b._dist===null)||(a._dist||0)-(b._dist||0));
+    const box=document.getElementById('schedule-timeline-box');
+    box.innerHTML='';
+    cart.forEach(item=>{
+        const url=`https://map.kakao.com/link/to/${encodeURIComponent(item.name)},${item.lat},${item.lng}`;
+        const node=document.createElement('div'); node.className='timeline-node';
+        node.innerHTML=`
+            <div class="timeline-title">${esc(item.name)}</div>
+            <div class="timeline-sub">${item._dist!=null?'직선거리 '+item._dist+'km · ':''}${esc(item.category)}</div>
+            <button class="btn btn-sm mt-2 px-3 fw-bold rounded-3"
+                style="font-size:.78em;background:var(--yeoro-mist);color:var(--yeoro-blue);border:1px solid var(--yeoro-border);"
+                onclick="window.open('${url}')">길찾기</button>`;
+        box.appendChild(node);
+    });
+}
 
-    function removeCartItem(index) {
-        globalOmniCartArray.splice(index, 1);
-        document.getElementById('omni-cart-counter-badge').innerText = globalOmniCartArray.length;
-        if(globalOmniCartArray.length === 0) {
-            document.getElementById('toss-omni-floating-cart').classList.add('hidden');
-            const m = bootstrap.Modal.getInstance(document.getElementById('omniCartModal'));
-            if(m) m.hide();
-        } else { openOmniCartModal(); }
-    }
-
-    function injectCartToTimelineRoute() {
-        const m = bootstrap.Modal.getInstance(document.getElementById('omniCartModal'));
-        if(m) m.hide();
-        recalculateAndSortRoute();
-        changeScreen('schedule');
-    }
-
-    function generateRandomSchedule() {
-        globalOmniCartArray = [];
-        ["관광지","먹거리","축제"].forEach(cat => {
-            const pool = rawUnifiedDataset.filter(i => i.category === cat);
-            if(pool.length > 0) globalOmniCartArray.push(pool[Math.floor(Math.random()*pool.length)]);
-        });
-        document.getElementById('omni-cart-counter-badge').innerText = globalOmniCartArray.length;
-        document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
-        recalculateAndSortRoute();
-    }
-
-    function recalculateAndSortRoute() {
-        if(globalOmniCartArray.length === 0) return;
-        globalOmniCartArray.forEach(item => {
-            item._currentDist = calculateHaversineDistanceKm(userRealTimeLocationCoords.lat, userRealTimeLocationCoords.lng, item.lat, item.lng);
-        });
-        globalOmniCartArray.sort((a,b) => a._currentDist - b._currentDist);
-        const box = document.getElementById('schedule-timeline-box');
-        box.innerHTML = "";
-        globalOmniCartArray.forEach(item => {
-            const url = `https://map.kakao.com/link/to/${encodeURIComponent(item.name)},${item.lat},${item.lng}`;
-            const node = document.createElement('div');
-            node.className = "timeline-node";
-            node.innerHTML = `
-                <div class="timeline-title">${item.name}</div>
-                <div class="timeline-sub">직선거리 ${item._currentDist}km · ${item.category}</div>
-                <button class="btn btn-sm mt-2 px-3 fw-bold rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-blue); border:1px solid var(--yeoro-border);" onclick="window.open('${url}')">길찾기</button>`;
-            box.appendChild(node);
-        });
-    }
+/* ── ⑬ 초기화 ───────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('yeoro-logo').src = LOGO_SRC;
+    handleKakaoCallback();
+    if(API_CONFIG.KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized())
+        Kakao.init(API_CONFIG.KAKAO_JS_KEY);
+    changeScreen('login');
+});
 </script>
 </body>
 </html>
