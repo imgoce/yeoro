@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>여로 - 세종시 맞춤형 무장애 큐레이션</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* yeoro 로고 기반 컬러 시스템 */
+            --yeoro-navy:    #1B3A6B;   /* 짙은 네이비 — 로고 강 색 */
+            --yeoro-blue:    #2E5FA3;   /* 중간 블루 — CTA / 포인트 */
+            --yeoro-sky:     #BDD9EF;   /* 연한 하늘 — 로고 배경 */
+            --yeoro-mist:    #E8F4FB;   /* 더 연한 미스트 — 카드 배경 */
+            --yeoro-white:   #FFFFFF;
+            --yeoro-bg:      #EDF5FB;   /* 전체 배경 */
+            --yeoro-text:    #0F2240;   /* 주 텍스트 */
+            --yeoro-sub:     #3A5580;   /* 보조 텍스트 */
+            --yeoro-muted:   #7A97B8;   /* 흐린 텍스트 */
+            --yeoro-border:  #C8DEEE;   /* 테두리 */
+            --app-font-size: 100%;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #C8DEEE;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            color: var(--yeoro-text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .phone-wrapper {
+            width: 100%;
+            max-width: 430px;
+            height: 100vh;
+            background-color: var(--yeoro-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(27,58,107,0.18);
+            font-size: var(--app-font-size);
+        }
+
+        /* ── 헤더 ── */
+        .app-header {
+            background: #fff;
+            padding: 12px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--yeoro-border);
+            z-index: 10;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .logo-text {
+            font-size: 1.2em;
+            font-weight: 800;
+            color: var(--yeoro-navy);
+            letter-spacing: -0.5px;
+        }
+        .header-action {
+            font-size: 0.82em;
+            font-weight: 600;
+            color: var(--yeoro-muted);
+            cursor: pointer;
+        }
+
+        /* ── 스크롤 영역 ── */
+        .app-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 18px;
+            padding-bottom: 96px;
+        }
+        .app-content::-webkit-scrollbar { display: none; }
+
+        /* ── 페이지 타이틀 ── */
+        .page-title {
+            font-size: 1.5em;
+            font-weight: 800;
+            line-height: 1.35;
+            margin-bottom: 22px;
+            color: var(--yeoro-navy);
+            letter-spacing: -0.3px;
+        }
+
+        /* ── 카드 ── */
+        .y-card {
+            background-color: var(--yeoro-white);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 12px;
+            border: 1px solid var(--yeoro-border);
+            box-shadow: 0 2px 10px rgba(27,58,107,0.05);
+        }
+
+        /* ── 로그인 라디오 ── */
+        .y-radio-group .form-check {
+            padding: 14px 16px;
+            border-radius: 14px;
+            background-color: var(--yeoro-mist);
+            margin-bottom: 8px;
+            border: 1.5px solid transparent;
+            display: flex;
+            align-items: center;
+            transition: border-color 0.15s;
+        }
+        .y-radio-group .form-check:has(input:checked) {
+            border-color: var(--yeoro-blue);
+            background-color: #E0EEF8;
+        }
+        .y-radio-group .form-check-input {
+            margin-right: 12px;
+            width: 1.1rem;
+            height: 1.1rem;
+            accent-color: var(--yeoro-blue);
+        }
+        .y-radio-group .form-check-input:checked {
+            background-color: var(--yeoro-blue);
+            border-color: var(--yeoro-blue);
+        }
+
+        /* ── 버튼 ── */
+        .y-btn-primary {
+            background: linear-gradient(135deg, var(--yeoro-blue) 0%, var(--yeoro-navy) 100%);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 16px;
+            font-size: 0.95em;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            transition: opacity 0.15s;
+        }
+        .y-btn-primary:active { opacity: 0.82; }
+
+        .y-btn-secondary {
+            background-color: var(--yeoro-mist);
+            color: var(--yeoro-blue);
+            border: 1.5px solid var(--yeoro-border);
+            width: 100%;
+            padding: 13px;
+            border-radius: 16px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        /* ── 히어로 배너 ── */
+        .hero-banner {
+            border-radius: 22px;
+            background: linear-gradient(145deg, var(--yeoro-navy) 0%, #2a5298 60%, var(--yeoro-blue) 100%);
+            padding: 24px 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: -20px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: rgba(189,217,239,0.15);
+        }
+        .hero-banner::after {
+            content: '';
+            position: absolute;
+            right: 30px;
+            bottom: -30px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: rgba(189,217,239,0.10);
+        }
+        .hero-banner-text {
+            color: white;
+            font-size: 1.15em;
+            font-weight: 700;
+            line-height: 1.5;
+            position: relative;
+            z-index: 1;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(189,217,239,0.22);
+            color: var(--yeoro-sky);
+            font-size: 0.75em;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* ── 메뉴 리스트 ── */
+        .menu-row {
+            display: flex;
+            align-items: center;
+            padding: 13px 4px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--yeoro-mist);
+            transition: background 0.1s;
+        }
+        .menu-row:last-child { border-bottom: none; }
+        .menu-icon-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background-color: var(--yeoro-mist);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        .menu-icon-box .material-icons { font-size: 1.3rem; }
+        .icon-blue   { color: var(--yeoro-blue); }
+        .icon-teal   { color: #2A8FA8; }
+        .icon-amber  { color: #C07A20; }
+        .icon-green  { color: #2A7A4A; }
+        .menu-title  { font-weight: 700; font-size: 0.98em; color: var(--yeoro-text); }
+        .menu-sub    { font-size: 0.78em; color: var(--yeoro-muted); margin-top: 2px; }
+        .menu-arrow  { margin-left: auto; color: var(--yeoro-border); }
+
+        /* ── 카테고리 탭 ── */
+        .cat-tabs {
+            display: flex;
+            background-color: var(--yeoro-border);
+            padding: 3px;
+            border-radius: 14px;
+            margin-bottom: 16px;
+        }
+        .cat-tab {
+            flex: 1;
+            text-align: center;
+            background: none;
+            color: var(--yeoro-sub);
+            border: none;
+            padding: 8px 4px;
+            border-radius: 11px;
+            font-size: 0.82em;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .cat-tab.active {
+            background-color: var(--yeoro-white);
+            color: var(--yeoro-navy);
+            box-shadow: 0 2px 8px rgba(27,58,107,0.10);
+        }
+
+        /* ── 장소 카드 ── */
+        .place-card {
+            background: var(--yeoro-white);
+            border-radius: 18px;
+            padding: 16px;
+            margin-bottom: 10px;
+            border: 1px solid var(--yeoro-border);
+            position: relative;
+        }
+        .place-name  { font-size: 1.05em; font-weight: 700; color: var(--yeoro-navy); margin-bottom: 3px; }
+        .place-meta  { font-size: 0.8em; color: var(--yeoro-muted); margin-bottom: 6px; }
+        .place-desc  { font-size: 0.82em; color: var(--yeoro-sub); font-weight: 500; margin-bottom: 8px; }
+        .place-tag   {
+            font-size: 0.75em;
+            background-color: var(--yeoro-mist);
+            color: var(--yeoro-blue);
+            padding: 3px 9px;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: 600;
+            border: 1px solid var(--yeoro-border);
+        }
+        .add-btn {
+            background: linear-gradient(135deg, var(--yeoro-blue), var(--yeoro-navy));
+            color: white;
+            border: none;
+            padding: 5px 14px;
+            border-radius: 10px;
+            font-size: 0.78em;
+            font-weight: 700;
+            position: absolute;
+            right: 16px;
+            top: 16px;
+        }
+
+        /* ── 타임라인 ── */
+        .timeline-node {
+            position: relative;
+            padding-left: 24px;
+            border-left: 2px solid var(--yeoro-border);
+            margin-left: 8px;
+            padding-bottom: 24px;
+        }
+        .timeline-node:last-child { border-left-color: transparent; }
+        .timeline-node::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--yeoro-blue);
+            box-shadow: 0 0 0 3px rgba(46,95,163,0.18);
+        }
+        .timeline-title { font-weight: 700; font-size: 1em; margin-bottom: 2px; color: var(--yeoro-navy); }
+        .timeline-sub   { font-size: 0.8em; color: var(--yeoro-muted); }
+
+        /* ── 바텀 내비 ── */
+        .app-bottom-nav {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 76px;
+            background-color: rgba(255,255,255,0.97);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--yeoro-border);
+            z-index: 10;
+            padding-bottom: 10px;
+        }
+        .nav-item { text-align: center; color: var(--yeoro-border); cursor: pointer; flex: 1; transition: color 0.15s; }
+        .nav-item.active { color: var(--yeoro-navy); }
+        .nav-item .material-icons { font-size: 1.55rem; display: block; margin-bottom: 2px; }
+        .nav-label { font-size: 0.68rem; font-weight: 600; display: block; }
+
+        /* ── 플로팅 카트 ── */
+        .floating-cart {
+            position: absolute;
+            left: 18px; right: 18px;
+            bottom: 90px;
+            background: linear-gradient(135deg, var(--yeoro-navy) 0%, #2a5298 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 6px 20px rgba(27,58,107,0.25);
+            z-index: 99;
+            cursor: pointer;
+        }
+        .cart-highlight { color: var(--yeoro-sky); font-weight: 700; font-size: 0.85em; }
+
+        /* ── 바텀시트 모달 ── */
+        .modal.fade .modal-dialog { transform: translateY(100%); transition: transform 0.25s ease-out; }
+        .modal.show .modal-dialog { transform: translateY(0); }
+        .bottom-sheet {
+            margin: auto 0 0 0 !important;
+            max-width: 430px !important;
+            width: 100%;
+        }
+        .bottom-sheet .modal-content { border-radius: 24px 24px 0 0; border: none; }
+
+        /* ── 폰트 사이즈 선택 ── */
+        .size-row {
+            padding: 16px;
+            background-color: var(--yeoro-mist);
+            border-radius: 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1.5px solid transparent;
+            color: var(--yeoro-sub);
+        }
+        .size-row.active {
+            background-color: #D8EEFA;
+            color: var(--yeoro-navy);
+            border-color: var(--yeoro-blue);
+        }
+
+        .hidden { display: none !important; }
+
+        /* 섹션 레이블 */
+        .section-label {
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: var(--yeoro-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="phone-wrapper" id="app-root-wrapper">
+
+    <!-- 헤더 -->
+    <div class="app-header">
+        <div class="logo" onclick="changeScreen('main')">
+            <img src="data:image/png;base64,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" alt="여로 로고">
+            <span class="logo-text">여로</span>
+        </div>
+        <span class="header-action" id="user-profile-indicator" onclick="changeScreen('login')">시작하기</span>
+    </div>
+
+    <!-- 콘텐츠 -->
+    <div class="app-content" id="main-app-content">
+
+        <!-- 로그인 화면 -->
+        <div id="screen-login" class="py-2">
+            <div class="page-title">세종시 무장애 여행,<br>여로와 함께하세요</div>
+
+            <div class="y-card mb-4">
+                <div class="section-label mb-3">여행 모드 선택</div>
+                <div class="y-radio-group">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="loginTargetRadio" id="radio5060" value="5060" checked>
+                        <label class="form-check-label fw-semibold" for="radio5060" style="font-size:0.9em;">👨‍🦳 5060 액티브 시니어 산책 모드</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="loginTargetRadio" id="radioFamily" value="family">
+                        <label class="form-check-label fw-semibold" for="radioFamily" style="font-size:0.9em;">👶 영유아 동반 부모 코스 모드</label>
+                    </div>
+                </div>
+            </div>
+
+            <button class="y-btn-primary mb-2" onclick="startKakaoOAuth()">카카오로 시작하기</button>
+            <button class="y-btn-secondary mt-1" onclick="processPreAuthenticationFlow(false)">둘러보기</button>
+        </div>
+
+        <!-- 메인 화면 -->
+        <div id="screen-main" class="hidden">
+            <div class="hero-banner mb-4">
+                <div class="hero-badge">
+                    <span class="material-icons" style="font-size:0.9em;">gps_fixed</span>
+                    현위치 기반 안내
+                </div>
+                <div class="hero-banner-text" id="main-welcome-msg">
+                    안전하고 편안한<br>세종 무장애 인프라 가이드
+                </div>
+            </div>
+
+            <div class="section-label">무엇을 찾으시나요?</div>
+            <div class="y-card" style="padding: 6px 14px;">
+                <div class="menu-row" onclick="loadUnifiedCategory('관광명소')">
+                    <div class="menu-icon-box"><span class="material-icons icon-blue">landscape</span></div>
+                    <div>
+                        <div class="menu-title">관광명소</div>
+                        <div class="menu-sub">국문관광정보 + 웰니스 관광 API 연동</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="loadUnifiedCategory('먹거리')">
+                    <div class="menu-icon-box"><span class="material-icons icon-amber">restaurant</span></div>
+                    <div>
+                        <div class="menu-title">추천 맛집</div>
+                        <div class="menu-sub">휠체어·유모차 진입 가능한 식당</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="loadUnifiedCategory('축제')">
+                    <div class="menu-icon-box"><span class="material-icons icon-teal">festival</span></div>
+                    <div>
+                        <div class="menu-title">지역 축제</div>
+                        <div class="menu-sub">세종시 장애물 없는 안전 행사</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="loadUnifiedCategory('의료기관')">
+                    <div class="menu-icon-box"><span class="material-icons icon-green">local_hospital</span></div>
+                    <div>
+                        <div class="menu-title">의료기관 정보</div>
+                        <div class="menu-sub">돌발 상황 대비 실시간 의료 정보</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 일정 화면 -->
+        <div id="screen-schedule" class="hidden">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="fw-bold" style="font-size:1.15em; color: var(--yeoro-navy);">오늘의 최적 일정</div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-blue); border:1px solid var(--yeoro-border);" onclick="generateRandomSchedule()">🎲 랜덤 추천</button>
+                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-sub); border:1px solid var(--yeoro-border);" onclick="recalculateAndSortRoute()">🔄 재정렬</button>
+                </div>
+            </div>
+            <div id="schedule-timeline-box" class="y-card">
+                <p class="text-center py-4 small m-0" style="color:var(--yeoro-muted);">장바구니에 장소를 담거나<br><strong style="color:var(--yeoro-sub);">'🎲 랜덤 추천'</strong> 버튼을 눌러보세요.</p>
+            </div>
+        </div>
+
+        <!-- 장소 목록 화면 -->
+        <div id="screen-api-list" class="hidden">
+            <div class="cat-tabs">
+                <button class="cat-tab" id="tab-관광명소" onclick="loadUnifiedCategory('관광명소')">관광명소</button>
+                <button class="cat-tab" id="tab-먹거리" onclick="loadUnifiedCategory('먹거리')">먹거리</button>
+                <button class="cat-tab" id="tab-축제" onclick="loadUnifiedCategory('축제')">축제</button>
+                <button class="cat-tab" id="tab-의료기관" onclick="loadUnifiedCategory('의료기관')">의료기관</button>
+            </div>
+            <div id="dynamic-api-cards-injection-box"></div>
+        </div>
+
+        <!-- 여행 로그 화면 -->
+        <div id="screen-history" class="hidden">
+            <div class="page-title">나의 무장애 여정</div>
+            <div class="y-card text-center py-5">
+                <span class="material-icons mb-2" style="font-size:2.5rem; color:var(--yeoro-border);">lock</span>
+                <p class="fw-bold m-0 small" style="color:var(--yeoro-sub);">비회원 상태에서는 기록이 저장되지 않아요.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 플로팅 카트 -->
+    <div class="floating-cart hidden" id="toss-omni-floating-cart" onclick="openOmniCartModal()">
+        <div class="d-flex align-items-center gap-2">
+            <span class="material-icons" style="font-size:1.25rem;">shopping_bag</span>
+            <span class="fw-bold small"><span id="omni-cart-counter-badge">0</span>개의 장소가 담겼어요</span>
+        </div>
+        <span class="cart-highlight">보기 ›</span>
+    </div>
+
+    <!-- 바텀 내비 -->
+    <div class="app-bottom-nav">
+        <div class="nav-item active" onclick="changeScreen('main')">
+            <span class="material-icons">home</span>
+            <span class="nav-label">홈</span>
+        </div>
+        <div class="nav-item" onclick="changeScreen('schedule')">
+            <span class="material-icons">near_me</span>
+            <span class="nav-label">추천일정</span>
+        </div>
+        <div class="nav-item" onclick="changeScreen('history')">
+            <span class="material-icons">history</span>
+            <span class="nav-label">여행로그</span>
+        </div>
+        <div class="nav-item" onclick="changeScreen('login')">
+            <span class="material-icons">face</span>
+            <span class="nav-label">내 정보</span>
+        </div>
+    </div>
+</div>
+
+<!-- 폰트 사이즈 모달 -->
+<div class="modal fade" id="fontSizeSettingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <div class="page-title" style="font-size:1.25em; margin-bottom:10px;">글자 크기 선택</div>
+                <p class="small mb-4" style="color:var(--yeoro-muted);">가장 보기 편한 크기를 골라주세요.</p>
+                <div class="size-row" id="size-card-normal" onclick="selectFontSizePreference('100%')">
+                    <span>기본 크기</span>
+                    <span style="font-size:1rem; color:var(--yeoro-muted);">가나다</span>
+                </div>
+                <div class="size-row active" id="size-card-large" onclick="selectFontSizePreference('120%')">
+                    <span>크게 보기 (시니어 추천)</span>
+                    <span style="font-size:1.25rem; color:var(--yeoro-navy);">가나다</span>
+                </div>
+                <button class="y-btn-primary mt-4" onclick="confirmFontSizeAndGoHome()">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 카트 모달 -->
+<div class="modal fade" id="omniCartModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <div class="page-title" style="font-size:1.15em; margin-bottom:14px;">선택한 장소 목록</div>
+                <div id="omni-cart-items-list-box" style="max-height:220px; overflow-y:auto;" class="mb-4"></div>
+                <button class="y-btn-primary" onclick="injectCartToTimelineRoute()">현위치 동선 최적화하기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   여로(Yero) — 세종시 무장애 큐레이션 앱
+   ─ API 키를 API_CONFIG에 채우면 실제 API가 연동됩니다.
+   ─ 키가 없어도 로컬 폴백 데이터로 모든 기능이 정상 동작합니다.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── ① API 키 설정 ──────────────────────────────────────────────── */
+const API_CONFIG = {
+    /*
+     * ┌─────────────────────────────────────────────────────────────┐
+     * │              API 키 입력 위치 안내                           │
+     * ├─────────────────────────────────────────────────────────────┤
+     * │ DATA_GO_KR_KEY                                               │
+     * │   발급처: https://www.data.go.kr                            │
+     * │   검색어: "한국관광공사_국문 관광정보 서비스"                   │
+     * │   → 활용신청 → 승인 후 [마이페이지 > 인증키 발급현황]에서 복사  │
+     * │   → Decoding(일반) 키를 붙여넣으세요                          │
+     * │                                                              │
+     * │ KAKAO_REST_KEY                                               │
+     * │   발급처: https://developers.kakao.com                       │
+     * │   → 내 애플리케이션 > 앱 키 > REST API 키                    │
+     * │   → 카카오맵 검색 + 카카오 로그인에 사용                       │
+     * │                                                              │
+     * │ KAKAO_JS_KEY                                                 │
+     * │   → 내 애플리케이션 > 앱 키 > JavaScript 키                  │
+     * │   → 지도 SDK 확장용 (선택)                                    │
+     * │                                                              │
+     * │ ※ 키를 넣지 않아도 폴백 데이터로 정상 동작합니다              │
+     * └─────────────────────────────────────────────────────────────┘
+     */
+    DATA_GO_KR_KEY: '',    // ← 공공데이터 인증키 (Decoding)
+    KAKAO_REST_KEY: '',    // ← 카카오 REST API 키
+    KAKAO_JS_KEY:   '',    // ← 카카오 JavaScript 키 (선택)
+
+    /* 아래는 수정하지 않아도 됩니다 */
+    KAKAO_REDIRECT_URI: window.location.origin + window.location.pathname,
+    TOUR_AREA_CODE: '8',   // 세종시 지역코드
+    DEFAULT_LAT: 36.4800,
+    DEFAULT_LNG: 127.2890,
+    HTTP_TIMEOUT: 6000,
+};
+
+/* ── ② 로컬 폴백 데이터 (API 미설정/실패 시 자동 사용) ────────────── */
+const LOCAL_FALLBACK = {
+    '관광명소': [
+        { id:'T1', name:'세종 이응다리 (금강보행교)', addr:'세종특별자치시 세종동 29-111', lat:36.4852, lng:127.2910, desc:'♿ 1.4km 완전 평면 동선 및 야간 안심 유도등 구비' },
+        { id:'T2', name:'국립세종수목원 사계절온실', addr:'세종특별자치시 연기면 수목원로 136', lat:36.4961, lng:127.2935, desc:'👶 무료 유모차 대여 인프라 및 넓은 수유실 인접' },
+        { id:'T3', name:'베어트리파크 힐링숲길', addr:'세종특별자치시 전동면 신송로 217', lat:36.6181, lng:127.2447, desc:'🧘 평탄한 산책로와 정원 테라피 — 웰니스 힐링 명소' },
+        { id:'T4', name:'세종호수공원 물맞이 명상터', addr:'세종특별자치시 세종동', lat:36.5006, lng:127.2589, desc:'🌿 호수 둘레 무장애 데크길과 휴게 쉼터로 힐링 산책' },
+        { id:'T5', name:'세종 중앙공원', addr:'세종특별자치시 보람동', lat:36.4897, lng:127.2650, desc:'🌳 넓은 잔디광장과 평탄한 산책로 — 무장애 접근 가능' },
+    ],
+    '먹거리': [
+        { id:'F1', name:'더사랑 차반 (한정식)', addr:'세종 장군면 월현윗길 38-31 1층', lat:36.4941, lng:127.2045, desc:'♿ 입구 턱 없는 완만한 슬로프, 휠체어 전용 진입로' },
+        { id:'F2', name:'만선 (생선구이)', addr:'세종 금남면 발산1길 41 1층', lat:36.4682, lng:127.2812, desc:'👶 영유아 동반 가족 안심 좌식 의자 및 넓은 주차장' },
+        { id:'F3', name:'세종 어울림 식당', addr:'세종특별자치시 한누리대로 123', lat:36.4820, lng:127.2700, desc:'♿ 넓은 통로와 장애인 편의시설 완비된 한식당' },
+    ],
+    '축제': [
+        { id:'V1', name:'세종시 낙화 축제 (시즌 한정)', addr:'세종특별자치시 중앙공원 일원', lat:36.4912, lng:127.2711, desc:'🌳 넓은 중앙녹지 연계 — 턱 없는 인도 확보' },
+        { id:'V2', name:'세종 호수공원 빛 축제', addr:'세종특별자치시 세종동 호수공원', lat:36.5006, lng:127.2589, desc:'✨ 무장애 데크 산책로에서 즐기는 야간 조명 축제' },
+    ],
+    '의료기관': [
+        { id:'M1', name:'세종충남대학교병원', addr:'세종특별자치시 보람1로 16', lat:36.5184, lng:127.2592, desc:'🚑 24시간 응급 진료 체계 및 소아청소년과 전문의 상주', tel:'044-995-4000' },
+        { id:'M2', name:'엔케이세종병원', addr:'세종특별자치시 한누리대로 249', lat:36.4842, lng:127.2588, desc:'🚑 야간 급체·골절 등 돌발 외상 안전 진료', tel:'044-866-0001' },
+        { id:'M3', name:'세종 연세내과의원', addr:'세종특별자치시 도움1로 46', lat:36.4780, lng:127.2640, desc:'🏥 내과·가정의학과 — 여행 중 건강 이상 시 빠른 진료', tel:'044-862-5200' },
+    ],
+};
+
+/* ── ③ 앱 상태 ──────────────────────────────────────────────────── */
+let userSession  = { loggedIn:false, targetGroup:'5060', nickname:'비회원' };
+let cart         = [];
+let userLoc      = { lat: API_CONFIG.DEFAULT_LAT, lng: API_CONFIG.DEFAULT_LNG };
+let fontChoice   = '120%';
+let apiCache     = {};   // { 카테고리명: [place, ...] }
+
+/* ── ④ 유틸 ─────────────────────────────────────────────────────── */
+const haversine = (la1,lo1,la2,lo2) => {
+    const R=6371, d=v=>v*Math.PI/180;
+    const a=Math.sin(d(la2-la1)/2)**2+Math.cos(d(la1))*Math.cos(d(la2))*Math.sin(d(lo2-lo1)/2)**2;
+    return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))*10)/10;
+};
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function showToast(msg, type='info') {
+    const d=document.createElement('div');
+    d.style.cssText=`position:fixed;top:20px;left:50%;transform:translateX(-50%);
+        background:${type==='error'?'#c0392b':'#1B3A6B'};color:#fff;padding:10px 18px;
+        border-radius:12px;font-size:0.82em;font-weight:600;z-index:9999;
+        box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none;`;
+    d.textContent=msg; document.body.appendChild(d);
+    setTimeout(()=>d.remove(),2800);
+}
+function sourceBadge(src) {
+    const m={tourapi:['관광API','#E8F3FF','#2E5FA3'],wellness:['웰니스API','#E6F9F0','#10A37F'],
+             kakao:['카카오맵','#FEF7C3','#A98600'],local:['기본정보','#F2F4F6','#7A97B8']};
+    const [lbl,bg,col]=m[src]||m.local;
+    return `<span style="font-size:.7em;font-weight:700;padding:2px 7px;border-radius:6px;
+                background:${bg};color:${col};margin-left:6px;vertical-align:middle;">${lbl}</span>`;
+}
+
+/* ── ⑤ 화면 전환 ────────────────────────────────────────────────── */
+function changeScreen(id) {
+    ['login','main','schedule','api-list','history'].forEach(s=>
+        document.getElementById('screen-'+s)?.classList.add('hidden'));
+    document.getElementById('screen-'+id)?.classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach((t,i)=>t.classList.toggle('active',
+        (id==='main'&&i===0)||(id==='schedule'&&i===1)||(id==='history'&&i===2)||(id==='login'&&i===3)));
+}
+
+/* ── ⑥ GPS ──────────────────────────────────────────────────────── */
+function initGeolocation() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+        p=>{userLoc={lat:p.coords.latitude,lng:p.coords.longitude};},
+        ()=>{}, {timeout:5000});
+}
+
+/* ── ⑦ 카카오 OAuth 로그인 ─────────────────────────────────────────
+   흐름: startKakaoOAuth() → 카카오 페이지 → ?code= 콜백
+   → handleKakaoCallback() → Flask /auth/kakao/callback 으로 code 전달
+   (토큰 교환은 CORS 때문에 반드시 Flask 서버에서 처리)
+   ─────────────────────────────────────────────────────────────────*/
+function startKakaoOAuth() {
+    const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
+    userSession.targetGroup=group;
+    if (!API_CONFIG.KAKAO_REST_KEY) {
+        showToast('카카오 키 미설정 → 둘러보기로 진행합니다');
+        browseAsGuest(); return;
+    }
+    const state=btoa(JSON.stringify({group,r:Math.random().toString(36).slice(2)}));
+    sessionStorage.setItem('oauth_state',state);
+    const p=new URLSearchParams({client_id:API_CONFIG.KAKAO_REST_KEY,
+        redirect_uri:API_CONFIG.KAKAO_REDIRECT_URI,response_type:'code',state});
+    window.location.href='https://kauth.kakao.com/oauth/authorize?'+p;
+}
+function handleKakaoCallback() {
+    const p=new URLSearchParams(window.location.search);
+    const code=p.get('code'), state=p.get('state'), error=p.get('error');
+    if (!code) return;
+    window.history.replaceState({},'',window.location.pathname);
+    if (error){showToast('카카오 로그인 취소됨');return;}
+    if (sessionStorage.getItem('oauth_state')!==state){showToast('보안 검증 실패','error');return;}
+    sessionStorage.removeItem('oauth_state');
+    let group='5060';
+    try{group=JSON.parse(atob(state)).group;}catch(e){}
+    userSession={loggedIn:true,targetGroup:group,nickname:'카카오 회원'};
+    /* Flask 연동 시: fetch('/auth/kakao/callback?code='+code+'&state='+state) */
+    afterAuth();
+}
+function browseAsGuest() {
+    const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
+    userSession={loggedIn:false,targetGroup:group,nickname:'비회원'};
+    afterAuth();
+}
+function afterAuth() {
+    if(userSession.targetGroup==='5060') new bootstrap.Modal(document.getElementById('fontSizeSettingModal')).show();
+    else { setFont('100%'); finalizeAuth(); }
+}
+function selectFontSizePreference(s){
+    fontChoice=s;
+    document.getElementById('size-card-normal').classList.toggle('active',s==='100%');
+    document.getElementById('size-card-large').classList.toggle('active',s!=='100%');
+}
+function confirmFontSizeAndGoHome(){
+    setFont(fontChoice);
+    bootstrap.Modal.getInstance(document.getElementById('fontSizeSettingModal'))?.hide();
+    finalizeAuth();
+}
+function setFont(s){document.getElementById('app-root-wrapper').style.setProperty('--app-font-size',s);}
+function finalizeAuth() {
+    document.getElementById('user-profile-indicator').textContent=userSession.nickname;
+    const guide=userSession.targetGroup==='5060'
+        ?'현위치 기반 무장애 맞춤 가이드가 켜졌어요.'
+        :'영유아 동반 코스 가이드가 켜졌어요.';
+    document.getElementById('main-welcome-msg').innerHTML=
+        `반갑습니다, ${esc(userSession.nickname)}님<br>
+         <span style="font-size:.82em;font-weight:500;opacity:.88;">${guide}</span>`;
+    changeScreen('main');
+    initGeolocation();
+}
+
+/* ── ⑧ API 호출 함수들 ───────────────────────────────────────────────
+   모든 함수는 실패 시 null/[] 반환 — 절대 예외를 밖으로 던지지 않음
+   ─────────────────────────────────────────────────────────────────*/
+
+/* 공통 fetch 래퍼 (타임아웃 + 에러 흡수) */
+async function safeFetch(url, options={}) {
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(()=>controller.abort(), API_CONFIG.HTTP_TIMEOUT);
+        const res = await fetch(url, {...options, signal:controller.signal});
+        clearTimeout(timer);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch(e) {
+        console.warn(`[API] 실패: ${url.substring(0,60)}... (${e.message})`);
+        return null;
+    }
+}
+
+/* 공공데이터 응답에서 item 배열 안전 추출 */
+function extractItems(json) {
+    try {
+        const items = json?.response?.body?.items?.item;
+        if (!items) return [];
+        return Array.isArray(items) ? items : [items];
+    } catch(e) { return []; }
+}
+
+/* 국문관광정보 API — contentTypeId: 12=관광지, 14=문화시설, 15=축제, 39=음식점 */
+async function callTourApi(contentTypeId, rows=15) {
+    if (!API_CONFIG.DATA_GO_KR_KEY) return null;
+    const url = 'https://apis.data.go.kr/B551011/KorService2/locationBasedList2?' +
+        new URLSearchParams({
+            serviceKey:    API_CONFIG.DATA_GO_KR_KEY,
+            numOfRows: rows, pageNo:1,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json',
+            mapX: userLoc.lng, mapY: userLoc.lat,
+            radius: 20000, contentTypeId, arrange:'E',
+        });
+    const json = await safeFetch(url);
+    if (!json) return null;
+    return extractItems(json).map(it=>({
+        id:    'tour-'+(it.contentid||it.title),
+        name:  (it.title||'').trim(),
+        addr:  ((it.addr1||'')+' '+(it.addr2||'')).trim(),
+        lat:   parseFloat(it.mapy)||null,
+        lng:   parseFloat(it.mapx)||null,
+        desc:  it.cat3||it.cat2||'한국관광공사 제공',
+        tel:   it.tel||'',
+        image: it.firstimage||it.firstimage2||'',
+        source:'tourapi',
+    })).filter(p=>p.name);
+}
+
+/* 웰니스 관광 API */
+async function callWellnessApi(rows=10) {
+    if (!API_CONFIG.DATA_GO_KR_KEY) return null;
+    const url = 'https://apis.data.go.kr/B551011/wellnessTourInfo/wellnessList?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.DATA_GO_KR_KEY,
+            numOfRows:rows, pageNo:1,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json',
+            areaCode: API_CONFIG.TOUR_AREA_CODE,
+        });
+    const json = await safeFetch(url);
+    if (!json) return null;
+    return extractItems(json).map(it=>({
+        id:    'wellness-'+(it.contentid||it.title),
+        name:  (it.title||it.name||'').trim(),
+        addr:  (it.addr1||it.address||'').trim(),
+        lat:   parseFloat(it.mapy||it.latitude)||null,
+        lng:   parseFloat(it.mapx||it.longitude)||null,
+        desc:  it.overview||it.cat3||'🧘 웰니스 힐링 추천 장소',
+        tel:   it.tel||'',
+        source:'wellness',
+    })).filter(p=>p.name);
+}
+
+/* 카카오맵 로컬 검색 — 카테고리 코드: FD6=음식점, HP8=병원, AT4=관광명소 */
+async function callKakaoCategory(code, size=15) {
+    if (!API_CONFIG.KAKAO_REST_KEY) return null;
+    const url = 'https://dapi.kakao.com/v2/local/search/category.json?' +
+        new URLSearchParams({
+            category_group_code: code,
+            x: userLoc.lng, y: userLoc.lat,
+            radius: 10000, size: Math.min(size,15), sort:'distance',
+        });
+    const json = await safeFetch(url, {headers:{Authorization:'KakaoAK '+API_CONFIG.KAKAO_REST_KEY}});
+    if (!json) return null;
+    return (json.documents||[]).map(d=>({
+        id:    'kakao-'+d.id,
+        name:  d.place_name||'',
+        addr:  d.road_address_name||d.address_name||'',
+        lat:   parseFloat(d.y)||null,
+        lng:   parseFloat(d.x)||null,
+        desc:  d.category_name||'카카오맵 제공',
+        tel:   d.phone||'',
+        source:'kakao',
+    })).filter(p=>p.name);
+}
+
+/* 카카오 키워드 검색 */
+async function callKakaoKeyword(keyword, size=10) {
+    if (!API_CONFIG.KAKAO_REST_KEY) return null;
+    const url = 'https://dapi.kakao.com/v2/local/search/keyword.json?' +
+        new URLSearchParams({query:keyword, x:userLoc.lng, y:userLoc.lat,
+            radius:10000, size:Math.min(size,15)});
+    const json = await safeFetch(url, {headers:{Authorization:'KakaoAK '+API_CONFIG.KAKAO_REST_KEY}});
+    if (!json) return null;
+    return (json.documents||[]).map(d=>({
+        id:'kakao-kw-'+d.id, name:d.place_name||'',
+        addr:d.road_address_name||d.address_name||'',
+        lat:parseFloat(d.y)||null, lng:parseFloat(d.x)||null,
+        desc:d.category_name||'카카오맵 제공', tel:d.phone||'',
+        source:'kakao',
+    })).filter(p=>p.name);
+}
+
+/* ── ⑨ 카테고리별 데이터 로딩 ──────────────────────────────────────
+   각 카테고리마다 1~2개 API를 호출 → 병합 → 실패 시 폴백
+   ─────────────────────────────────────────────────────────────────*/
+async function getPlaces(category) {
+    if (apiCache[category]) return apiCache[category];
+
+    let places = null;
+
+    try {
+        if (category === '관광명소') {
+            /* 국문관광정보(관광지12 + 문화시설14) + 웰니스 API 병렬 호출 */
+            const [tour, culture, wellness] = await Promise.all([
+                callTourApi('12', 12),
+                callTourApi('14', 8),
+                callWellnessApi(8),
+            ]);
+            const combined = [...(tour||[]), ...(culture||[]), ...(wellness||[])];
+            if (combined.length > 0) places = combined;
+        }
+        else if (category === '먹거리') {
+            /* 국문관광정보(음식점39) + 카카오맵(FD6 음식점) 병렬 호출 */
+            const [tourFood, kakaoFood] = await Promise.all([
+                callTourApi('39', 10),
+                callKakaoCategory('FD6', 10),
+            ]);
+            const combined = [...(tourFood||[]), ...(kakaoFood||[])];
+            if (combined.length > 0) places = combined;
+        }
+        else if (category === '축제') {
+            /* 국문관광정보(축제15) */
+            const tourFest = await callTourApi('15', 15);
+            if (tourFest && tourFest.length > 0) places = tourFest;
+        }
+        else if (category === '의료기관') {
+            /* 카카오맵(HP8 병원) + 키워드 검색 보조 */
+            const [kakaoHosp, keyword] = await Promise.all([
+                callKakaoCategory('HP8', 12),
+                callKakaoKeyword('세종 병원 응급', 5),
+            ]);
+            const combined = [...(kakaoHosp||[]), ...(keyword||[])];
+            // 중복 제거
+            const seen = new Set();
+            const deduped = combined.filter(p=>{
+                if (seen.has(p.name)) return false;
+                seen.add(p.name); return true;
+            });
+            if (deduped.length > 0) places = deduped;
+        }
+    } catch(e) {
+        console.warn('[getPlaces] 예외:', e.message);
+        places = null;
+    }
+
+    /* API 실패 또는 키 없음 → 로컬 폴백 */
+    if (!places || places.length === 0) {
+        places = (LOCAL_FALLBACK[category]||[]).map(p=>({...p, category}));
+        if (places.length === 0) {
+            console.info(`[폴백] ${category}: 데이터 없음`);
+        }
+    }
+
+    /* 거리 계산 + 정렬 */
+    places = places
+        .map(p=>({...p, category, _dist:(p.lat&&p.lng)
+            ? haversine(userLoc.lat,userLoc.lng,p.lat,p.lng) : null}))
+        .sort((a,b)=>(a._dist===null)-(b._dist===null)||(a._dist||0)-(b._dist||0));
+
+    apiCache[category] = places;
+    return places;
+}
+
+/* ── ⑩ 카드 렌더링 ──────────────────────────────────────────────── */
+async function loadUnifiedCategory(categoryKey) {
+    document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+    document.getElementById(`tab-${categoryKey}`)?.classList.add('active');
+    changeScreen('api-list');
+
+    const box = document.getElementById('dynamic-api-cards-injection-box');
+    box.innerHTML = `<div style="text-align:center;padding:48px 0;color:var(--yeoro-muted);">
+        <div style="font-size:2em;margin-bottom:8px;">🔍</div>
+        <div style="font-size:.85em;font-weight:600;">불러오는 중...</div>
+        <div style="font-size:.75em;margin-top:4px;opacity:.7;">API 연동 중이에요</div></div>`;
+
+    const places = await getPlaces(categoryKey);
+
+    if (!places.length) {
+        box.innerHTML=`<div style="text-align:center;padding:48px 0;color:var(--yeoro-muted);">
+            <div style="font-size:2em;margin-bottom:8px;">📭</div>
+            <div style="font-size:.85em;">표시할 장소가 없어요.</div></div>`;
+        return;
+    }
+
+    box.innerHTML = '';
+    places.forEach(item => {
+        const inCart = cart.some(c=>c.id===item.id);
+        const dist   = item._dist!=null ? `내 위치에서 ${item._dist}km · ` : '';
+        const card   = document.createElement('div');
+        card.className = 'place-card';
+        card.innerHTML = `
+            <div class="place-name">${esc(item.name)}${sourceBadge(item.source||'local')}</div>
+            <div class="place-meta">${dist}세종시</div>
+            <div class="place-desc">${esc(item.desc||'')}</div>
+            ${item.tel?`<div style="font-size:.78em;color:var(--yeoro-muted);margin-bottom:6px;">📞 ${esc(item.tel)}</div>`:''}
+            <span class="place-tag">${esc(item.category)}</span>
+            <button class="add-btn" ${inCart?'disabled style="opacity:.5"':''}>
+                ${inCart?'담김':'추가'}</button>`;
+        card.querySelector('.add-btn').addEventListener('click', e=>{
+            if(inCart) return;
+            pushToCart(item);
+            e.target.disabled=true; e.target.textContent='담김'; e.target.style.opacity='.5';
+        });
+        box.appendChild(card);
+    });
+}
+
+/* ── ⑪ 장바구니 ─────────────────────────────────────────────────── */
+function pushToCart(item) {
+    if (cart.some(c=>c.id===item.id)) return;
+    cart.push(item);
+    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
+    document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+}
+function removeCartItem(i) {
+    cart.splice(i,1);
+    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
+    if(cart.length===0){
+        document.getElementById('toss-omni-floating-cart').classList.add('hidden');
+        bootstrap.Modal.getInstance(document.getElementById('omniCartModal'))?.hide();
+    } else openOmniCartModal();
+}
+function openOmniCartModal() {
+    const box=document.getElementById('omni-cart-items-list-box');
+    box.innerHTML=cart.length===0
+        ?`<p class="text-center py-3 m-0 small" style="color:var(--yeoro-muted);">추가한 장소가 없어요.</p>`
+        :cart.map((item,i)=>`
+            <div class="d-flex justify-content-between align-items-center py-2"
+                 style="border-bottom:1px solid var(--yeoro-border);">
+                <div>
+                    <span class="fw-bold" style="color:var(--yeoro-navy);font-size:.93em;">${esc(item.name)}</span>
+                    <span class="ms-2" style="font-size:.78em;color:var(--yeoro-muted);">${esc(item.category)}</span>
+                </div>
+                <span class="material-icons" onclick="removeCartItem(${i})"
+                    style="cursor:pointer;font-size:1.15rem;color:var(--yeoro-muted);">close</span>
+            </div>`).join('');
+    new bootstrap.Modal(document.getElementById('omniCartModal')).show();
+}
+function injectCartToTimelineRoute() {
+    bootstrap.Modal.getInstance(document.getElementById('omniCartModal'))?.hide();
+    recalculateAndSortRoute();
+    changeScreen('schedule');
+}
+
+/* ── ⑫ 일정·동선 ────────────────────────────────────────────────── */
+async function generateRandomSchedule() {
+    const box=document.getElementById('schedule-timeline-box');
+    box.innerHTML=`<div style="text-align:center;padding:32px;color:var(--yeoro-muted);">🎲 일정 생성 중...</div>`;
+    changeScreen('schedule');
+    cart=[];
+    for (const cat of ['관광명소','먹거리','축제']) {
+        const pool=await getPlaces(cat);
+        if(pool.length) cart.push(pool[Math.floor(Math.random()*pool.length)]);
+    }
+    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
+    document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+    recalculateAndSortRoute();
+}
+function recalculateAndSortRoute() {
+    if(!cart.length) return;
+    cart.forEach(item=>{item._dist=(item.lat&&item.lng)
+        ?haversine(userLoc.lat,userLoc.lng,item.lat,item.lng):null;});
+    cart.sort((a,b)=>(a._dist===null)-(b._dist===null)||(a._dist||0)-(b._dist||0));
+    const box=document.getElementById('schedule-timeline-box');
+    box.innerHTML='';
+    cart.forEach(item=>{
+        const url=`https://map.kakao.com/link/to/${encodeURIComponent(item.name)},${item.lat},${item.lng}`;
+        const node=document.createElement('div'); node.className='timeline-node';
+        node.innerHTML=`
+            <div class="timeline-title">${esc(item.name)}</div>
+            <div class="timeline-sub">${item._dist!=null?'직선거리 '+item._dist+'km · ':''}${esc(item.category)}</div>
+            <button class="btn btn-sm mt-2 px-3 fw-bold rounded-3"
+                style="font-size:.78em;background:var(--yeoro-mist);color:var(--yeoro-blue);border:1px solid var(--yeoro-border);"
+                onclick="window.open('${url}')">길찾기</button>`;
+        box.appendChild(node);
+    });
+}
+
+/* ── ⑬ 초기화 ───────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+    handleKakaoCallback();
+    if(API_CONFIG.KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized())
+        Kakao.init(API_CONFIG.KAKAO_JS_KEY);
+    changeScreen('login');
+});
+</script>
+</body>
+</html>
