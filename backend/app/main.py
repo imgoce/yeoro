@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.health import router as health_router
 from app.core.config import settings
+from app.db.base import Base
+from app.db.session import engine
 
 def create_application() -> FastAPI:
     application = FastAPI(
@@ -28,6 +31,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def root():
-    return {"message": f"Welcome to {settings.PROJECT_NAME} API"}
+@app.get("startup")
+def startup() -> None:
+    Base.metadata.create_all(bind=engine)
