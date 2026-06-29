@@ -1,18 +1,27 @@
-from sqlalchemy import Column, Integer, String, Boolean, JSON
-from sqlalchemy.ext.declarative import declarative_base
+from typing import TYPE_CHECKING
 
-# 데이터베이스 베이스 클래스 (실제 환경에서는 별도의 database.py에서 관리하는 것을 권장합니다)
-Base = declarative_base()
+from sqlalchemy import Boolean, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-class User(Base):
+from app.models.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.bookmark import Bookmark
+    from app.models.course import Course
+    from app.models.review import Review
+
+
+class User(TimestampMixin, Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    
-    # 여로 서비스 핵심 데이터: 사용자 타겟층 및 맞춤형 큐레이션용
-    age_group = Column(String, nullable=False)  # 예: "5060", "유아동반"
-    preferences = Column(JSON, default=list)    # 예: ["관광지", "먹거리", "축제"]
-    
-    is_active = Column(Boolean, default=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    nickname: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    preferred_themes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    preferred_transport: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    bookmarks: Mapped[list["Bookmark"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    reviews: Mapped[list["Review"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    courses: Mapped[list["Course"]] = relationship(back_populates="creator")
