@@ -1,17 +1,19 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Yeoro_Backend"
-    SECRET_KEY: str = "YOUR_SUPER_SECRET_KEY_PLEASE_CHANGE_THIS"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    
-    # 오픈 API 연동 키 (5060 및 유아 동반 맞춤형 큐레이션용)
-    TOUR_API_KEY: str = ""      # 웰니스, 무장애, 의료 관광정보 API 
-    KAKAO_MAP_API_KEY: str = "" # 실시간 경로 최적화용
-    WEATHER_API_KEY: str = ""   # 기상 대응 유동적 추천용
+    app_name: str = "Sejong Tour API"
+    app_env: str = "local"
+    database_url: str = "sqlite:///./sejong_tour.db"
+    tourism_api_base_url: str = "https://apis.data.go.kr/B551011/KorService1"
+    tourism_api_key: str = ""
+    tourism_api_timeout_seconds: float = 10.0
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
+
 
 settings = Settings()
