@@ -31,6 +31,9 @@ uvicorn app.main:app --reload
 APP_NAME=Sejong Tour API
 APP_ENV=local
 DATABASE_URL=sqlite:///./sejong_tour.db
+TOURISM_API_BASE_URL=https://apis.data.go.kr/B551011/KorService1
+TOURISM_API_KEY=your_service_key
+TOURISM_API_TIMEOUT_SECONDS=10
 ```
 
 ## 주요 도메인 모델
@@ -43,3 +46,17 @@ DATABASE_URL=sqlite:///./sejong_tour.db
 - `CoursePlace`: 코스 내 장소 순서 정보
 - `Bookmark`: 사용자 북마크
 - `Review`: 사용자 리뷰
+
+## 외부 API 클라이언트
+
+한국관광공사 TourAPI 기반 외부 API 클라이언트가 추가되어 있습니다.
+
+- `GET /external/tourism/places`: 지역 기반 관광지 조회
+- `GET /external/tourism/nearby`: 좌표 기반 주변 관광지 조회
+- `GET /external/tourism/places/{content_id}`: 관광지 상세 조회
+
+예시:
+
+```bash
+curl "http://localhost:8000/external/tourism/places?area_code=8"
+```
