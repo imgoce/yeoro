@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.external import router as external_router
 from app.api.routes.health import router as health_router
 from app.core.config import settings
 from app.db.base import Base
@@ -13,6 +14,7 @@ def create_application() -> FastAPI:
         description="세종시 맞춤형 여행 큐레이션 서비스 백엔드 API",
     )
     application.include_router(health_router)
+    application.include_router(external_router)
     return application
 
 app = create_application()
