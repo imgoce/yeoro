@@ -31,6 +31,9 @@ uvicorn app.main:app --reload
 APP_NAME=Sejong Tour API
 APP_ENV=local
 DATABASE_URL=sqlite:///./sejong_tour.db
+SECRET_KEY=change-this-secret-key
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+JWT_ALGORITHM=HS256
 TOURISM_API_BASE_URL=https://apis.data.go.kr/B551011/KorService1
 TOURISM_API_KEY=your_service_key
 TOURISM_API_TIMEOUT_SECONDS=10
