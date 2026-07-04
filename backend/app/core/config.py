@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     weather_api_base_url: str = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0"
     weather_api_key: str = ""
     weather_api_timeout_seconds: float = 10.0
+    redis_url: str = "redis://localhost:6379/0"
+    redis_default_ttl_seconds: int = 300
 
     model_config = SettingsConfigDict(
         env_file=".env",

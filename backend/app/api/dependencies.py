@@ -1,8 +1,11 @@
 from collections.abc import AsyncIterator
 
+from fastapi import Depends
+from redis.asyncio import Redis
+
 from app.clients import TourismApiClient, KakaoMapApiClient, WeatherApiClient
 from app.core.config import settings
-
+from app.core.cache import RedisCache
 
 async def get_tourism_api_client() -> AsyncIterator[TourismApiClient]:
     client = TourismApiClient(
@@ -36,3 +39,19 @@ async def get_weather_api_client() -> AsyncIterator[WeatherApiClient]:
         yield client
     finally:
         await client.close()
+
+async def get_redis_client() -> AsyncIterator[Redis]:
+    client = Redis.from_url(settings.redis_url, decode_responses=True)
+    try:
+        yield client
+    finally:
+        await client.aclose()
+
+
+async def get_redis_cache(
+    redis_client: Redis = Depends(get_redis_client),
+) -> AsyncIterator[RedisCache]:
+    yield RedisCache(
+        redis_client,
+        default_ttl_seconds=settings.redis_default_ttl_seconds,
+    )
