@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     tourism_api_base_url: str = "https://apis.data.go.kr/B551011/KorService1"
     tourism_api_key: str = ""
     tourism_api_timeout_seconds: float = 10.0
+    kakao_map_api_base_url: str = "https://dapi.kakao.com"
+    kakao_map_rest_api_key: str = ""
+    kakao_map_timeout_seconds: float = 10.0
     
 
     model_config = SettingsConfigDict(
