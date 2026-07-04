@@ -14,7 +14,9 @@ class Settings(BaseSettings):
     kakao_map_api_base_url: str = "https://dapi.kakao.com"
     kakao_map_rest_api_key: str = ""
     kakao_map_timeout_seconds: float = 10.0
-    
+    weather_api_base_url: str = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0"
+    weather_api_key: str = ""
+    weather_api_timeout_seconds: float = 10.0
 
     model_config = SettingsConfigDict(
         env_file=".env",
