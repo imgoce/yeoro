@@ -37,6 +37,14 @@ JWT_ALGORITHM=HS256
 TOURISM_API_BASE_URL=https://apis.data.go.kr/B551011/KorService1
 TOURISM_API_KEY=your_service_key
 TOURISM_API_TIMEOUT_SECONDS=10
+KAKAO_MAP_API_BASE_URL=https://dapi.kakao.com
+KAKAO_MAP_REST_API_KEY=your_kakao_rest_api_key
+KAKAO_MAP_TIMEOUT_SECONDS=10
+WEATHER_API_BASE_URL=https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
+WEATHER_API_KEY=your_weather_service_key
+WEATHER_API_TIMEOUT_SECONDS=10
+REDIS_URL=redis://localhost:6379/0
+REDIS_DEFAULT_TTL_SECONDS=300
 ```
 
 ## 주요 도메인 모델
