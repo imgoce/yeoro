@@ -5,6 +5,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from redis.asyncio import Redis
+from redis.exceptions import RedisError
 
 
 class RedisCache:
@@ -30,7 +31,7 @@ class RedisCache:
         *,
         ttl_seconds: int | None = None,
     ) -> None:
-        ttl = ttl_seconds or self._default_ttl_seconds
+        ttl = ttl_seconds if ttl_seconds is not None else self._default_ttl_seconds
         await self._redis.set(key, json.dumps(value, ensure_ascii=False), ex=ttl)
 
     async def get_or_set_json(
@@ -40,9 +41,17 @@ class RedisCache:
         *,
         ttl_seconds: int | None = None,
     ) -> Any:
-        cached = await self.get_json(key)
-        if cached is not None:
-            return cached
+        try:
+            cached = await self.get_json(key)
+            if cached is not None:
+                return cached
+        except (RedisError, json.JSONDecodeError):
+            pass
+        
         value = await loader()
-        await self.set_json(key, value, ttl_seconds=ttl_seconds)
+        try:
+            await self.set_json(key, value, ttl_seconds=ttl_seconds)
+        except RedisError:
+            pass
+        
         return value
