@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>여로 - 세종시 맞춤형 무장애 큐레이션</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Jua&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+<div class="phone-wrapper" id="app-root-wrapper">
+
+    <!-- ══════════════ 온보딩(튜토리얼) — 2x2 그리드 ══════════════ -->
+    <div class="onboard-wrap" id="onboard-screen">
+        <div class="onboard-skip" onclick="finishOnboarding()">건너뛰기</div>
+        <div class="onboard-header">
+            <div class="onboard-header-title">세종시 무장애 여행,<br>여로가 도와드릴게요</div>
+            <div class="onboard-header-sub">여로의 핵심 기능을 한눈에 살펴보세요</div>
+        </div>
+        <div class="onboard-grid">
+            <div class="onboard-card">
+                <div class="onboard-card-illust"><span class="material-icons">accessible_forward</span></div>
+                <div class="onboard-card-title">무장애 동선<br>큐레이션</div>
+                <div class="onboard-card-desc">휠체어·유모차도 걱정 없는<br>평탄한 동선만 골라드려요</div>
+            </div>
+            <div class="onboard-card">
+                <div class="onboard-card-illust"><span class="material-icons">explore</span></div>
+                <div class="onboard-card-title">통합 정보<br>실시간 검색</div>
+                <div class="onboard-card-desc">관광·맛집·축제·의료기관을<br>한 번에 모아드려요</div>
+            </div>
+            <div class="onboard-card">
+                <div class="onboard-card-illust"><span class="material-icons">route</span></div>
+                <div class="onboard-card-title">내 위치 기반<br>동선 추천</div>
+                <div class="onboard-card-desc">담아둔 장소를 가까운 순서로<br>자동 정렬해드려요</div>
+            </div>
+            <div class="onboard-card">
+                <div class="onboard-card-illust"><span class="material-icons">history_edu</span></div>
+                <div class="onboard-card-title">나만의<br>여행로그</div>
+                <div class="onboard-card-desc">게스트로 둘러봐도<br>기록은 저장돼요</div>
+            </div>
+        </div>
+        <div class="onboard-bottom">
+            <button class="y-btn-primary" onclick="finishOnboarding()">시작하기</button>
+        </div>
+    </div>
+
+    <!-- ══════════════ 시작 로그인 페이지 (독립 전체화면) ══════════════ -->
+    <div class="auth-screen" id="auth-screen">
+        <div class="auth-brand">
+            <img id="auth-logo" alt="여로 로고">
+            <div class="auth-brand-en">yeoro</div>
+            <div class="auth-brand-name">여로</div>
+            <div class="auth-brand-tagline">세종시 무장애 여행 큐레이션</div>
+        </div>
+
+        <div class="y-card mb-3">
+            <div class="section-label mb-3">여행 모드 선택</div>
+            <div class="y-radio-group">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="loginTargetRadio" id="radio5060" value="5060" checked>
+                    <label class="form-check-label fw-semibold" for="radio5060" style="font-size:0.9em;">👨‍🦳 5060 액티브 시니어 산책 모드</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="loginTargetRadio" id="radioFamily" value="family">
+                    <label class="form-check-label fw-semibold" for="radioFamily" style="font-size:0.9em;">👶 영유아 동반 부모 코스 모드</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 카카오 로그인 -->
+        <button class="kakao-btn mb-2" onclick="startKakaoOAuth()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 1.5C5.03 1.5 1 4.66 1 8.55c0 2.5 1.66 4.7 4.17 5.96-.18.67-.67 2.48-.77 2.87-.12.48.18.47.38.34.16-.1 2.5-1.7 3.52-2.39.55.08 1.12.12 1.7.12 4.97 0 9-3.16 9-7.05S14.97 1.5 10 1.5z" fill="#181600"/></svg>
+            카카오로 3초 만에 시작하기
+        </button>
+        <button class="y-btn-secondary mb-3" onclick="browseAsGuest()">게스트로 둘러보기</button>
+
+        <div class="auth-divider">또는</div>
+
+        <!-- 이메일 로그인/회원가입 토글 -->
+        <div class="auth-toggle-tabs">
+            <button class="auth-toggle-tab active" id="auth-tab-login" onclick="switchAuthTab('login')">이메일 로그인</button>
+            <button class="auth-toggle-tab" id="auth-tab-signup" onclick="switchAuthTab('signup')">회원가입</button>
+        </div>
+
+        <!-- 로그인 폼 -->
+        <div id="auth-form-login">
+            <div class="auth-input-group">
+                <label class="auth-label">이메일</label>
+                <input type="email" class="auth-input" id="login-email" placeholder="example@email.com">
+            </div>
+            <div class="auth-input-group">
+                <label class="auth-label">비밀번호</label>
+                <input type="password" class="auth-input" id="login-pw" placeholder="비밀번호 입력">
+            </div>
+            <div class="auth-error" id="login-error"></div>
+            <button class="y-btn-primary" onclick="handleEmailLogin()">로그인</button>
+        </div>
+
+        <!-- 회원가입 폼 -->
+        <div id="auth-form-signup" class="hidden">
+            <div class="auth-input-group">
+                <label class="auth-label">닉네임</label>
+                <input type="text" class="auth-input" id="signup-nickname" placeholder="여로에서 사용할 닉네임">
+            </div>
+            <div class="auth-input-group">
+                <label class="auth-label">이메일</label>
+                <input type="email" class="auth-input" id="signup-email" placeholder="example@email.com">
+            </div>
+            <div class="auth-input-group">
+                <label class="auth-label">비밀번호</label>
+                <input type="password" class="auth-input" id="signup-pw" placeholder="6자 이상 입력해주세요">
+            </div>
+            <div class="auth-input-group">
+                <label class="auth-label">비밀번호 확인</label>
+                <input type="password" class="auth-input" id="signup-pw2" placeholder="비밀번호를 한 번 더 입력">
+            </div>
+            <div class="auth-error" id="signup-error"></div>
+            <button class="y-btn-primary" onclick="handleEmailSignup()">회원가입 완료</button>
+        </div>
+
+        <div class="auth-link-row" id="auth-switch-hint">
+            계정이 없으신가요? <a onclick="switchAuthTab('signup')">회원가입하기</a>
+        </div>
+    </div>
+
+
+    <!-- 헤더 -->
+    <div class="app-header">
+        <div class="logo" onclick="changeScreen('main')">
+            <img id="yeoro-logo" alt="여로 로고">
+            <span class="logo-text">여로</span>
+        </div>
+        <span class="header-action" id="user-profile-indicator" onclick="changeScreen('login')">시작하기</span>
+    </div>
+
+    <!-- 콘텐츠 -->
+    <div class="app-content" id="main-app-content">
+
+        <!-- 내 정보 (프로필) 화면 -->
+        <div id="screen-login" class="py-2">
+            <div class="page-title">내 정보</div>
+
+            <!-- 프로필 카드 -->
+            <div class="y-card mb-3" style="display:flex;align-items:center;gap:14px;">
+                <div style="width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,var(--yeoro-sky),var(--yeoro-mist));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <span class="material-icons" style="color:var(--yeoro-navy);font-size:1.7rem;">person</span>
+                </div>
+                <div>
+                    <div id="profile-nickname" style="font-weight:800;font-size:1.05em;color:var(--yeoro-navy);">게스트</div>
+                    <div id="profile-authtype" style="font-size:0.78em;color:var(--yeoro-muted);margin-top:2px;">로그인이 필요해요</div>
+                </div>
+            </div>
+
+            <!-- 현재 여행 모드 -->
+            <div class="section-label mb-2">현재 여행 모드</div>
+            <div class="y-card mb-3" style="padding:6px 14px;">
+                <div class="menu-row" style="cursor:default;">
+                    <div class="menu-icon-box"><span class="material-icons icon-blue" id="profile-mode-icon">accessibility_new</span></div>
+                    <div>
+                        <div class="menu-title" id="profile-mode-label">5060 액티브 시니어</div>
+                        <div class="menu-sub">로그아웃 후 다시 선택할 수 있어요</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 계정 액션 -->
+            <div class="section-label mb-2">계정</div>
+            <div class="y-card" style="padding:6px 14px;">
+                <div class="menu-row" id="profile-login-row" onclick="goToAuthScreen()">
+                    <div class="menu-icon-box"><span class="material-icons icon-green">login</span></div>
+                    <div>
+                        <div class="menu-title" id="profile-login-title">로그인 / 회원가입</div>
+                        <div class="menu-sub" id="profile-login-sub">카카오·이메일로 기록을 안전하게 보관하세요</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" id="profile-logout-row" onclick="handleLogout()" style="display:none;">
+                    <div class="menu-icon-box"><span class="material-icons icon-amber">logout</span></div>
+                    <div>
+                        <div class="menu-title">로그아웃</div>
+                        <div class="menu-sub">로그인 화면으로 돌아갑니다</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 화면 -->
+        <div id="screen-main" class="hidden">
+            <div class="hero-banner mb-4">
+                <div class="hero-badge">
+                    <span class="material-icons" style="font-size:0.9em;">gps_fixed</span>
+                    현위치 기반 안내
+                </div>
+                <div class="hero-banner-text" id="main-welcome-msg">
+                    안전하고 편안한<br>세종 무장애 인프라 가이드
+                </div>
+            </div>
+
+            <div class="section-label">무엇을 찾으시나요?</div>
+            <div class="y-card" style="padding: 6px 14px;">
+                <div class="menu-row" onclick="loadUnifiedCategory('관광명소')">
+                    <div class="menu-icon-box"><span class="material-icons icon-blue">landscape</span></div>
+                    <div>
+                        <div class="menu-title">관광명소</div>
+                        <div class="menu-sub">국문관광정보 + 웰니스 관광 API 연동</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="loadUnifiedCategory('먹거리')">
+                    <div class="menu-icon-box"><span class="material-icons icon-amber">restaurant</span></div>
+                    <div>
+                        <div class="menu-title">추천 맛집</div>
+                        <div class="menu-sub">휠체어·유모차 진입 가능한 식당</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="loadUnifiedCategory('축제')">
+                    <div class="menu-icon-box"><span class="material-icons icon-teal">festival</span></div>
+                    <div>
+                        <div class="menu-title">지역 축제</div>
+                        <div class="menu-sub">세종시 장애물 없는 안전 행사</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="loadUnifiedCategory('의료기관')">
+                    <div class="menu-icon-box"><span class="material-icons icon-green">local_hospital</span></div>
+                    <div>
+                        <div class="menu-title">의료기관 정보</div>
+                        <div class="menu-sub">돌발 상황 대비 실시간 의료 정보</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 일정 화면 -->
+        <div id="screen-schedule" class="hidden">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="fw-bold" style="font-size:1.15em; color: var(--yeoro-navy);">오늘의 최적 일정</div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-blue); border:1px solid var(--yeoro-border);" onclick="generateRandomSchedule()">🎲 랜덤 추천</button>
+                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-sub); border:1px solid var(--yeoro-border);" onclick="recalculateAndSortRoute()">🔄 재정렬</button>
+                </div>
+            </div>
+            <div id="schedule-timeline-box" class="y-card">
+                <p class="text-center py-4 small m-0" style="color:var(--yeoro-muted);">장바구니에 장소를 담거나<br><strong style="color:var(--yeoro-sub);">'🎲 랜덤 추천'</strong> 버튼을 눌러보세요.</p>
+            </div>
+        </div>
+
+        <!-- 장소 목록 화면 -->
+        <div id="screen-api-list" class="hidden">
+            <div class="cat-tabs">
+                <button class="cat-tab" id="tab-관광명소" onclick="loadUnifiedCategory('관광명소')">관광명소</button>
+                <button class="cat-tab" id="tab-먹거리" onclick="loadUnifiedCategory('먹거리')">먹거리</button>
+                <button class="cat-tab" id="tab-축제" onclick="loadUnifiedCategory('축제')">축제</button>
+                <button class="cat-tab" id="tab-의료기관" onclick="loadUnifiedCategory('의료기관')">의료기관</button>
+            </div>
+            <div id="dynamic-api-cards-injection-box"></div>
+        </div>
+
+        <!-- 여행 로그 화면 -->
+        <div id="screen-history" class="hidden">
+            <div class="page-title">나의 무장애 여정</div>
+
+            <!-- 게스트 안내 배너 (게스트 로그인 시에만 노출) -->
+            <div class="guest-banner hidden" id="history-guest-banner">
+                <span class="material-icons">info</span>
+                <div class="guest-banner-text">
+                    게스트 기록은 이 기기에만 저장돼요.<br>
+                    <span class="guest-banner-link" onclick="goToAuthScreen('signup')">회원가입</span>하면 모든 기기에서 이어볼 수 있어요.
+                </div>
+            </div>
+
+            <div id="history-empty-state" class="y-card text-center py-5 hidden">
+                <span class="material-icons mb-2" style="font-size:2.5rem; color:var(--yeoro-border);">map</span>
+                <p class="fw-bold m-0 small" style="color:var(--yeoro-sub);">아직 다녀온 곳이 없어요.<br>장소를 둘러보고 일정에 담아보세요!</p>
+            </div>
+
+            <div id="history-log-list"></div>
+        </div>
+
+    </div>
+
+    <!-- 플로팅 카트 -->
+    <div class="floating-cart hidden" id="toss-omni-floating-cart" onclick="openOmniCartModal()">
+        <div class="d-flex align-items-center gap-2">
+            <span class="material-icons" style="font-size:1.25rem;">shopping_bag</span>
+            <span class="fw-bold small"><span id="omni-cart-counter-badge">0</span>개의 장소가 담겼어요</span>
+        </div>
+        <span class="cart-highlight">보기 ›</span>
+    </div>
+
+    <!-- 바텀 내비 -->
+    <div class="app-bottom-nav">
+        <div class="nav-item active" onclick="changeScreen('main')">
+            <span class="material-icons">home</span>
+            <span class="nav-label">홈</span>
+        </div>
+        <div class="nav-item" onclick="changeScreen('schedule')">
+            <span class="material-icons">near_me</span>
+            <span class="nav-label">추천일정</span>
+        </div>
+        <div class="nav-item" onclick="changeScreen('history')">
+            <span class="material-icons">history</span>
+            <span class="nav-label">여행로그</span>
+        </div>
+        <div class="nav-item" onclick="changeScreen('login')">
+            <span class="material-icons">face</span>
+            <span class="nav-label">내 정보</span>
+        </div>
+    </div>
+</div>
+
+<!-- 폰트 사이즈 모달 -->
+<div class="modal fade" id="fontSizeSettingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <div class="page-title" style="font-size:1.25em; margin-bottom:10px;">글자 크기 설정</div>
+                <p class="small mb-3" style="color:var(--yeoro-muted);">슬라이더를 움직여 가장 보기 편한 크기로 맞춰주세요.</p>
+
+                <!-- 실시간 미리보기 -->
+                <div class="fontsize-preview" id="fontsize-preview" style="font-size:1.2rem;">
+                    여로와 함께<br>편안한 여행 되세요 😊
+                </div>
+
+                <div class="fontsize-value" id="fontsize-value">기본 크기 (100%)</div>
+                <div class="fontsize-scale"><span>작게</span><span>보통</span><span>크게</span><span>아주 크게</span></div>
+                <input type="range" class="fontsize-slider" id="fontsize-slider"
+                       min="90" max="160" step="5" value="120"
+                       oninput="onFontSliderInput(this.value)">
+
+                <button class="y-btn-primary mt-4" onclick="confirmFontSizeAndGoHome()">이 크기로 시작하기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 카트 모달 -->
+<div class="modal fade" id="omniCartModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <div class="page-title" style="font-size:1.15em; margin-bottom:14px;">선택한 장소 목록</div>
+                <div id="omni-cart-items-list-box" style="max-height:220px; overflow-y:auto;" class="mb-4"></div>
+                <button class="y-btn-primary" onclick="injectCartToTimelineRoute()">현위치 동선 최적화하기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 기능별로 분리된 프론트엔드 스크립트 (의존 순서대로 로드) -->
+<script src="js/logo-data.js"></script>
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/onboarding.js"></script>
+<script src="js/screens.js"></script>
+<script src="js/geolocation.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/places.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/schedule.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
