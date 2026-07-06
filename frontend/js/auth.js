@@ -1,65 +1,41 @@
-/* ── 소셜 OAuth 로그인 (카카오 / 구글) ───────────────────────────
-   흐름: startKakaoOAuth()/startGoogleOAuth() → 제공자 로그인 페이지 → ?code= 콜백
-   → handleOAuthCallback() → Flask /auth/{provider}/callback 으로 code 전달
+/* ── 카카오 OAuth 로그인 ─────────────────────────────────────────
+   흐름: startKakaoOAuth() → 카카오 페이지 → ?code= 콜백
+   → handleKakaoCallback() → Flask /auth/kakao/callback 으로 code 전달
    (토큰 교환은 CORS 때문에 반드시 Flask 서버에서 처리)
-   provider 구분은 state 파라미터에 실어서 같은 redirect_uri로 함께 처리한다.
    ─────────────────────────────────────────────────────────────────*/
-const OAUTH_PROVIDERS = {
-    kakao: {
-        label: '카카오 회원',
-        authorizeUrl: 'https://kauth.kakao.com/oauth/authorize',
-        clientId: () => API_CONFIG.KAKAO_REST_KEY,
-        redirectUri: () => API_CONFIG.KAKAO_REDIRECT_URI,
-        scope: null,
-    },
-    google: {
-        label: '구글 회원',
-        authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-        clientId: () => API_CONFIG.GOOGLE_CLIENT_ID,
-        redirectUri: () => API_CONFIG.GOOGLE_REDIRECT_URI,
-        scope: 'openid email profile',
-    },
-};
-
-function startOAuth(provider) {
-    const cfg = OAUTH_PROVIDERS[provider];
-    const group = document.querySelector('input[name="loginTargetRadio"]:checked')?.value || '5060';
-    userSession.targetGroup = group;
-
-    if (!cfg.clientId()) {
-        showToast(`${provider==='kakao'?'카카오':'구글'} 키 미설정 → 데모 로그인으로 진행합니다`);
-        /* 데모 모드: 실제 OAuth 없이 즉시 로그인 처리 */
-        const userId = `${provider}_demo_user`;
-        userSession = {loggedIn:true, targetGroup:group, nickname:cfg.label, userId, authType:provider};
+function startKakaoOAuth() {
+    const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
+    userSession.targetGroup=group;
+    if (!API_CONFIG.KAKAO_REST_KEY) {
+        showToast('카카오 키 미설정 → 데모 카카오 로그인으로 진행합니다');
+        /* 데모 모드: 실제 OAuth 없이 카카오 회원으로 즉시 로그인 처리 */
+        const kakaoUserId = 'kakao_demo_user';
+        userSession = {loggedIn:true, targetGroup:group, nickname:'카카오 회원', userId:kakaoUserId, authType:'kakao'};
         localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
         afterAuth();
         return;
     }
-    const state = btoa(JSON.stringify({group, provider, r:Math.random().toString(36).slice(2)}));
-    sessionStorage.setItem('oauth_state', state);
-    const params = {client_id:cfg.clientId(), redirect_uri:cfg.redirectUri(), response_type:'code', state};
-    if (cfg.scope) params.scope = cfg.scope;
-    window.location.href = cfg.authorizeUrl + '?' + new URLSearchParams(params);
+    const state=btoa(JSON.stringify({group,r:Math.random().toString(36).slice(2)}));
+    sessionStorage.setItem('oauth_state',state);
+    const p=new URLSearchParams({client_id:API_CONFIG.KAKAO_REST_KEY,
+        redirect_uri:API_CONFIG.KAKAO_REDIRECT_URI,response_type:'code',state});
+    window.location.href='https://kauth.kakao.com/oauth/authorize?'+p;
 }
-function startKakaoOAuth() { startOAuth('kakao'); }
-function startGoogleOAuth() { startOAuth('google'); }
-
-function handleOAuthCallback() {
+function handleKakaoCallback() {
     const p=new URLSearchParams(window.location.search);
     const code=p.get('code'), state=p.get('state'), error=p.get('error');
     if (!code) return;
     window.history.replaceState({},'',window.location.pathname);
-    if (error){showToast('로그인 취소됨');return;}
+    if (error){showToast('카카오 로그인 취소됨');return;}
     if (sessionStorage.getItem('oauth_state')!==state){showToast('보안 검증 실패','error');return;}
     sessionStorage.removeItem('oauth_state');
-    let group='5060', provider='kakao';
-    try{ ({group=group, provider=provider} = JSON.parse(atob(state))); }catch(e){}
-    const cfg = OAUTH_PROVIDERS[provider] || OAUTH_PROVIDERS.kakao;
-    /* 실제 서비스에서는 백엔드에서 제공자 고유 ID를 받아와야 함 */
-    const userId = `${provider}_` + code.slice(0,16);
-    userSession={loggedIn:true, targetGroup:group, nickname:cfg.label, userId, authType:provider};
+    let group='5060';
+    try{group=JSON.parse(atob(state)).group;}catch(e){}
+    /* 실제 서비스에서는 백엔드에서 카카오 고유 ID(kakao_account.id)를 받아와야 함 */
+    const kakaoUserId = 'kakao_' + code.slice(0,16);
+    userSession={loggedIn:true, targetGroup:group, nickname:'카카오 회원', userId:kakaoUserId, authType:'kakao'};
     localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
-    /* Flask 연동 시: fetch(`/auth/${provider}/callback?code=`+code+'&state='+state) */
+    /* Flask 연동 시: fetch('/auth/kakao/callback?code='+code+'&state='+state) */
     afterAuth();
 }
 

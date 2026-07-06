@@ -10,12 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
     changeScreen('main');
     renderProfile();
 
-    /* 소셜 로그인 콜백으로 돌아온 경우: handleOAuthCallback 내부에서 afterAuth() 진행 */
-    const hasOAuthCode = new URLSearchParams(window.location.search).get('code');
-    handleOAuthCallback();
+    /* 카카오 콜백으로 돌아온 경우: handleKakaoCallback 내부에서 afterAuth() 진행 */
+    const hasKakaoCode = new URLSearchParams(window.location.search).get('code');
+    handleKakaoCallback();
 
     /* 콜백이 아니고 아직 로그인 전이면 시작 로그인 페이지 노출 */
-    if (!hasOAuthCode && !userSession.loggedIn) {
+    if (!hasKakaoCode && !userSession.loggedIn) {
         goToAuthScreen();
     }
 });

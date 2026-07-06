@@ -669,23 +669,6 @@ body {
     letter-spacing: -0.2px;
 }
 .kakao-btn:active { opacity: 0.85; }
-.google-btn {
-    background: var(--yeoro-white);
-    color: var(--yeoro-text);
-    border: 1.5px solid var(--yeoro-border);
-    width: 100%;
-    padding: 15px;
-    border-radius: 16px;
-    font-size: 0.95em;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    letter-spacing: -0.2px;
-}
-.google-btn:active { opacity: 0.85; }
-
 /* ══════════════ 여행로그 카드 ══════════════ */
 .log-entry-card {
     background: var(--yeoro-white);
