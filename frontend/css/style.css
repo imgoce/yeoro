@@ -652,73 +652,7 @@ body {
     font-weight: 700;
 }
 
-/* ══════════════ 인증 화면 공통(회원가입/로그인) ══════════════ */
-.auth-toggle-tabs {
-    display: flex;
-    background: var(--yeoro-mist);
-    border-radius: 14px;
-    padding: 4px;
-    margin-bottom: 20px;
-}
-.auth-toggle-tab {
-    flex: 1;
-    text-align: center;
-    background: none;
-    border: none;
-    padding: 10px 4px;
-    border-radius: 11px;
-    font-size: 0.88em;
-    font-weight: 700;
-    color: var(--yeoro-muted);
-    transition: all 0.15s;
-}
-.auth-toggle-tab.active {
-    background: var(--yeoro-white);
-    color: var(--yeoro-navy);
-    box-shadow: 0 2px 8px rgba(27,58,107,0.10);
-}
-.auth-input-group { margin-bottom: 14px; }
-.auth-label {
-    font-size: 0.8em;
-    font-weight: 700;
-    color: var(--yeoro-sub);
-    margin-bottom: 6px;
-    display: block;
-}
-.auth-input {
-    width: 100%;
-    border: 1.5px solid var(--yeoro-border);
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 0.92em;
-    color: var(--yeoro-text);
-    outline: none;
-    transition: border-color 0.15s;
-    background: var(--yeoro-white);
-}
-.auth-input:focus { border-color: var(--yeoro-blue); }
-.auth-error {
-    font-size: 0.76em;
-    color: #c0392b;
-    margin-top: 5px;
-    font-weight: 600;
-    min-height: 14px;
-}
-.auth-divider {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 18px 0;
-    color: var(--yeoro-muted);
-    font-size: 0.78em;
-    font-weight: 600;
-}
-.auth-divider::before, .auth-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--yeoro-border);
-}
+/* ══════════════ 인증 화면 공통(로그인) ══════════════ */
 .kakao-btn {
     background: #FEE500;
     color: #181600;
@@ -735,18 +669,22 @@ body {
     letter-spacing: -0.2px;
 }
 .kakao-btn:active { opacity: 0.85; }
-.auth-link-row {
-    text-align: center;
-    margin-top: 16px;
-    font-size: 0.82em;
-    color: var(--yeoro-muted);
-}
-.auth-link-row a {
-    color: var(--yeoro-blue);
+.google-btn {
+    background: var(--yeoro-white);
+    color: var(--yeoro-text);
+    border: 1.5px solid var(--yeoro-border);
+    width: 100%;
+    padding: 15px;
+    border-radius: 16px;
+    font-size: 0.95em;
     font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: -0.2px;
 }
+.google-btn:active { opacity: 0.85; }
 
 /* ══════════════ 여행로그 카드 ══════════════ */
 .log-entry-card {

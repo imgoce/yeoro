@@ -8,14 +8,6 @@ function getOrCreateGuestId() {
     return gid;
 }
 
-/* ── 간이 회원 저장소 (localStorage 기반 데모용) ──────────────────
-   실제 서비스에서는 서버 DB + 해시 비밀번호로 대체해야 합니다.       */
-function getUsersDB() {
-    try { return JSON.parse(localStorage.getItem('yeoro_users_db') || '{}'); }
-    catch(e){ return {}; }
-}
-function saveUsersDB(db) { localStorage.setItem('yeoro_users_db', JSON.stringify(db)); }
-
 /* ── 여행로그 저장/조회 — userId별로 키를 분리해 누구든 기록 유지 ── */
 function getTravelLog(userId) {
     try { return JSON.parse(localStorage.getItem('yeoro_log_'+userId) || '[]'); }

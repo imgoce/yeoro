@@ -10,9 +10,8 @@ function changeScreen(id) {
 }
 
 /* ── 시작 로그인 페이지(독립 오버레이) 열기/닫기 ──────────────── */
-function goToAuthScreen(tab) {
+function goToAuthScreen() {
     document.getElementById('auth-screen').classList.remove('hidden');
-    if (tab) switchAuthTab(tab);
 }
 function hideAuthScreen() {
     document.getElementById('auth-screen').classList.add('hidden');
@@ -29,7 +28,7 @@ function renderProfile() {
     if (!nick) return;
 
     nick.textContent = userSession.nickname || '게스트';
-    const typeMap = {kakao:'카카오 로그인', email:'이메일 로그인', guest:'게스트 (이 기기에만 저장)'};
+    const typeMap = {kakao:'카카오 로그인', google:'구글 로그인', guest:'게스트 (이 기기에만 저장)'};
     type.textContent = userSession.userId ? (typeMap[userSession.authType]||'') : '로그인이 필요해요';
 
     if (userSession.targetGroup==='family') {
@@ -53,5 +52,5 @@ function handleLogout() {
     applyFontFamily('5060');
     setFont('100%');
     showToast('로그아웃 되었어요');
-    goToAuthScreen('login');
+    goToAuthScreen();
 }

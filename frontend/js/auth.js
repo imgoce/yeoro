@@ -1,41 +1,65 @@
-/* ── 카카오 OAuth 로그인 ─────────────────────────────────────────
-   흐름: startKakaoOAuth() → 카카오 페이지 → ?code= 콜백
-   → handleKakaoCallback() → Flask /auth/kakao/callback 으로 code 전달
+/* ── 소셜 OAuth 로그인 (카카오 / 구글) ───────────────────────────
+   흐름: startKakaoOAuth()/startGoogleOAuth() → 제공자 로그인 페이지 → ?code= 콜백
+   → handleOAuthCallback() → Flask /auth/{provider}/callback 으로 code 전달
    (토큰 교환은 CORS 때문에 반드시 Flask 서버에서 처리)
+   provider 구분은 state 파라미터에 실어서 같은 redirect_uri로 함께 처리한다.
    ─────────────────────────────────────────────────────────────────*/
-function startKakaoOAuth() {
-    const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
-    userSession.targetGroup=group;
-    if (!API_CONFIG.KAKAO_REST_KEY) {
-        showToast('카카오 키 미설정 → 데모 카카오 로그인으로 진행합니다');
-        /* 데모 모드: 실제 OAuth 없이 카카오 회원으로 즉시 로그인 처리 */
-        const kakaoUserId = 'kakao_demo_user';
-        userSession = {loggedIn:true, targetGroup:group, nickname:'카카오 회원', userId:kakaoUserId, authType:'kakao'};
+const OAUTH_PROVIDERS = {
+    kakao: {
+        label: '카카오 회원',
+        authorizeUrl: 'https://kauth.kakao.com/oauth/authorize',
+        clientId: () => API_CONFIG.KAKAO_REST_KEY,
+        redirectUri: () => API_CONFIG.KAKAO_REDIRECT_URI,
+        scope: null,
+    },
+    google: {
+        label: '구글 회원',
+        authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+        clientId: () => API_CONFIG.GOOGLE_CLIENT_ID,
+        redirectUri: () => API_CONFIG.GOOGLE_REDIRECT_URI,
+        scope: 'openid email profile',
+    },
+};
+
+function startOAuth(provider) {
+    const cfg = OAUTH_PROVIDERS[provider];
+    const group = document.querySelector('input[name="loginTargetRadio"]:checked')?.value || '5060';
+    userSession.targetGroup = group;
+
+    if (!cfg.clientId()) {
+        showToast(`${provider==='kakao'?'카카오':'구글'} 키 미설정 → 데모 로그인으로 진행합니다`);
+        /* 데모 모드: 실제 OAuth 없이 즉시 로그인 처리 */
+        const userId = `${provider}_demo_user`;
+        userSession = {loggedIn:true, targetGroup:group, nickname:cfg.label, userId, authType:provider};
         localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
         afterAuth();
         return;
     }
-    const state=btoa(JSON.stringify({group,r:Math.random().toString(36).slice(2)}));
-    sessionStorage.setItem('oauth_state',state);
-    const p=new URLSearchParams({client_id:API_CONFIG.KAKAO_REST_KEY,
-        redirect_uri:API_CONFIG.KAKAO_REDIRECT_URI,response_type:'code',state});
-    window.location.href='https://kauth.kakao.com/oauth/authorize?'+p;
+    const state = btoa(JSON.stringify({group, provider, r:Math.random().toString(36).slice(2)}));
+    sessionStorage.setItem('oauth_state', state);
+    const params = {client_id:cfg.clientId(), redirect_uri:cfg.redirectUri(), response_type:'code', state};
+    if (cfg.scope) params.scope = cfg.scope;
+    window.location.href = cfg.authorizeUrl + '?' + new URLSearchParams(params);
 }
-function handleKakaoCallback() {
+function startKakaoOAuth() { startOAuth('kakao'); }
+function startGoogleOAuth() { startOAuth('google'); }
+
+function handleOAuthCallback() {
     const p=new URLSearchParams(window.location.search);
     const code=p.get('code'), state=p.get('state'), error=p.get('error');
     if (!code) return;
     window.history.replaceState({},'',window.location.pathname);
-    if (error){showToast('카카오 로그인 취소됨');return;}
+    if (error){showToast('로그인 취소됨');return;}
     if (sessionStorage.getItem('oauth_state')!==state){showToast('보안 검증 실패','error');return;}
     sessionStorage.removeItem('oauth_state');
-    let group='5060';
-    try{group=JSON.parse(atob(state)).group;}catch(e){}
-    /* 실제 서비스에서는 백엔드에서 카카오 고유 ID(kakao_account.id)를 받아와야 함 */
-    const kakaoUserId = 'kakao_' + code.slice(0,16);
-    userSession={loggedIn:true, targetGroup:group, nickname:'카카오 회원', userId:kakaoUserId, authType:'kakao'};
+    let group='5060', provider='kakao';
+    try{ ({group=group, provider=provider} = JSON.parse(atob(state))); }catch(e){}
+    const cfg = OAUTH_PROVIDERS[provider] || OAUTH_PROVIDERS.kakao;
+    /* 실제 서비스에서는 백엔드에서 제공자 고유 ID를 받아와야 함 */
+    const userId = `${provider}_` + code.slice(0,16);
+    userSession={loggedIn:true, targetGroup:group, nickname:cfg.label, userId, authType:provider};
     localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
-    /* Flask 연동 시: fetch('/auth/kakao/callback?code='+code+'&state='+state) */
+    /* Flask 연동 시: fetch(`/auth/${provider}/callback?code=`+code+'&state='+state) */
     afterAuth();
 }
 
@@ -44,68 +68,6 @@ function browseAsGuest() {
     const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
     const guestId = getOrCreateGuestId();
     userSession={loggedIn:false, targetGroup:group, nickname:'게스트', userId:guestId, authType:'guest'};
-    afterAuth();
-}
-
-/* ── 이메일 로그인/회원가입 토글 UI ───────────────────────────── */
-function switchAuthTab(tab) {
-    const isLogin = tab==='login';
-    document.getElementById('auth-tab-login').classList.toggle('active', isLogin);
-    document.getElementById('auth-tab-signup').classList.toggle('active', !isLogin);
-    document.getElementById('auth-form-login').classList.toggle('hidden', !isLogin);
-    document.getElementById('auth-form-signup').classList.toggle('hidden', isLogin);
-    document.getElementById('auth-switch-hint').innerHTML = isLogin
-        ? `계정이 없으신가요? <a onclick="switchAuthTab('signup')">회원가입하기</a>`
-        : `이미 계정이 있으신가요? <a onclick="switchAuthTab('login')">로그인하기</a>`;
-    document.getElementById('login-error').textContent='';
-    document.getElementById('signup-error').textContent='';
-}
-
-/* ── 이메일 회원가입 (localStorage 데모 저장소) ───────────────── */
-function handleEmailSignup() {
-    const nickname = document.getElementById('signup-nickname').value.trim();
-    const email    = document.getElementById('signup-email').value.trim().toLowerCase();
-    const pw       = document.getElementById('signup-pw').value;
-    const pw2      = document.getElementById('signup-pw2').value;
-    const errEl    = document.getElementById('signup-error');
-
-    if (!nickname) { errEl.textContent='닉네임을 입력해주세요.'; return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent='올바른 이메일 형식이 아니에요.'; return; }
-    if (pw.length < 6) { errEl.textContent='비밀번호는 6자 이상이어야 해요.'; return; }
-    if (pw !== pw2) { errEl.textContent='비밀번호가 일치하지 않아요.'; return; }
-
-    const db = getUsersDB();
-    if (db[email]) { errEl.textContent='이미 가입된 이메일이에요.'; return; }
-
-    /* 데모용 평문 저장 — 실서비스에서는 반드시 서버에서 해시(bcrypt 등) 처리 */
-    const userId = 'user_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-    db[email] = { userId, nickname, pw };
-    saveUsersDB(db);
-    errEl.textContent='';
-    showToast('회원가입 완료! 자동으로 로그인할게요.');
-
-    const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
-    userSession={loggedIn:true, targetGroup:group, nickname, userId, authType:'email'};
-    localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
-    afterAuth();
-}
-
-/* ── 이메일 로그인 ──────────────────────────────────────────── */
-function handleEmailLogin() {
-    const email = document.getElementById('login-email').value.trim().toLowerCase();
-    const pw    = document.getElementById('login-pw').value;
-    const errEl = document.getElementById('login-error');
-
-    const db = getUsersDB();
-    const record = db[email];
-    if (!record || record.pw !== pw) {
-        errEl.textContent='이메일 또는 비밀번호가 올바르지 않아요.';
-        return;
-    }
-    errEl.textContent='';
-    const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
-    userSession={loggedIn:true, targetGroup:group, nickname:record.nickname, userId:record.userId, authType:'email'};
-    localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
     afterAuth();
 }
 
