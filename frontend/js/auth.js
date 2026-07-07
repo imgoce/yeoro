@@ -1,11 +1,22 @@
-/* ── 카카오 OAuth 로그인 ─────────────────────────────────────────
-   흐름: startKakaoOAuth() → 카카오 페이지 → ?code= 콜백
-   → handleKakaoCallback() → Flask /auth/kakao/callback 으로 code 전달
-   (토큰 교환은 CORS 때문에 반드시 Flask 서버에서 처리)
+/* ── 카카오 로그인 ───────────────────────────────────────────────
+   ▸ 안드로이드 앱(WebView)에서 실행 중이면: window.YeoroNative.startKakaoLogin()을
+     호출해 네이티브 카카오 SDK로 위임한다. 카카오/구글 등은 임베디드 WebView의
+     User-Agent를 감지해 로그인을 차단하므로("disallowed_useragent"), WebView
+     안에서 카카오 로그인 페이지를 직접 여는 것은 시도하지 않는다.
+     네이티브(MainActivity.kt)가 로그인 완료 후 window.onNativeKakaoLoginResult(...)를
+     호출해 결과를 돌려준다 — 아래 정의 참고.
+   ▸ 일반 브라우저(순수 웹)에서 실행 중이면: 기존과 동일하게 카카오 OAuth 페이지로
+     이동 → ?code= 콜백 → handleKakaoCallback().
    ─────────────────────────────────────────────────────────────────*/
 function startKakaoOAuth() {
     const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
     userSession.targetGroup=group;
+
+    if (window.YeoroNative && typeof window.YeoroNative.startKakaoLogin === 'function') {
+        window.YeoroNative.startKakaoLogin();
+        return;
+    }
+
     if (!API_CONFIG.KAKAO_REST_KEY) {
         showToast('카카오 키 미설정 → 데모 카카오 로그인으로 진행합니다');
         /* 데모 모드: 실제 OAuth 없이 카카오 회원으로 즉시 로그인 처리 */
@@ -20,6 +31,27 @@ function startKakaoOAuth() {
     const p=new URLSearchParams({client_id:API_CONFIG.KAKAO_REST_KEY,
         redirect_uri:API_CONFIG.KAKAO_REDIRECT_URI,response_type:'code',state});
     window.location.href='https://kauth.kakao.com/oauth/authorize?'+p;
+}
+
+/* 안드로이드 네이티브(MainActivity.kt)가 카카오 SDK 로그인 결과를 돌려줄 때 호출.
+   success=true면 message는 {userId, nickname} JSON 문자열, false면 에러 메시지 문자열. */
+function onNativeKakaoLoginResult(success, message) {
+    if (!success) {
+        showToast(message || '카카오 로그인 실패', 'error');
+        return;
+    }
+    let payload = {};
+    try { payload = JSON.parse(message); } catch (e) {}
+    const group = userSession.targetGroup || '5060';
+    userSession = {
+        loggedIn: true,
+        targetGroup: group,
+        nickname: payload.nickname || '카카오 회원',
+        userId: payload.userId || 'kakao_native_user',
+        authType: 'kakao',
+    };
+    localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
+    afterAuth();
 }
 function handleKakaoCallback() {
     const p=new URLSearchParams(window.location.search);

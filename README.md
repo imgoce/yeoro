@@ -21,6 +21,7 @@
 |---|---|
 | 프론트엔드 | Vanilla JS(ES6+), HTML5, CSS3, Bootstrap 5(레이아웃 유틸), Material Icons |
 | 백엔드 | FastAPI, Pydantic v2, PyJWT, bcrypt, httpx |
+| Android 셸 | Kotlin, WebView, Kakao Login SDK(`v2-user`), AndroidX Browser(Custom Tabs) |
 | 외부 연동 | 카카오 로그인/지도, 공공데이터포털(한국관광공사 국문·웰니스 관광정보), 기상청 API *(선택, 키 없이도 폴백 동작)* |
 
 ## 프로젝트 구조
@@ -46,6 +47,11 @@ yeoro/
 │   │   ├── utils.js          # haversine 등 공용 유틸
 │   │   └── logo-data.js      # 로고 base64 리소스
 │   └── tools/live_server.py  # 저장 시 자동 새로고침되는 로컬 미리보기 서버
+├── android/                   # frontend/를 WebView로 감싸는 네이티브 셸 (카카오 로그인 안정화 목적)
+│   └── app/src/main/java/com/yeoro/app/
+│       ├── MainActivity.kt       # WebView 호스트 + 카카오 SDK 로그인 + Custom Tabs 안전망
+│       ├── KakaoLoginBridge.kt   # JS ↔ 네이티브 브릿지 (window.YeoroNative)
+│       └── YeoroApplication.kt   # 카카오 SDK 초기화
 └── backend/
     ├── requirements.txt
     └── app/
@@ -97,6 +103,14 @@ WEATHER_API_KEY=    # 기상청 — 날씨 대응 추천
 
 - `DATA_GO_KR_KEY` — [data.go.kr](https://www.data.go.kr)에서 "한국관광공사_국문 관광정보 서비스" 활용신청 후 발급
 - `KAKAO_REST_KEY` / `KAKAO_JS_KEY` — [Kakao Developers](https://developers.kakao.com)에서 발급 (카카오맵 검색 + 로그인)
+
+### Android 앱 (카카오 로그인 안정화)
+
+`frontend/`를 WebView로 감싼 네이티브 셸이 `android/`에 있습니다. 웹 브라우저에서는 기존
+OAuth 리다이렉트 방식 그대로 동작하고, 이 앱 안에서는 카카오톡 앱 전환 또는 시스템 브라우저
+(Custom Tabs)로 로그인하는 공식 카카오 SDK 방식으로 자동 전환됩니다 — 임베디드 WebView가
+카카오/구글 로그인에서 차단되는 문제(`disallowed_useragent`)를 피하기 위함입니다.
+설정 방법은 [android/README.md](android/README.md) 참고.
 
 ## 라이선스
 
