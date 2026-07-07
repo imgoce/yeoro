@@ -550,16 +550,10 @@ body {
 .onboard-wrap {
     position: absolute;
     inset: 0;
-    /* Canva 'Blue gradient login' 템플릿 스타일을 yeoro 테마 색으로 재현
-       — 위쪽 네이비 → 미드블루 → 스카이 → 미스트로 흐르는 대각선 그라데이션 */
-    background:
-        linear-gradient(160deg,
-            var(--yeoro-navy) 0%,
-            #24508C 22%,
-            var(--yeoro-blue) 42%,
-            #6F9BCB 62%,
-            var(--yeoro-sky) 80%,
-            var(--yeoro-mist) 100%);
+    /* 로그인 화면(.auth-screen)과 동일한 코발트 → 연한 코발트 대각선 그라데이션 */
+    background: linear-gradient(160deg,
+        var(--yeoro-blue) 0%,
+        var(--yeoro-sky) 100%);
     z-index: 200;
     display: flex;
     flex-direction: column;
