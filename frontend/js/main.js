@@ -2,7 +2,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('yeoro-logo').src = LOGO_SRC;
     document.getElementById('auth-logo').src  = LOGO_SRC;
+    document.getElementById('splash-logo').src = LOGO_SRC;
     document.getElementById('onboard-screen').classList.add('hidden');
+
+    /* 앱 진입 스플래시: 로고 등장 애니메이션 재생 후(1.5초) 제거 */
+    setTimeout(() => {
+        document.getElementById('splash-screen').classList.add('hidden');
+    }, 1500);
     if(API_CONFIG.KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized())
         Kakao.init(API_CONFIG.KAKAO_JS_KEY);
 
