@@ -1,12 +1,19 @@
 package com.yeoro.app
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.webkit.GeolocationPermissions
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.kakao.sdk.common.model.ClientError
 import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.user.UserApiClient
@@ -32,6 +39,10 @@ class MainActivity : AppCompatActivity() {
         "accounts.google.com",
     )
 
+    private companion object {
+        const val REQ_LOCATION = 100
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,17 +57,44 @@ class MainActivity : AppCompatActivity() {
         webView.addJavascriptInterface(KakaoLoginBridge(this), "YeoroNative")
 
         webView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-                val host = Uri.parse(url).host ?: return false
+            // minSdk 24부터는 String 오버로드가 아니라 이 WebResourceRequest 버전이 호출된다.
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val host = request.url.host ?: return false
                 if (host in externalAuthHosts) {
-                    openInCustomTabs(url)
+                    openInCustomTabs(request.url.toString())
                     return true
                 }
                 return false
             }
         }
 
+        // geolocation.js(navigator.geolocation)가 동작하려면 WebView가 위치 권한 요청을
+        // 처리해줘야 한다. OS 권한을 이미 보유했을 때만 허용한다.
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?,
+            ) {
+                val granted = ContextCompat.checkSelfPermission(
+                    this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+                callback?.invoke(origin, granted, false)
+            }
+        }
+
+        requestLocationIfNeeded()
         webView.loadUrl("file:///android_asset/www/index.html")
+    }
+
+    private fun requestLocationIfNeeded() {
+        val granted = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            ActivityCompat.requestPermissions(
+                this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQ_LOCATION
+            )
+        }
     }
 
     override fun onBackPressed() {
@@ -69,6 +107,11 @@ class MainActivity : AppCompatActivity() {
 
     /** KakaoLoginBridge(JS) → 여기로 진입. UI 스레드에서 호출된다. */
     fun startKakaoLogin() {
+        // 아직 카카오 앱 키가 없으면(SDK 미초기화) 크래시 대신 안내 메시지를 웹으로 돌려준다.
+        if (BuildConfig.KAKAO_NATIVE_APP_KEY.isBlank()) {
+            notifyJs(success = false, message = "카카오 로그인이 아직 설정되지 않았습니다")
+            return
+        }
         if (UserApiClient.instance.isKakaoTalkLoginAvailable(this)) {
             UserApiClient.instance.loginWithKakaoTalk(this) { token, error ->
                 if (error != null) {
@@ -114,8 +157,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun notifyJs(success: Boolean, message: String) {
-        val escaped = message.replace("\\", "\\\\").replace("'", "\\'")
-        val js = "window.onNativeKakaoLoginResult(${success}, '${escaped}');"
+        // 줄바꿈/따옴표가 섞여도 JS 문자열이 깨지지 않도록 모두 이스케이프한다.
+        val escaped = message
+            .replace("\\", "\\\\")
+            .replace("'", "\\'")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+        val js = "window.onNativeKakaoLoginResult($success, '$escaped');"
         runOnUiThread { webView.evaluateJavascript(js, null) }
     }
 }
