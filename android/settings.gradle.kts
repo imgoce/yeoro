@@ -11,6 +11,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // 카카오 SDK(com.kakao.sdk:*)는 Maven Central이 아니라 카카오 전용 저장소에 있다.
+        maven(url = "https://devrepo.kakao.com/nexus/content/groups/public/")
     }
 }
 
