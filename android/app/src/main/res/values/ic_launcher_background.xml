@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 여로 로고 배경의 하늘색 (적응형 아이콘 배경) -->
+    <color name="ic_launcher_background">#B3D7E8</color>
+</resources>
