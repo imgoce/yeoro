@@ -5,12 +5,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.auth import router as auth_router
+from app.api.routes.cart import router as cart_router
 from app.api.routes.external import (
     kakao_router,
     router as external_router,
     weather_router,
 )
 from app.api.routes.health import router as health_router
+from app.api.routes.places import router as places_router
+from app.api.routes.routes import router as routes_router
 from app.api.routes.users import router as users_router
 from app.core.config import settings
 from app.db.base import Base
@@ -50,6 +53,9 @@ def create_application() -> FastAPI:
     application.include_router(kakao_router)
     application.include_router(weather_router)
     application.include_router(users_router)
+    application.include_router(places_router)
+    application.include_router(cart_router)
+    application.include_router(routes_router)
     
     return application
 
