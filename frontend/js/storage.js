@@ -8,6 +8,39 @@ function getOrCreateGuestId() {
     return gid;
 }
 
+/* ── 백엔드 인증 요청 도우미 — 아이디/비밀번호로 로그인한 사용자만
+   JWT를 갖고 있으므로, 여행기록도 이 사용자만 서버와 동기화한다.
+   카카오/게스트는 지금처럼 기기 로컬 저장만 사용한다. ───────────── */
+function getAuthToken() {
+    return localStorage.getItem('yeoro_jwt');
+}
+async function apiFetchAuthed(path, options={}) {
+    const token = getAuthToken();
+    if (!token) return null;
+    try {
+        const res = await fetch(`${API_CONFIG.API_BASE_URL}${path}`, {
+            ...options,
+            headers: { ...(options.headers||{}), 'Authorization':'Bearer '+token, 'Content-Type':'application/json' },
+        });
+        if (!res.ok) return null;
+        return res.status === 204 ? true : await res.json();
+    } catch(e) {
+        console.warn(`[travel-log] 서버 동기화 실패: ${e.message}`);
+        return null;
+    }
+}
+/* 로그인 직후 서버에 저장된 여행기록을 내려받아 로컬 화면과 맞춘다 */
+async function syncTravelLogFromServer() {
+    const rows = await apiFetchAuthed('/users/me/travel-logs');
+    if (!rows) return;
+    const log = rows.map(row => ({
+        id: row.id, name: row.place_name, category: row.category,
+        addr: row.address || '', date: (row.created_at||'').slice(0,10).replace(/-/g,'.'),
+    }));
+    saveTravelLog(userSession.userId, log);
+    renderTravelLog();
+}
+
 /* ── 여행로그 저장/조회 — userId별로 키를 분리해 누구든 기록 유지 ── */
 function getTravelLog(userId) {
     try { return JSON.parse(localStorage.getItem('yeoro_log_'+userId) || '[]'); }
@@ -27,15 +60,27 @@ function addToTravelLog(items) {
             name: item.name, category: item.category,
             addr: item.addr||'', date: dateStr,
         });
+        /* 아이디/비밀번호로 로그인한 경우에만 서버에도 기록을 남김 */
+        if (getAuthToken()) {
+            apiFetchAuthed('/users/me/travel-logs', {
+                method: 'POST',
+                body: JSON.stringify({ place_name:item.name, category:item.category, address:item.addr||'' }),
+            }).then(saved => { if (saved) syncTravelLogFromServer(); });
+        }
     });
     saveTravelLog(userSession.userId, log.slice(0,100)); // 최대 100건 보관
 }
 function removeFromTravelLog(logId) {
     if (!userSession.userId) return;
+    /* onclick 속성을 거치며 logId는 항상 문자열로 넘어오므로 문자열로 비교한다 */
     let log = getTravelLog(userSession.userId);
-    log = log.filter(l=>l.id!==logId);
+    log = log.filter(l => String(l.id) !== String(logId));
     saveTravelLog(userSession.userId, log);
     renderTravelLog();
+    /* "log_"로 시작하지 않으면 서버에서 내려받은 기록(숫자 id) → 서버에서도 삭제 */
+    if (getAuthToken() && !String(logId).startsWith('log_')) {
+        apiFetchAuthed(`/users/me/travel-logs/${logId}`, { method:'DELETE' });
+    }
 }
 function renderTravelLog() {
     const banner = document.getElementById('history-guest-banner');

@@ -11,6 +11,7 @@ from app.api.routes.external import (
     weather_router,
 )
 from app.api.routes.health import router as health_router
+from app.api.routes.travel_log import router as travel_log_router
 from app.api.routes.users import router as users_router
 from app.core.config import settings
 from app.db.base import Base
@@ -34,6 +35,9 @@ def create_application() -> FastAPI:
     # CORS 설정: 앱 배포 시 승인된 도메인만 통신 허용
     origins = [
         "http://localhost:3000",
+        "http://localhost:5500",       # frontend/tools/live_server.py 기본 포트
+        "http://127.0.0.1:5500",
+        "capacitor://localhost",       # 안드로이드 WebView 셸
         "https://your-production-app-domain.com",
     ]
     
@@ -50,6 +54,7 @@ def create_application() -> FastAPI:
     application.include_router(kakao_router)
     application.include_router(weather_router)
     application.include_router(users_router)
+    application.include_router(travel_log_router)
     
     return application
 

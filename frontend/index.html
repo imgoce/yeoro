@@ -81,7 +81,25 @@
             카카오로 3초 만에 시작하기
         </button>
 
+        <!-- 10초 로그인 (아이디/비밀번호 회원가입 폼으로 바로 이동) -->
+        <button class="y-btn-primary mb-2" onclick="focusEmailRegisterForm()">
+            <span class="material-icons" style="font-size:1.05em;vertical-align:-2px;margin-right:4px;">bolt</span>
+            10초 로그인으로 시작하기
+        </button>
+
         <button class="y-btn-secondary mb-3" onclick="browseAsGuest()">게스트로 둘러보기</button>
+    </div>
+
+    <!-- ══════════════ 위치 정보 허용 (회원가입/로그인/게스트 공통 — 글자 크기 설정 후, 메인 진입 전 필수) ══════════════ -->
+    <div class="auth-screen hidden" id="location-permission-screen">
+        <div class="auth-brand">
+            <span class="material-icons" style="font-size:3.2rem;color:#fff;">gps_fixed</span>
+            <div class="auth-brand-name" style="margin-top:10px;">위치 정보가 필요해요</div>
+            <div class="auth-brand-tagline">내 위치를 기준으로 가까운 무장애 장소와<br>동선을 추천해드리려면 위치 정보 허용이 꼭 필요해요</div>
+        </div>
+        <div class="text-danger small text-center mb-3 hidden" id="location-permission-error"
+             style="background:#fff;border-radius:10px;padding:10px 14px;"></div>
+        <button class="y-btn-primary mb-2" id="location-permission-btn" onclick="handleLocationPermissionRequest()">위치 허용하고 시작하기</button>
     </div>
 
 
@@ -306,6 +324,28 @@
                 <div class="page-title" style="font-size:1.15em; margin-bottom:14px;">선택한 장소 목록</div>
                 <div id="omni-cart-items-list-box" style="max-height:220px; overflow-y:auto;" class="mb-4"></div>
                 <button class="y-btn-primary" onclick="injectCartToTimelineRoute()">현위치 동선 최적화하기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 10초 로그인 모달 — 아이디(닉네임/이메일/비밀번호) 회원가입·로그인 -->
+<div class="modal fade" id="emailAuthModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <span class="material-icons" data-bs-dismiss="modal"
+                    style="position:absolute;top:14px;right:16px;cursor:pointer;color:var(--yeoro-muted);">close</span>
+                <div class="section-label mb-3" id="email-auth-title">아이디로 회원가입</div>
+                <input type="text" class="form-control mb-2" id="email-auth-nickname" placeholder="닉네임 (2자 이상)" autocomplete="nickname">
+                <input type="email" class="form-control mb-2" id="email-auth-email" placeholder="이메일" autocomplete="username">
+                <input type="password" class="form-control mb-2" id="email-auth-password" placeholder="비밀번호 (8자 이상)" autocomplete="new-password">
+                <div class="text-danger small mb-2 hidden" id="email-auth-error"></div>
+                <button class="y-btn-primary mb-2 w-100" id="email-auth-submit-btn" onclick="handleEmailAuthSubmit()">회원가입</button>
+                <div class="text-center small">
+                    <span id="email-auth-toggle-label">이미 계정이 있으신가요?</span>
+                    <a href="#" onclick="toggleEmailAuthMode(); return false;" id="email-auth-toggle-link">로그인</a>
+                </div>
             </div>
         </div>
     </div>
