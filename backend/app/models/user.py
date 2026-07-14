@@ -7,6 +7,7 @@ from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.bookmark import Bookmark
+    from app.models.cart_item import CartItem
     from app.models.course import Course
     from app.models.review import Review
     from app.models.travel_log import TravelLog
@@ -24,6 +25,7 @@ class User(TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     bookmarks: Mapped[list["Bookmark"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    cart_items: Mapped[list["CartItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     reviews: Mapped[list["Review"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     courses: Mapped[list["Course"]] = relationship(back_populates="creator")
     travel_logs: Mapped[list["TravelLog"]] = relationship(back_populates="user", cascade="all, delete-orphan")
