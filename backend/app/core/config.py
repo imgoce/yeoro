@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     weather_api_timeout_seconds: float = 10.0
     redis_url: str = "redis://localhost:6379/0"
     redis_default_ttl_seconds: int = 300
+    cors_extra_origins: str = ""  # 실제 배포 도메인. 쉼표로 여러 개 지정 가능 (예: "https://yeoro.app,https://www.yeoro.app")
 
     kakao_auth_base_url: str = "https://kauth.kakao.com"
     kakao_api_base_url: str = "https://kapi.kakao.com"

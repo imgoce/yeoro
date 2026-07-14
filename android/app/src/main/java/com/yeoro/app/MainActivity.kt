@@ -5,6 +5,8 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
+import android.webkit.ConsoleMessage
 import android.webkit.GeolocationPermissions
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -97,6 +99,13 @@ class MainActivity : AppCompatActivity() {
                     ),
                     REQ_LOCATION,
                 )
+            }
+
+            override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                if (BuildConfig.DEBUG) {
+                    Log.d("YeoroWebConsole", "${message.message()} (${message.sourceId()}:${message.lineNumber()})")
+                }
+                return true
             }
         }
 

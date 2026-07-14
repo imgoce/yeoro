@@ -5,24 +5,24 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.auth import router as auth_router
-from app.api.routes.health import router as health_router
-
-# ====================================================================
-# [수정] 존재하지 않는 external_router를 버리고,
-# 실제 작동하는 4개의 개별 서브 라우터를 깔끔하게 직접 가져옵니다.
-# ====================================================================
+from app.api.routes.cart import router as cart_router
 from app.api.routes.external import (
     tourism_router,
     kakao_router,
     weather_router,
     kakao_auth_router,
 )
+from app.api.routes.health import router as health_router
+from app.api.routes.medical import router as medical_router
+from app.api.routes.places import router as places_router
+from app.api.routes.travel_log import router as travel_log_router
+from app.api.routes.routes import router as routes_router
 from app.api.routes.users import router as users_router
 from app.api.routes.travel_log import router as travel_log_router
 from app.core.config import settings
 from app.db.base import Base
-from app.db.session import engine
-
+from app.db.session import SessionLocal, engine
+from app.models.medical_facility import MedicalFacility
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -38,12 +38,16 @@ def create_application() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # CORS 설정: 앱 배포 시 승인된 도메인만 통신 허용
+    # 실제 배포 도메인은 하드코딩하지 않고 .env의 CORS_EXTRA_ORIGINS로 넣는다
+    # (예: CORS_EXTRA_ORIGINS=https://yeoro.app,https://www.yeoro.app)
     origins = [
         "http://localhost:3000",
         "http://localhost:5500",
         "http://127.0.0.1:5500",
-        "capacitor://localhost",
-        "https://your-production-app-domain.com",
+        "capacitor://localhost",       # Capacitor 기반 WebView 셸
+        "null",                        # file:// 로 로드되는 안드로이드 WebView(현재 MainActivity 방식)의 Origin
+        *[origin.strip() for origin in settings.cors_extra_origins.split(",") if origin.strip()],
     ]
     
     application.add_middleware(
@@ -67,7 +71,11 @@ def create_application() -> FastAPI:
     application.include_router(kakao_auth_router, prefix="/external")
     
     application.include_router(users_router)
+    application.include_router(places_router)
+    application.include_router(cart_router)
+    application.include_router(routes_router)
     application.include_router(travel_log_router)
+    application.include_router(medical_router)
     
     return application
 

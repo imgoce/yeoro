@@ -30,12 +30,17 @@ function handleLocationPermissionRequest() {
             btn.textContent = '위치 허용하고 시작하기';
             finalizeAuth();
         },
-        () => {
+        (err) => {
             btn.disabled = false;
             btn.textContent = '위치 허용하고 시작하기';
-            showLocationPermissionError('위치 정보 허용이 필요해요. 브라우저·기기 설정에서 여로의 위치 권한을 허용한 뒤 다시 시도해주세요.');
+            // 권한을 막 허용한 직후 첫 요청은 기기의 위치 서비스가 준비되는 데 시간이 걸려
+            // 타임아웃(code 3)이 나기도 한다. 이 경우는 권한 문제가 아니므로 안내 문구를 다르게 준다.
+            const message = err.code === err.TIMEOUT
+                ? '위치를 확인하는 데 시간이 걸리고 있어요. 잠시 후 다시 시도해주세요.'
+                : '위치 정보 허용이 필요해요. 브라우저·기기 설정에서 여로의 위치 권한을 허용한 뒤 다시 시도해주세요.';
+            showLocationPermissionError(message);
         },
-        { timeout: 8000 }
+        { timeout: 20000 }
     );
 }
 

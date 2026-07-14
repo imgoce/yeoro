@@ -1,7 +1,21 @@
+<div align="center">
+  <img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/59f62355-46aa-4160-ad52-e63e9d6a37c6" />
+  <br/>
+  <a href="https://git.io/typing-svg">
+    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=600&size=35&pause=1000&color=00D9FFFF&center=true&vCenter=true&width=435&lines=Yeoro" alt="Typing SVG" />
+  </a>
+</div>
+
 # yeoro (여로)
 
 5060 액티브 시니어와 영유아 동반 가족을 대상으로, 세종시의 관광명소·맛집·축제·의료기관 정보를
 **무장애 기능(휠체어·유모차 진입 가능 여부 등)으로 큐레이션**해주는 개인 맞춤형 여행 추천 서비스입니다.
+
+### 🎬 라이브 데모
+
+다운로드 없이 바로 앱 화면을 확인해볼 수 있어요.
+
+**[▶ 데모](https://htmlpreview.github.io/?https://github.com/imgoce/yeoro/blob/main/yeoro.html)**
 
 ## 핵심 기능
 
