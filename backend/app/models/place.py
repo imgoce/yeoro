@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.course_place import CoursePlace
     from app.models.region import Region
     from app.models.theme import Theme
+    from app.models.travel_log import TravelLog
 
 
 class Place(TimestampMixin, Base):
@@ -33,3 +34,4 @@ class Place(TimestampMixin, Base):
         back_populates="places",
     )
     course_places: Mapped[list["CoursePlace"]] = relationship(back_populates="place")
+    travel_logs: Mapped[list["TravelLog"]] = relationship()
