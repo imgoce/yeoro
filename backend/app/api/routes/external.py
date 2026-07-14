@@ -1,3 +1,4 @@
+Header
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.dependencies import (
@@ -260,9 +261,10 @@ async def callback(
 
 @kakao_auth_router.get("/me")
 async def me(
-    access_token: str,
+    authorization: str = Header(...),
     client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
 ):
+    access_token = authorization.removeprefix("Bearer ").strip()
     try:
         return await client.get_user_info(
             access_token=access_token,

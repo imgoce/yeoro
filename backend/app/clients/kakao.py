@@ -50,7 +50,7 @@ class KakaoAuthApiClient:
         state: str | None = None,
     ) -> str:
         url = (
-            f"{self._auth_client.base_url}/oauth/authorize"
+            f"https://kauth.kakao.com/oauth/authorize"
             f"?response_type=code"
             f"&client_id={self._rest_api_key}"
             f"&redirect_uri={self._redirect_uri}"
@@ -82,10 +82,10 @@ class KakaoAuthApiClient:
                 data=data,
             )
             response.raise_for_status()
+            return response.json()
         except httpx.HTTPError as exc:
             raise KakaoAuthApiError("카카오 Access Token 발급에 실패했습니다.") from exc
 
-        return response.json()
 
     async def refresh_access_token(
         self,
@@ -107,10 +107,10 @@ class KakaoAuthApiClient:
                 data=data,
             )
             response.raise_for_status()
+            return response.json()
         except httpx.HTTPError as exc:
             raise KakaoAuthApiError("카카오 Access Token 갱신에 실패했습니다.") from exc
 
-        return response.json()
 
     async def get_user_info(
         self,
@@ -125,10 +125,10 @@ class KakaoAuthApiClient:
                 },
             )
             response.raise_for_status()
+            return response.json()
         except httpx.HTTPError as exc:
             raise KakaoAuthApiError("카카오 사용자 조회에 실패했습니다.") from exc
 
-        return response.json()
 
     async def logout(
         self,
@@ -143,10 +143,10 @@ class KakaoAuthApiClient:
                 },
             )
             response.raise_for_status()
+            return response.json()
         except httpx.HTTPError as exc:
             raise KakaoAuthApiError("카카오 로그아웃에 실패했습니다.") from exc
 
-        return response.json()
 
     async def unlink(
         self,
@@ -161,8 +161,8 @@ class KakaoAuthApiClient:
                 },
             )
             response.raise_for_status()
+            return response.json()
         except httpx.HTTPError as exc:
             raise KakaoAuthApiError("카카오 연결 끊기에 실패했습니다.") from exc
 
-        return response.json()
     
