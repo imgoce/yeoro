@@ -37,12 +37,14 @@ def create_application() -> FastAPI:
     )
 
     # CORS 설정: 앱 배포 시 승인된 도메인만 통신 허용
+    # 실제 배포 도메인은 하드코딩하지 않고 .env의 CORS_EXTRA_ORIGINS로 넣는다
+    # (예: CORS_EXTRA_ORIGINS=https://yeoro.app,https://www.yeoro.app)
     origins = [
         "http://localhost:3000",
         "http://localhost:5500",       # frontend/tools/live_server.py 기본 포트
         "http://127.0.0.1:5500",
         "capacitor://localhost",       # 안드로이드 WebView 셸
-        "https://your-production-app-domain.com",
+        *[origin.strip() for origin in settings.cors_extra_origins.split(",") if origin.strip()],
     ]
     
     application.add_middleware(
