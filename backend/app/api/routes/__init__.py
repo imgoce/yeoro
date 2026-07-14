@@ -10,7 +10,7 @@ from app.api.routes.external import (
 from app.api.routes.places import router as places_router
 from app.api.routes.users import router as users_router
 from app.api.routes.routes import router as routes_router
-from app.api.routes.travel_logs import router as travel_logs_router
+from app.api.routes.travel_log import router as travel_logs_router
 
 __all__ = [
     "health_router",
