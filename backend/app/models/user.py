@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.cart_item import CartItem
     from app.models.course import Course
     from app.models.review import Review
+    from app.models.travel_log import TravelLog
 
 
 class User(TimestampMixin, Base):
@@ -27,3 +28,4 @@ class User(TimestampMixin, Base):
     cart_items: Mapped[list["CartItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     reviews: Mapped[list["Review"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     courses: Mapped[list["Course"]] = relationship(back_populates="creator")
+    travel_logs: Mapped[list["TravelLog"]] = relationship(back_populates="user", cascade="all, delete-orphan")

@@ -14,7 +14,7 @@ from app.api.routes.external import (
 from app.api.routes.health import router as health_router
 from app.api.routes.medical import router as medical_router
 from app.api.routes.places import router as places_router
-from app.api.routes.travel_log import router as travel_logs_router
+from app.api.routes.travel_log import router as travel_log_router
 from app.api.routes.routes import router as routes_router
 from app.api.routes.users import router as users_router
 from app.core.config import settings
@@ -39,6 +39,9 @@ def create_application() -> FastAPI:
     # CORS 설정: 앱 배포 시 승인된 도메인만 통신 허용
     origins = [
         "http://localhost:3000",
+        "http://localhost:5500",       # frontend/tools/live_server.py 기본 포트
+        "http://127.0.0.1:5500",
+        "capacitor://localhost",       # 안드로이드 WebView 셸
         "https://your-production-app-domain.com",
     ]
     
@@ -58,7 +61,7 @@ def create_application() -> FastAPI:
     application.include_router(places_router)
     application.include_router(cart_router)
     application.include_router(routes_router)
-    application.include_router(travel_logs_router)
+    application.include_router(travel_log_router)
     application.include_router(medical_router)
     
     return application
