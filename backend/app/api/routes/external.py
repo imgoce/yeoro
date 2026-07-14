@@ -1,5 +1,8 @@
-Header
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
+
 
 from app.api.dependencies import (
     get_kakao_map_api_client,
@@ -261,14 +264,17 @@ async def callback(
 
 @kakao_auth_router.get("/me")
 async def me(
-    authorization: str = Header(...),
+    # HTTPBearer가 스웨거에 'Authorize' 버튼을 만들고 헤더 주입을 알아서 보장합니다.
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
 ):
-    access_token = authorization.removeprefix("Bearer ").strip()
+    # credentials.credentials에 'Bearer ' 가 제외된 순수 토큰만 자동으로 담깁니다.
+    access_token = credentials.credentials.strip()
+        
     try:
         return await client.get_user_info(
             access_token=access_token,
         )
     except KakaoAuthApiError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc    
+        raise HTTPException(status_code=502, detail=str(exc)) from exc  
       
