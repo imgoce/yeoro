@@ -34,4 +34,4 @@ class Place(TimestampMixin, Base):
         back_populates="places",
     )
     course_places: Mapped[list["CoursePlace"]] = relationship(back_populates="place")
-    travel_logs: Mapped[list["TravelLog"]] = relationship()
+    travel_logs: Mapped[list["TravelLog"]] = relationship(back_populates="place")
