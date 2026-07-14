@@ -1,16 +1,6 @@
-/* ── 게스트/회원 식별자 — 게스트도 기기별 고유 ID로 기록을 저장 ──── */
-function getOrCreateGuestId() {
-    let gid = localStorage.getItem('yeoro_guest_id');
-    if (!gid) {
-        gid = 'guest_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
-        localStorage.setItem('yeoro_guest_id', gid);
-    }
-    return gid;
-}
-
-/* ── 백엔드 인증 요청 도우미 — 아이디/비밀번호로 로그인한 사용자만
-   JWT를 갖고 있으므로, 여행기록도 이 사용자만 서버와 동기화한다.
-   카카오/게스트는 지금처럼 기기 로컬 저장만 사용한다. ───────────── */
+/* ── 백엔드 인증 요청 도우미 — 이메일/카카오/게스트 모두 로그인 시
+   백엔드에서 JWT를 발급받아 저장하므로, 로그인 방식에 상관없이 이
+   토큰이 있으면 여행기록을 서버와 동기화한다. ───────────── */
 function getAuthToken() {
     return localStorage.getItem('yeoro_jwt');
 }

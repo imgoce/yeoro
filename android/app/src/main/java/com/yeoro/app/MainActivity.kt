@@ -162,8 +162,8 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         loginWithKakaoAccount()
                     }
-                } else {
-                    fetchUserAndNotify()
+                } else if (token != null) {
+                    notifyAccessToken(token.accessToken)
                 }
             }
         } else {
@@ -177,24 +177,18 @@ class MainActivity : AppCompatActivity() {
         UserApiClient.instance.loginWithKakaoAccount(this) { token, error ->
             if (error != null) {
                 notifyJs(success = false, message = error.message ?: "카카오 로그인 실패")
-            } else {
-                fetchUserAndNotify()
+            } else if (token != null) {
+                notifyAccessToken(token.accessToken)
             }
         }
     }
 
-    private fun fetchUserAndNotify() {
-        UserApiClient.instance.me { user, error ->
-            if (error != null || user == null) {
-                notifyJs(success = false, message = error?.message ?: "사용자 정보 조회 실패")
-                return@me
-            }
-            val payload = JSONObject().apply {
-                put("userId", "kakao_${user.id}")
-                put("nickname", user.kakaoAccount?.profile?.nickname ?: "카카오 회원")
-            }
-            notifyJs(success = true, message = payload.toString())
-        }
+    // 카카오 access token만 JS로 넘기고, 실제 신원 검증(카카오 고유 ID 조회) 및 자체 JWT
+    // 발급은 백엔드(/auth/kakao/token)가 담당한다 — 네이티브에서 UserApiClient.me()를
+    // 한 번 더 호출할 필요가 없다.
+    private fun notifyAccessToken(accessToken: String) {
+        val payload = JSONObject().apply { put("accessToken", accessToken) }
+        notifyJs(success = true, message = payload.toString())
     }
 
     private fun notifyJs(success: Boolean, message: String) {

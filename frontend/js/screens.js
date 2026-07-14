@@ -28,7 +28,7 @@ function renderProfile() {
     if (!nick) return;
 
     nick.textContent = userSession.nickname || '게스트';
-    const typeMap = {kakao:'카카오 로그인', email:'아이디 로그인', guest:'게스트 (이 기기에만 저장)'};
+    const typeMap = {kakao:'카카오 로그인', email:'아이디 로그인', guest:'게스트 (이 기기에서만 이어짐)'};
     type.textContent = userSession.userId ? (typeMap[userSession.authType]||'') : '로그인이 필요해요';
 
     if (userSession.targetGroup==='family') {

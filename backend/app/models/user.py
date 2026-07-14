@@ -20,6 +20,8 @@ class User(TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     nickname: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    kakao_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True, index=True)
+    auth_provider: Mapped[str] = mapped_column(String(20), nullable=False, default="email")
     preferred_themes: Mapped[str | None] = mapped_column(Text, nullable=True)
     preferred_transport: Mapped[str | None] = mapped_column(String(50), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
