@@ -4,9 +4,12 @@
      User-Agent를 감지해 로그인을 차단하므로("disallowed_useragent"), WebView
      안에서 카카오 로그인 페이지를 직접 여는 것은 시도하지 않는다.
      네이티브(MainActivity.kt)가 로그인 완료 후 window.onNativeKakaoLoginResult(...)를
-     호출해 결과를 돌려준다 — 아래 정의 참고.
+     호출해 카카오 access_token을 돌려준다 — 아래 정의 참고.
    ▸ 일반 브라우저(순수 웹)에서 실행 중이면: 기존과 동일하게 카카오 OAuth 페이지로
      이동 → ?code= 콜백 → handleKakaoCallback().
+   ▸ 두 경로 모두 최종적으로는 백엔드(/auth/kakao/token, /auth/kakao/callback)가
+     카카오 access_token/code를 검증해 우리 자체 JWT를 발급한다 — 이메일 로그인과
+     동일한 방식으로 이후 요청을 인증하고 여행기록도 서버와 동기화된다.
    ─────────────────────────────────────────────────────────────────*/
 function startKakaoOAuth() {
     const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
@@ -18,12 +21,7 @@ function startKakaoOAuth() {
     }
 
     if (!API_CONFIG.KAKAO_REST_KEY) {
-        showToast('카카오 키 미설정 → 데모 카카오 로그인으로 진행합니다');
-        /* 데모 모드: 실제 OAuth 없이 카카오 회원으로 즉시 로그인 처리 */
-        const kakaoUserId = 'kakao_demo_user';
-        userSession = {loggedIn:true, targetGroup:group, nickname:'카카오 회원', userId:kakaoUserId, authType:'kakao'};
-        localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
-        afterAuth();
+        showToast('카카오 로그인이 아직 설정되지 않았어요', 'error');
         return;
     }
     const state=btoa(JSON.stringify({group,r:Math.random().toString(36).slice(2)}));
@@ -33,27 +31,51 @@ function startKakaoOAuth() {
     window.location.href='https://kauth.kakao.com/oauth/authorize?'+p;
 }
 
+/* 카카오/게스트 로그인 공통 마무리 — 백엔드가 발급한 JWT로 내 프로필을 조회하고
+   세션을 이메일 로그인과 동일한 형태로 구성한다.
+   게스트는 실제 신원이 없는 임시 계정이라는 걸 UI에서 계속 구분해야 하므로
+   loggedIn은 이메일/카카오만 true, 게스트는 그대로 false로 둔다. */
+async function finishBackendLogin(token, group, authType) {
+    const profile = await fetchMyProfile(token);
+    localStorage.setItem('yeoro_jwt', token);
+    userSession = {
+        loggedIn: authType !== 'guest', targetGroup: group,
+        nickname: profile.nickname, userId: profile.id, authType,
+    };
+    localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
+    await syncTravelLogFromServer();
+    afterAuth();
+}
+
 /* 안드로이드 네이티브(MainActivity.kt)가 카카오 SDK 로그인 결과를 돌려줄 때 호출.
-   success=true면 message는 {userId, nickname} JSON 문자열, false면 에러 메시지 문자열. */
-function onNativeKakaoLoginResult(success, message) {
+   success=true면 message는 {accessToken} JSON 문자열, false면 에러 메시지 문자열. */
+async function onNativeKakaoLoginResult(success, message) {
     if (!success) {
         showToast(message || '카카오 로그인 실패', 'error');
         return;
     }
     let payload = {};
     try { payload = JSON.parse(message); } catch (e) {}
+    if (!payload.accessToken) {
+        showToast('카카오 로그인 정보를 받지 못했어요', 'error');
+        return;
+    }
     const group = userSession.targetGroup || '5060';
-    userSession = {
-        loggedIn: true,
-        targetGroup: group,
-        nickname: payload.nickname || '카카오 회원',
-        userId: payload.userId || 'kakao_native_user',
-        authType: 'kakao',
-    };
-    localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
-    afterAuth();
+    try {
+        const res = await fetch(`${API_CONFIG.API_BASE_URL}/auth/kakao/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: payload.accessToken }),
+        });
+        if (!res.ok) throw new Error('카카오 로그인 검증에 실패했어요');
+        const { access_token } = await res.json();
+        await finishBackendLogin(access_token, group, 'kakao');
+    } catch (e) {
+        showToast(e.message || '카카오 로그인 중 오류가 발생했어요', 'error');
+    }
 }
-function handleKakaoCallback() {
+
+async function handleKakaoCallback() {
     const p=new URLSearchParams(window.location.search);
     const code=p.get('code'), state=p.get('state'), error=p.get('error');
     if (!code) return;
@@ -63,12 +85,18 @@ function handleKakaoCallback() {
     sessionStorage.removeItem('oauth_state');
     let group='5060';
     try{group=JSON.parse(atob(state)).group;}catch(e){}
-    /* 실제 서비스에서는 백엔드에서 카카오 고유 ID(kakao_account.id)를 받아와야 함 */
-    const kakaoUserId = 'kakao_' + code.slice(0,16);
-    userSession={loggedIn:true, targetGroup:group, nickname:'카카오 회원', userId:kakaoUserId, authType:'kakao'};
-    localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
-    /* Flask 연동 시: fetch('/auth/kakao/callback?code='+code+'&state='+state) */
-    afterAuth();
+    try {
+        const res = await fetch(`${API_CONFIG.API_BASE_URL}/auth/kakao/callback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, redirect_uri: API_CONFIG.KAKAO_REDIRECT_URI }),
+        });
+        if (!res.ok) throw new Error('카카오 로그인 검증에 실패했어요');
+        const { access_token } = await res.json();
+        await finishBackendLogin(access_token, group, 'kakao');
+    } catch (e) {
+        showToast(e.message || '카카오 로그인 중 오류가 발생했어요', 'error');
+    }
 }
 
 /* ── 아이디(이메일)/비밀번호 회원가입·로그인 ─────────────────────
@@ -178,12 +206,32 @@ async function fetchMyProfile(token) {
     return data.user;
 }
 
-/* ── 게스트 둘러보기 — 기기별 고유 ID를 발급해 여행로그를 유지 ──── */
-function browseAsGuest() {
+/* ── 게스트 둘러보기 ────────────────────────────────────────────
+   백엔드에 익명 계정을 만들어 JWT를 발급받는다 (/auth/guest). 같은
+   기기에서 재방문 시에는 저장해둔 토큰을 재사용해 계정이 계속 늘어나지
+   않도록 한다. 새 기기/재설치 시에는 새 게스트 계정이 만들어진다. */
+async function browseAsGuest() {
     const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
-    const guestId = getOrCreateGuestId();
-    userSession={loggedIn:false, targetGroup:group, nickname:'게스트', userId:guestId, authType:'guest'};
-    afterAuth();
+    const cachedToken = localStorage.getItem('yeoro_jwt');
+    const cachedSession = JSON.parse(localStorage.getItem('yeoro_last_user') || 'null');
+
+    if (cachedToken && cachedSession?.authType === 'guest') {
+        try {
+            await finishBackendLogin(cachedToken, group, 'guest');
+            return;
+        } catch (e) {
+            /* 토큰이 만료됐거나 무효화됐으면 새 게스트 계정으로 폴백 */
+        }
+    }
+
+    try {
+        const res = await fetch(`${API_CONFIG.API_BASE_URL}/auth/guest`, { method: 'POST' });
+        if (!res.ok) throw new Error('게스트로 시작하지 못했어요');
+        const { access_token } = await res.json();
+        await finishBackendLogin(access_token, group, 'guest');
+    } catch (e) {
+        showToast(e.message || '게스트로 시작하지 못했어요', 'error');
+    }
 }
 
 function afterAuth() {

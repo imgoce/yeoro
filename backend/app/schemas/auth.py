@@ -14,6 +14,15 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=8, max_length=100)
 
 
+class KakaoTokenLoginRequest(BaseModel):
+    access_token: str = Field(min_length=1)
+
+
+class KakaoCallbackLoginRequest(BaseModel):
+    code: str = Field(min_length=1)
+    redirect_uri: str = Field(min_length=1)
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
