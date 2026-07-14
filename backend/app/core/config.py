@@ -20,6 +20,13 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     redis_default_ttl_seconds: int = 300
 
+    kakao_auth_base_url: str = "https://kauth.kakao.com"
+    kakao_api_base_url: str = "https://kapi.kakao.com"
+    kakao_rest_api_key: str = ""
+    kakao_client_secret: str | None = None
+    kakao_redirect_uri: str = ""
+    kakao_timeout_seconds: float = 10.0
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
