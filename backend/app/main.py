@@ -39,6 +39,9 @@ def create_application() -> FastAPI:
     # CORS 설정: 앱 배포 시 승인된 도메인만 통신 허용
     origins = [
         "http://localhost:3000",
+        "http://localhost:5500",       # frontend/tools/live_server.py 기본 포트
+        "http://127.0.0.1:5500",
+        "capacitor://localhost",       # 안드로이드 WebView 셸
         "https://your-production-app-domain.com",
     ]
     

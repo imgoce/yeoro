@@ -28,7 +28,7 @@ function renderProfile() {
     if (!nick) return;
 
     nick.textContent = userSession.nickname || '게스트';
-    const typeMap = {kakao:'카카오 로그인', guest:'게스트 (이 기기에만 저장)'};
+    const typeMap = {kakao:'카카오 로그인', email:'아이디 로그인', guest:'게스트 (이 기기에만 저장)'};
     type.textContent = userSession.userId ? (typeMap[userSession.authType]||'') : '로그인이 필요해요';
 
     if (userSession.targetGroup==='family') {
@@ -46,6 +46,7 @@ function renderProfile() {
 /* ── 로그아웃 → 시작 로그인 페이지로 ──────────────────────────── */
 function handleLogout() {
     localStorage.removeItem('yeoro_last_user');
+    localStorage.removeItem('yeoro_jwt');
     userSession = { loggedIn:false, targetGroup:'5060', nickname:'게스트', userId:null, authType:null };
     document.getElementById('user-profile-indicator').textContent='시작하기';
     /* 폰트/크기 기본값으로 복원 */
