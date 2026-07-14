@@ -1,3 +1,11 @@
+<div align="center">
+  <img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/59f62355-46aa-4160-ad52-e63e9d6a37c6" />
+  <br/>
+  <a href="https://git.io/typing-svg">
+    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=600&size=35&pause=1000&color=00D9FFFF&center=true&vCenter=true&width=435&lines=Yeoro" alt="Typing SVG" />
+  </a>
+</div>
+
 # yeoro (여로)
 
 5060 액티브 시니어와 영유아 동반 가족을 대상으로, 세종시의 관광명소·맛집·축제·의료기관 정보를
