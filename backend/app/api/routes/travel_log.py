@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
@@ -36,8 +38,8 @@ def serialize_travel_log(log: TravelLog) -> TravelLogItemResponse:
 
 @router.get("", response_model=TravelLogTimelineResponse)
 def list_travel_logs(
-    start_at: str | None = Query(default=None),
-    end_at: str | None = Query(default=None),
+    start_at: datetime | None = Query(default=None),
+    end_at: datetime | None = Query(default=None),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
@@ -109,15 +111,11 @@ def update_travel_log(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="여행 로그를 찾을 수 없습니다.")
 
     if payload.place_id is not None:
-        if payload.place_id:
-            place = db.get(Place, payload.place_id)
-            if place is None:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="연결할 여행지가 없습니다.")
-            log.place_id = payload.place_id
-            log.place = place
-        else:
-            log.place_id = None
-            log.place = None
+        place = db.get(Place, payload.place_id)
+        if place is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="연결할 여행지가 없습니다.")
+        log.place_id = payload.place_id
+        log.place = place
 
     for field_name in ("title", "description", "visited_at", "mood", "stay_minutes"):
         value = getattr(payload, field_name)
