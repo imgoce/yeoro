@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     redis_default_ttl_seconds: int = 300
     cors_extra_origins: str = ""  # 실제 배포 도메인. 쉼표로 여러 개 지정 가능 (예: "https://yeoro.app,https://www.yeoro.app")
 
+    kakao_auth_base_url: str = "https://kauth.kakao.com"
+    kakao_api_base_url: str = "https://kapi.kakao.com"
+    kakao_rest_api_key: str = ""
+    kakao_client_secret: str | None = None
+    kakao_redirect_uri: str = ""
+    kakao_timeout_seconds: float = 10.0
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

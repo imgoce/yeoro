@@ -7,9 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.auth import router as auth_router
 from app.api.routes.cart import router as cart_router
 from app.api.routes.external import (
+    tourism_router,
     kakao_router,
-    router as external_router,
     weather_router,
+    kakao_auth_router,
 )
 from app.api.routes.health import router as health_router
 from app.api.routes.medical import router as medical_router
@@ -41,7 +42,7 @@ def create_application() -> FastAPI:
     # (예: CORS_EXTRA_ORIGINS=https://yeoro.app,https://www.yeoro.app)
     origins = [
         "http://localhost:3000",
-        "http://localhost:5500",       # frontend/tools/live_server.py 기본 포트
+        "http://localhost:5500",
         "http://127.0.0.1:5500",
         "capacitor://localhost",       # Capacitor 기반 WebView 셸
         "null",                        # file:// 로 로드되는 안드로이드 WebView(현재 MainActivity 방식)의 Origin
@@ -55,11 +56,19 @@ def create_application() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["*"],
     )
+    
     application.include_router(auth_router)
     application.include_router(health_router)
-    application.include_router(external_router)
-    application.include_router(kakao_router)
-    application.include_router(weather_router)
+    
+    # ====================================================================
+    # [수정] 4개의 외부 API 라우터를 메인 앱에 독립적으로 직접 등록합니다.
+    # 각 라우터에 prefix("/external")를 수동으로 붙여 경로 계층을 만듭니다.
+    # ====================================================================
+    application.include_router(tourism_router, prefix="/external")
+    application.include_router(kakao_router, prefix="/external")
+    application.include_router(weather_router, prefix="/external")
+    application.include_router(kakao_auth_router, prefix="/external")
+    
     application.include_router(users_router)
     application.include_router(places_router)
     application.include_router(cart_router)

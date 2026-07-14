@@ -1,3 +1,4 @@
+Header
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.dependencies import (
@@ -5,16 +6,23 @@ from app.api.dependencies import (
     get_redis_cache,
     get_tourism_api_client,
     get_weather_api_client,
+    get_kakao_auth_api_client,
 )
 from app.clients.kakaomap import KakaoMapApiClient, KakaoMapApiError
 from app.clients.tourism import TourismApiClient, TourismApiError
 from app.clients.weather import WeatherApiClient, WeatherApiError
 from app.core.cache import RedisCache
+from app.clients.kakao import KakaoAuthApiClient, KakaoAuthApiError
 
-router = APIRouter(prefix="/external/tourism", tags=["external-tourism"])
 
 
-@router.get("/places")
+tourism_router = APIRouter(prefix="/tourism", tags=["external-tourism"])
+kakao_router = APIRouter(prefix="/kakao-map", tags=["external-kakao-map"])
+weather_router = APIRouter(prefix="/weather", tags=["external-weather"])
+kakao_auth_router = APIRouter(prefix="/kakao-auth", tags=["external-kakao-auth"])
+
+
+@tourism_router.get("/places")
 async def get_places(
     area_code: int = Query(..., ge=1),
     sigungu_code: int | None = Query(default=None, ge=1),
@@ -43,7 +51,7 @@ async def get_places(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-@router.get("/nearby")
+@tourism_router.get("/nearby")
 async def get_nearby_places(
     map_x: float,
     map_y: float,
@@ -74,7 +82,7 @@ async def get_nearby_places(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-@router.get("/places/{content_id}")
+@tourism_router.get("/places/{content_id}")
 async def get_place_detail(
     content_id: int,
     content_type_id: int | None = Query(default=None, ge=1),
@@ -92,9 +100,6 @@ async def get_place_detail(
         )
     except TourismApiError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
-
-
-kakao_router = APIRouter(prefix="/external/kakao-map", tags=["external-kakao-map"])
 
 
 @kakao_router.get("/search")
@@ -172,9 +177,6 @@ async def get_region_code(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-weather_router = APIRouter(prefix="/external/weather", tags=["external-weather"])
-
-
 @weather_router.get("/forecast")
 async def get_forecast(
     base_date: str = Query(..., min_length=8, max_length=8),
@@ -233,3 +235,40 @@ async def get_nowcast(
         )
     except WeatherApiError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@kakao_auth_router.get("/login")
+async def login(
+    client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
+):
+    return {
+        "login_url": client.get_login_url(),
+    }
+
+
+@kakao_auth_router.get("/callback")
+async def callback(
+    code: str,
+    client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
+):
+    try:
+        return await client.get_access_token(
+            code=code,
+        )
+    except KakaoAuthApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc    
+
+
+@kakao_auth_router.get("/me")
+async def me(
+    authorization: str = Header(...),
+    client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
+):
+    access_token = authorization.removeprefix("Bearer ").strip()
+    try:
+        return await client.get_user_info(
+            access_token=access_token,
+        )
+    except KakaoAuthApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc    
+      
