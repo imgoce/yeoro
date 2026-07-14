@@ -71,6 +71,113 @@ function handleKakaoCallback() {
     afterAuth();
 }
 
+/* ── 아이디(이메일)/비밀번호 회원가입·로그인 ─────────────────────
+   백엔드(FastAPI)의 /auth/register, /auth/login을 호출해 JWT를 받고,
+   이후 요청은 이 토큰(Authorization: Bearer ...)으로 인증한다.
+   로그인/회원가입에 성공하면 여행기록을 서버와 동기화한다.
+   ─────────────────────────────────────────────────────────────────*/
+let emailAuthMode = 'register';   // 'login' 또는 'register' — 모달은 회원가입 모드로 열림
+
+function toggleEmailAuthMode() {
+    emailAuthMode = emailAuthMode === 'login' ? 'register' : 'login';
+    const isRegister = emailAuthMode === 'register';
+    document.getElementById('email-auth-title').textContent = isRegister ? '아이디로 회원가입' : '아이디로 로그인';
+    document.getElementById('email-auth-nickname').classList.toggle('hidden', !isRegister);
+    document.getElementById('email-auth-submit-btn').textContent = isRegister ? '회원가입' : '로그인';
+    document.getElementById('email-auth-toggle-label').textContent = isRegister ? '이미 계정이 있으신가요?' : '계정이 없으신가요?';
+    document.getElementById('email-auth-toggle-link').textContent = isRegister ? '로그인' : '회원가입';
+    document.getElementById('email-auth-error').classList.add('hidden');
+}
+
+/* "10초 로그인으로 시작하기" 버튼 → 닉네임/이메일/비밀번호 회원가입 모달을 띄운다 */
+function focusEmailRegisterForm() {
+    if (emailAuthMode !== 'register') toggleEmailAuthMode();
+    document.getElementById('email-auth-error').classList.add('hidden');
+    const modalEl = document.getElementById('emailAuthModal');
+    new bootstrap.Modal(modalEl).show();
+    modalEl.addEventListener('shown.bs.modal', () => {
+        document.getElementById('email-auth-nickname')?.focus();
+    }, { once: true });
+}
+
+function showEmailAuthError(message) {
+    const el = document.getElementById('email-auth-error');
+    el.textContent = message;
+    el.classList.remove('hidden');
+}
+
+async function handleEmailAuthSubmit() {
+    const group = document.querySelector('input[name="loginTargetRadio"]:checked')?.value || '5060';
+    const email = document.getElementById('email-auth-email').value.trim();
+    const nickname = document.getElementById('email-auth-nickname').value.trim();
+    const password = document.getElementById('email-auth-password').value;
+    const submitBtn = document.getElementById('email-auth-submit-btn');
+
+    if (!email || !password) { showEmailAuthError('이메일과 비밀번호를 입력해주세요'); return; }
+    if (password.length < 8) { showEmailAuthError('비밀번호는 8자 이상이어야 해요'); return; }
+    if (emailAuthMode === 'register' && nickname.length < 2) { showEmailAuthError('닉네임은 2자 이상이어야 해요'); return; }
+
+    submitBtn.disabled = true;
+    document.getElementById('email-auth-error').classList.add('hidden');
+    try {
+        if (emailAuthMode === 'register') {
+            await registerWithEmail(email, nickname, password);
+        }
+        const token = await loginWithEmail(email, password);
+        const profile = await fetchMyProfile(token);
+
+        localStorage.setItem('yeoro_jwt', token);
+        userSession = {
+            loggedIn: true, targetGroup: group,
+            nickname: profile.nickname, userId: profile.id, authType: 'email',
+        };
+        localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
+        await syncTravelLogFromServer();
+        bootstrap.Modal.getInstance(document.getElementById('emailAuthModal'))?.hide();
+        afterAuth();
+    } catch (e) {
+        showEmailAuthError(e.message || '처리 중 오류가 발생했어요');
+    } finally {
+        submitBtn.disabled = false;
+    }
+}
+
+async function registerWithEmail(email, nickname, password) {
+    const res = await fetch(`${API_CONFIG.API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, nickname, password }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || '회원가입에 실패했어요');
+    }
+    return await res.json();
+}
+
+async function loginWithEmail(email, password) {
+    const res = await fetch(`${API_CONFIG.API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || '이메일 또는 비밀번호가 올바르지 않아요');
+    }
+    const data = await res.json();
+    return data.access_token;
+}
+
+async function fetchMyProfile(token) {
+    const res = await fetch(`${API_CONFIG.API_BASE_URL}/users/me`, {
+        headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!res.ok) throw new Error('내 정보를 불러오지 못했어요');
+    const data = await res.json();
+    return data.user;
+}
+
 /* ── 게스트 둘러보기 — 기기별 고유 ID를 발급해 여행로그를 유지 ──── */
 function browseAsGuest() {
     const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
@@ -98,7 +205,7 @@ function proceedAfterOnboarding() {
         /* 유아동반 모드: 예쁜 둥근 폰트 + 기본 크기 */
         applyFontFamily('family');
         setFont('100%');
-        finalizeAuth();
+        requestLocationThenEnter();
     }
 }
 
@@ -132,7 +239,7 @@ function onFontSliderInput(val){
 function confirmFontSizeAndGoHome(){
     setFont(fontChoice);
     bootstrap.Modal.getInstance(document.getElementById('fontSizeSettingModal'))?.hide();
-    finalizeAuth();
+    requestLocationThenEnter();
 }
 function setFont(s){document.getElementById('app-root-wrapper').style.setProperty('--app-font-size',s);}
 function finalizeAuth() {

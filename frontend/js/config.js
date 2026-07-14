@@ -40,4 +40,7 @@ const API_CONFIG = {
     DEFAULT_LAT: 36.4800,
     DEFAULT_LNG: 127.2890,
     HTTP_TIMEOUT: 6000,
+
+    /* 여로 자체 백엔드(FastAPI) 주소 — 아이디/비밀번호 로그인, 여행기록 저장에 사용 */
+    API_BASE_URL: 'http://localhost:8000',
 };
