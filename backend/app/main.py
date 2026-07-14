@@ -18,7 +18,6 @@ from app.api.routes.places import router as places_router
 from app.api.routes.travel_log import router as travel_log_router
 from app.api.routes.routes import router as routes_router
 from app.api.routes.users import router as users_router
-from app.api.routes.travel_log import router as travel_log_router
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import SessionLocal, engine
