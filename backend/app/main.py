@@ -44,8 +44,12 @@ def create_application() -> FastAPI:
         "http://localhost:3000",
         "http://localhost:5500",
         "http://127.0.0.1:5500",
+<<<<<<< HEAD
         "capacitor://localhost",       # Capacitor 기반 WebView 셸
         "null",                        # file:// 로 로드되는 안드로이드 WebView(현재 MainActivity 방식)의 Origin
+=======
+        "capacitor://localhost",       # 안드로이드 WebView 셸
+>>>>>>> df7813cbacb9f75c080741f1a81df4e01a0ce0b4
         *[origin.strip() for origin in settings.cors_extra_origins.split(",") if origin.strip()],
     ]
     
