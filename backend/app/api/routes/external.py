@@ -1,4 +1,7 @@
+import secrets
+
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from redis.exceptions import RedisError
 
 from app.api.dependencies import (
     get_kakao_map_api_client,
@@ -236,26 +239,50 @@ async def get_nowcast(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
+KAKAO_OAUTH_STATE_TTL_SECONDS = 300
+
+
 @kakao_auth_router.get("/login")
 async def login(
     client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
+    redis_cache: RedisCache = Depends(get_redis_cache),
 ):
+    state = secrets.token_urlsafe(32)
+    try:
+        await redis_cache.set_json(
+            f"kakao_oauth_state:{state}",
+            True,
+            ttl_seconds=KAKAO_OAUTH_STATE_TTL_SECONDS,
+        )
+    except RedisError as exc:
+        raise HTTPException(status_code=503, detail="로그인 서비스를 일시적으로 사용할 수 없습니다.") from exc
     return {
-        "login_url": client.get_login_url(),
+        "login_url": client.get_login_url(state=state),
     }
 
 
 @kakao_auth_router.get("/callback")
 async def callback(
     code: str,
+    state: str,
     client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
+    redis_cache: RedisCache = Depends(get_redis_cache),
 ):
+    state_key = f"kakao_oauth_state:{state}"
+    try:
+        state_exists = await redis_cache.get_json(state_key) is not None
+    except RedisError as exc:
+        raise HTTPException(status_code=503, detail="로그인 서비스를 일시적으로 사용할 수 없습니다.") from exc
+    if not state_exists:
+        raise HTTPException(status_code=400, detail="유효하지 않거나 만료된 로그인 요청입니다.")
+    await redis_cache.delete(state_key)
+
     try:
         return await client.get_access_token(
             code=code,
         )
     except KakaoAuthApiError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc    
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @kakao_auth_router.get("/me")

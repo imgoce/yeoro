@@ -34,6 +34,12 @@ class RedisCache:
         ttl = ttl_seconds if ttl_seconds is not None else self._default_ttl_seconds
         await self._redis.set(key, json.dumps(value, ensure_ascii=False), ex=ttl)
 
+    async def delete(self, key: str) -> None:
+        try:
+            await self._redis.delete(key)
+        except RedisError:
+            pass
+
     async def get_or_set_json(
         self,
         key: str,
