@@ -10,8 +10,8 @@ async function getPlaces(category) {
         if (category === '관광명소') {
             /* 국문관광정보(관광지12 + 문화시설14) + 웰니스 API 병렬 호출 */
             const [tour, culture, wellness] = await Promise.all([
-                callTourApi('12', 12),
-                callTourApi('14', 8),
+                callTourApi('12', 100),
+                callTourApi('14', 100),
                 callWellnessApi(8),
             ]);
             const combined = [...(tour||[]), ...(culture||[]), ...(wellness||[])];
@@ -20,7 +20,7 @@ async function getPlaces(category) {
         else if (category === '먹거리') {
             /* 국문관광정보(음식점39) + 카카오맵(FD6 음식점) 병렬 호출 */
             const [tourFood, kakaoFood] = await Promise.all([
-                callTourApi('39', 10),
+                callTourApi('39', 100),
                 callKakaoCategory('FD6', 10),
             ]);
             const combined = [...(tourFood||[]), ...(kakaoFood||[])];
@@ -28,7 +28,7 @@ async function getPlaces(category) {
         }
         else if (category === '축제') {
             /* 국문관광정보(축제15) */
-            const tourFest = await callTourApi('15', 15);
+            const tourFest = await callTourApi('15', 100);
             if (tourFest && tourFest.length > 0) places = tourFest;
         }
         else if (category === '의료기관') {

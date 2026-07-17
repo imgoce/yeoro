@@ -26,16 +26,46 @@ function extractItems(json) {
     } catch(e) { return []; }
 }
 
-/* 국문관광정보 API — contentTypeId: 12=관광지, 14=문화시설, 15=축제, 39=음식점 */
-async function callTourApi(contentTypeId, rows=15) {
+/* 관광공사 분류코드(cat2) → 사람이 읽을 수 있는 이름 */
+const TOUR_CAT_LABELS = {
+    A0101:'자연관광지', A0102:'관광자원',
+    A0201:'역사관광지', A0202:'휴양관광지', A0203:'체험관광지', A0204:'산업관광지',
+    A0205:'건축/조형물', A0206:'문화시설', A0207:'축제', A0208:'공연/행사',
+    A0301:'레포츠', A0302:'육상레포츠', A0303:'수상레포츠', A0304:'항공레포츠',
+    A0401:'쇼핑', A0502:'음식점', B0201:'숙박',
+};
+function tourCatLabel(it) {
+    const code = it.cat2 || (it.cat3||'').slice(0,5);
+    return TOUR_CAT_LABELS[code] || '한국관광공사 제공';
+}
+
+/* 세종시 대략 경계 — 관광공사 데이터에 좌표가 잘못 등록된 항목이 섞여 있어
+   (예: 축제 하나가 수천 km 밖으로 찍힘) 범위를 벗어난 좌표는 버린다.
+   좌표가 null이면 거리 표시가 생략되고 길찾기도 막힌다. */
+const SEJONG_BOUNDS = { minLat: 36.3, maxLat: 36.8, minLng: 126.95, maxLng: 127.55 };
+function sejongCoord(mapy, mapx) {
+    const lat = parseFloat(mapy), lng = parseFloat(mapx);
+    if (!lat || !lng) return { lat: null, lng: null };
+    const inside = lat >= SEJONG_BOUNDS.minLat && lat <= SEJONG_BOUNDS.maxLat
+                && lng >= SEJONG_BOUNDS.minLng && lng <= SEJONG_BOUNDS.maxLng;
+    if (!inside) {
+        console.warn(`[좌표오류] 세종 범위 밖 좌표라 무시합니다: ${lat},${lng}`);
+        return { lat: null, lng: null };
+    }
+    return { lat, lng };
+}
+
+/* 국문관광정보 API — contentTypeId: 12=관광지, 14=문화시설, 15=축제, 39=음식점
+   세종시(areaCode=8)에 등록된 전체 데이터를 가져온다 — 다른 지역은 포함되지 않음.
+   거리 계산·가까운 순 정렬은 places.js에서 좌표 기반으로 처리한다. */
+async function callTourApi(contentTypeId, rows=100) {
     if (!API_CONFIG.DATA_GO_KR_KEY) return null;
-    const url = 'https://apis.data.go.kr/B551011/KorService2/locationBasedList2?' +
+    const url = 'https://apis.data.go.kr/B551011/KorService2/areaBasedList2?' +
         new URLSearchParams({
             serviceKey:    API_CONFIG.DATA_GO_KR_KEY,
             numOfRows: rows, pageNo:1,
             MobileOS:'ETC', MobileApp:'Yero', _type:'json',
-            mapX: userLoc.lng, mapY: userLoc.lat,
-            radius: 20000, contentTypeId, arrange:'E',
+            areaCode: API_CONFIG.TOUR_AREA_CODE, contentTypeId,
         });
     const json = await safeFetch(url);
     if (!json) return null;
@@ -43,9 +73,8 @@ async function callTourApi(contentTypeId, rows=15) {
         id:    'tour-'+(it.contentid||it.title),
         name:  (it.title||'').trim(),
         addr:  ((it.addr1||'')+' '+(it.addr2||'')).trim(),
-        lat:   parseFloat(it.mapy)||null,
-        lng:   parseFloat(it.mapx)||null,
-        desc:  it.cat3||it.cat2||'한국관광공사 제공',
+        ...sejongCoord(it.mapy, it.mapx),
+        desc:  tourCatLabel(it),
         tel:   it.tel||'',
         image: it.firstimage||it.firstimage2||'',
         source:'tourapi',
@@ -68,8 +97,7 @@ async function callWellnessApi(rows=10) {
         id:    'wellness-'+(it.contentid||it.title),
         name:  (it.title||it.name||'').trim(),
         addr:  (it.addr1||it.address||'').trim(),
-        lat:   parseFloat(it.mapy||it.latitude)||null,
-        lng:   parseFloat(it.mapx||it.longitude)||null,
+        ...sejongCoord(it.mapy||it.latitude, it.mapx||it.longitude),
         desc:  it.overview||it.cat3||'🧘 웰니스 힐링 추천 장소',
         tel:   it.tel||'',
         source:'wellness',
@@ -83,7 +111,8 @@ async function callKakaoCategory(code, size=15) {
         new URLSearchParams({
             category_group_code: code,
             x: userLoc.lng, y: userLoc.lat,
-            radius: 10000, size: Math.min(size,15), sort:'distance',
+            /* 카카오 로컬 API의 최대 반경은 20km (그 이상은 정책상 불가) */
+            radius: 20000, size: Math.min(size,15), sort:'distance',
         });
     const json = await safeFetch(url, {headers:{Authorization:'KakaoAK '+API_CONFIG.KAKAO_REST_KEY}});
     if (!json) return null;
@@ -104,7 +133,7 @@ async function callKakaoKeyword(keyword, size=10) {
     if (!API_CONFIG.KAKAO_REST_KEY) return null;
     const url = 'https://dapi.kakao.com/v2/local/search/keyword.json?' +
         new URLSearchParams({query:keyword, x:userLoc.lng, y:userLoc.lat,
-            radius:10000, size:Math.min(size,15)});
+            radius:20000, size:Math.min(size,15)});
     const json = await safeFetch(url, {headers:{Authorization:'KakaoAK '+API_CONFIG.KAKAO_REST_KEY}});
     if (!json) return null;
     return (json.documents||[]).map(d=>({
