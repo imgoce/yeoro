@@ -29,6 +29,7 @@ async def get_kakao_map_api_client() -> AsyncIterator[KakaoMapApiClient]:
         base_url=settings.kakao_map_api_base_url,
         rest_api_key=settings.kakao_map_rest_api_key,
         timeout_seconds=settings.kakao_map_timeout_seconds,
+        ka_origin=settings.kakao_ka_origin,
     )
     try:
         yield client
