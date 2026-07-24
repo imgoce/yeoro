@@ -1,0 +1,6 @@
+# ⚠️ API 키 등 비밀값 — 절대 커밋 금지
+frontend/js/config.local.js
+android/app/src/main/assets/www/js/config.local.js
+
+# 백엔드 환경변수
+backend/.env

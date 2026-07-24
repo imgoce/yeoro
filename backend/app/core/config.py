@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     kakao_map_api_base_url: str = "https://dapi.kakao.com"
     kakao_map_rest_api_key: str = ""
     kakao_map_timeout_seconds: float = 10.0
+    # 카카오 dapi KA 헤더의 origin — 카카오 콘솔 [플랫폼 > Web]에 등록된 도메인이어야 한다
+    kakao_ka_origin: str = "http://localhost:5500"
     weather_api_base_url: str = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0"
     weather_api_key: str = ""
     weather_api_timeout_seconds: float = 10.0

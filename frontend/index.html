@@ -90,18 +90,60 @@
         <button class="y-btn-secondary mb-3" onclick="browseAsGuest()">게스트로 둘러보기</button>
     </div>
 
-    <!-- ══════════════ 위치 정보 허용 (회원가입/로그인/게스트 공통 — 글자 크기 설정 후, 메인 진입 전 필수) ══════════════ -->
-    <div class="auth-screen hidden" id="location-permission-screen">
-        <div class="auth-brand">
-            <span class="material-icons" style="font-size:3.2rem;color:#fff;">gps_fixed</span>
-            <div class="auth-brand-name" style="margin-top:10px;">위치 정보가 필요해요</div>
-            <div class="auth-brand-tagline">내 위치를 기준으로 가까운 무장애 장소와<br>동선을 추천해드리려면 위치 정보 허용이 꼭 필요해요</div>
+    <!-- ══════════════ 위치 정보 허용 (회원가입/로그인/게스트 공통 — 글자 크기 설정 후, 메인 진입 전 필수)
+         안드로이드 네이티브 권한 창과 같은 모양: 정확한/대략적인 위치 선택 + 허용 방식 3버튼 ══════════════ -->
+    <div class="auth-screen hidden" id="location-permission-screen" style="justify-content:flex-end;padding:0;">
+        <div style="background:#fff;border-radius:28px 28px 0 0;padding:30px 26px 26px;box-shadow:0 -8px 30px rgba(0,0,0,.18);">
+            <div style="text-align:center;margin-bottom:14px;">
+                <span class="material-icons" style="font-size:2.6rem;color:var(--yeoro-blue);">location_on</span>
+            </div>
+            <div style="text-align:center;font-weight:700;font-size:1.02em;line-height:1.5;margin-bottom:20px;">
+                <b>여로</b>에서 이 기기의 위치 정보에 액세스하도록<br>허용하시겠습니까?
+            </div>
+
+            <!-- 정확한 위치 / 대략적인 위치 선택 -->
+            <div style="display:flex;gap:18px;justify-content:center;margin-bottom:22px;">
+                <div id="loc-precise-opt" onclick="setLocationPrecision(true)" style="text-align:center;cursor:pointer;">
+                    <div style="width:104px;height:104px;border-radius:50%;border:3px solid var(--yeoro-blue);
+                                display:flex;align-items:center;justify-content:center;background:var(--yeoro-mist);margin:0 auto 8px;">
+                        <span class="material-icons" style="font-size:3rem;color:var(--yeoro-blue);">place</span>
+                    </div>
+                    <div id="loc-precise-label" style="font-weight:800;font-size:.9em;">정확한 위치</div>
+                </div>
+                <div id="loc-approx-opt" onclick="setLocationPrecision(false)" style="text-align:center;cursor:pointer;">
+                    <div style="width:104px;height:104px;border-radius:50%;border:3px solid transparent;
+                                display:flex;align-items:center;justify-content:center;background:var(--yeoro-mist);margin:0 auto 8px;">
+                        <span class="material-icons" style="font-size:3rem;color:var(--yeoro-muted);">map</span>
+                    </div>
+                    <div id="loc-approx-label" style="font-weight:500;font-size:.9em;color:var(--yeoro-muted);">대략적인 위치</div>
+                </div>
+            </div>
+
+            <div class="text-danger small text-center mb-3 hidden" id="location-permission-error"
+                 style="background:var(--yeoro-mist);border-radius:10px;padding:10px 14px;"></div>
+
+            <!-- 허용 방식 3버튼 (네이티브 다이얼로그와 동일한 구성) -->
+            <button class="y-btn-primary mb-2" id="location-permission-btn"
+                    onclick="handleLocationPermissionRequest(true)">앱 사용 중에만 허용</button>
+            <button class="y-btn-secondary mb-2" id="location-permission-once-btn"
+                    onclick="handleLocationPermissionRequest(false)">이번만 허용</button>
+            <button class="btn w-100 fw-bold" style="color:var(--yeoro-muted);font-size:.95em;"
+                    onclick="denyLocationPermission()">허용 안함</button>
         </div>
-        <div class="text-danger small text-center mb-3 hidden" id="location-permission-error"
-             style="background:#fff;border-radius:10px;padding:10px 14px;"></div>
-        <button class="y-btn-primary mb-2" id="location-permission-btn" onclick="handleLocationPermissionRequest()">위치 허용하고 시작하기</button>
     </div>
 
+
+    <!-- ══════════════ 앱 내부 카카오맵 길찾기 화면 (외부 브라우저로 나가지 않음) ══════════════ -->
+    <div class="hidden" id="inapp-map-screen"
+         style="position:absolute;inset:0;z-index:200;background:#fff;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--yeoro-border);flex:0 0 auto;">
+            <span class="material-icons" onclick="closeInAppMap()" style="cursor:pointer;font-size:1.6rem;">arrow_back</span>
+            <div id="inapp-map-title" style="font-weight:800;font-size:1em;">길찾기</div>
+        </div>
+        <div id="inapp-map" style="flex:1 1 auto;min-height:0;"></div>
+        <div id="inapp-map-info"
+             style="padding:14px 16px;border-top:1px solid var(--yeoro-border);font-size:.9em;line-height:1.5;flex:0 0 auto;"></div>
+    </div>
 
     <!-- 헤더 -->
     <div class="app-header">
@@ -219,7 +261,6 @@
                 <div class="fw-bold" style="font-size:1.15em; color: var(--yeoro-navy);">오늘의 최적 일정</div>
                 <div class="d-flex gap-2">
                     <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-blue); border:1px solid var(--yeoro-border);" onclick="generateRandomSchedule()">🎲 랜덤 추천</button>
-                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-sub); border:1px solid var(--yeoro-border);" onclick="recalculateAndSortRoute()">🔄 재정렬</button>
                 </div>
             </div>
             <div id="schedule-timeline-box" class="y-card">
@@ -356,6 +397,8 @@
 <!-- 기능별로 분리된 프론트엔드 스크립트 (의존 순서대로 로드) -->
 <script src="js/logo-data.js"></script>
 <script src="js/config.js"></script>
+<!-- 비커밋 로컬 키 파일(있으면 config.js의 빈 키를 덮어씀). 없으면 폴백으로 동작 -->
+<script src="js/config.local.js" onerror="void 0"></script>
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/storage.js"></script>

@@ -226,11 +226,20 @@ async function browseAsGuest() {
 
     try {
         const res = await fetch(`${API_CONFIG.API_BASE_URL}/auth/guest`, { method: 'POST' });
-        if (!res.ok) throw new Error('게스트로 시작하지 못했어요');
+        if (!res.ok) throw new Error('backend guest failed');
         const { access_token } = await res.json();
         await finishBackendLogin(access_token, group, 'guest');
     } catch (e) {
-        showToast(e.message || '게스트로 시작하지 못했어요', 'error');
+        /* 백엔드에 연결하지 못하면(서버 미실행/오프라인) 로컬 게스트로 진입한다.
+           기록은 이 기기에만 저장되고, 로그인 시 서버와 동기화된다. */
+        let guestId = localStorage.getItem('yeoro_guest_id');
+        if (!guestId) {
+            guestId = 'guest_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+            localStorage.setItem('yeoro_guest_id', guestId);
+        }
+        userSession = { loggedIn: false, targetGroup: group, nickname: '게스트', userId: guestId, authType: 'guest' };
+        localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
+        afterAuth();
     }
 }
 
