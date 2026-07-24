@@ -16,7 +16,9 @@ function showToast(msg, type='info') {
 }
 function sourceBadge(src) {
     const m={tourapi:['관광API','#E8F3FF','#2E5FA3'],wellness:['웰니스API','#E6F9F0','#10A37F'],
-             kakao:['카카오맵','#FEF7C3','#A98600'],local:['기본정보','#F2F4F6','#7A97B8']};
+             kakao:['카카오맵','#FEF7C3','#A98600'],
+             egen:['응급의료','#FDE7E7','#C0392B'],hira:['심평원','#EAF1FF','#2F5FE0'],
+             local:['기본정보','#F2F4F6','#7A97B8']};
     const [lbl,bg,col]=m[src]||m.local;
     return `<span style="font-size:.7em;font-weight:700;padding:2px 7px;border-radius:6px;
                 background:${bg};color:${col};margin-left:6px;vertical-align:middle;">${lbl}</span>`;

@@ -32,13 +32,16 @@ async function getPlaces(category) {
             if (tourFest && tourFest.length > 0) places = tourFest;
         }
         else if (category === '의료기관') {
-            /* 카카오맵(HP8 병원) + 키워드 검색 보조 */
-            const [kakaoHosp, keyword] = await Promise.all([
-                callKakaoCategory('HP8', 12),
+            /* 응급의료기관(E-Gen) + 병원정보(심평원) + 카카오맵(HP8) 병렬 호출 */
+            const [emergency, hospital, kakaoHosp, keyword] = await Promise.all([
+                callEmergencyApi(12),
+                callHospitalInfoApi(15),
+                callKakaoCategory('HP8', 10),
                 callKakaoKeyword('세종 병원 응급', 5),
             ]);
-            const combined = [...(kakaoHosp||[]), ...(keyword||[])];
-            // 중복 제거
+            /* 응급의료기관을 앞쪽에 우선 배치 */
+            const combined = [...(emergency||[]), ...(hospital||[]), ...(kakaoHosp||[]), ...(keyword||[])];
+            // 이름 기준 중복 제거
             const seen = new Set();
             const deduped = combined.filter(p=>{
                 if (seen.has(p.name)) return false;

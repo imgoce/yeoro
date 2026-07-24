@@ -128,6 +128,73 @@ async function callKakaoCategory(code, size=15) {
     })).filter(p=>p.name);
 }
 
+/* XML 응답에서 item 배열 추출 (E-Gen 응급의료 API는 XML만 반환) */
+async function safeFetchXmlItems(url) {
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(()=>controller.abort(), API_CONFIG.HTTP_TIMEOUT);
+        const res = await fetch(url, {signal:controller.signal});
+        clearTimeout(timer);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const doc = new DOMParser().parseFromString(text, 'application/xml');
+        return Array.from(doc.getElementsByTagName('item')).map(node=>{
+            const o = {};
+            Array.from(node.children).forEach(c=>{ o[c.tagName] = c.textContent; });
+            return o;
+        });
+    } catch(e) {
+        console.warn(`[API] XML 실패: ${url.substring(0,60)}... (${e.message})`);
+        return null;
+    }
+}
+
+/* 응급의료기관 위치기반 조회 (국립중앙의료원 E-Gen) — 현위치 주변 응급의료기관 */
+async function callEmergencyApi(rows=12) {
+    if (!API_CONFIG.MEDICAL_API_KEY) return null;
+    const url = 'https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEgytLcinfoInqire?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.MEDICAL_API_KEY,
+            WGS84_LON: userLoc.lng, WGS84_LAT: userLoc.lat,
+            pageNo: 1, numOfRows: rows,
+        });
+    const items = await safeFetchXmlItems(url);
+    if (!items) return null;
+    return items.map(it=>({
+        id:    'egen-'+(it.hpid||it.dutyName),
+        name:  (it.dutyName||'').trim(),
+        addr:  (it.dutyAddr||'').trim(),
+        lat:   parseFloat(it.latitude||it.wgs84Lat)||null,
+        lng:   parseFloat(it.longitude||it.wgs84Lon)||null,
+        desc:  '🚑 '+(it.dutyEmclsName||it.dutyDivName||'응급의료기관')+(it.distance?` · ${it.distance}km`:''),
+        tel:   it.dutyTel1||'',
+        source:'egen',
+    })).filter(p=>p.name);
+}
+
+/* 병원정보서비스 (건강보험심사평가원) — 세종시 병·의원 목록 */
+async function callHospitalInfoApi(rows=15) {
+    if (!API_CONFIG.MEDICAL_API_KEY) return null;
+    const url = 'https://apis.data.go.kr/B551182/hospInfoServicev2/getHospBasisList?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.MEDICAL_API_KEY,
+            sidoCd: API_CONFIG.MEDICAL_SIDO_CD,
+            pageNo: 1, numOfRows: rows, _type:'json',
+        });
+    const json = await safeFetch(url);
+    if (!json) return null;
+    return extractItems(json).map(it=>({
+        id:    'hira-'+(it.ykiho||it.yadmNm),
+        name:  (it.yadmNm||'').trim(),
+        addr:  (it.addr||'').trim(),
+        lat:   parseFloat(it.YPos)||null,   // 심평원: YPos=위도, XPos=경도
+        lng:   parseFloat(it.XPos)||null,
+        desc:  '🏥 '+(it.clCdNm||'병원'),
+        tel:   it.telno||'',
+        source:'hira',
+    })).filter(p=>p.name);
+}
+
 /* 카카오 키워드 검색 */
 async function callKakaoKeyword(keyword, size=10) {
     if (!API_CONFIG.KAKAO_REST_KEY) return null;

@@ -397,6 +397,8 @@
 <!-- 기능별로 분리된 프론트엔드 스크립트 (의존 순서대로 로드) -->
 <script src="js/logo-data.js"></script>
 <script src="js/config.js"></script>
+<!-- 비커밋 로컬 키 파일(있으면 config.js의 빈 키를 덮어씀). 없으면 폴백으로 동작 -->
+<script src="js/config.local.js" onerror="void 0"></script>
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/storage.js"></script>
