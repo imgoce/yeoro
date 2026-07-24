@@ -162,8 +162,19 @@ def _handle_sigterm(signum, frame):
 if __name__ == '__main__':
     signal.signal(signal.SIGTERM, _handle_sigterm)
     start_backend()
-    with ReusableTCPServer(('127.0.0.1', PORT), LiveReloadHandler) as httpd:
-        print(f'Live preview: http://localhost:{PORT}/  (Ctrl+C to stop)')
+    # HOST 인자로 바인딩 주소 지정 (기본 127.0.0.1). '0.0.0.0'이면 같은 Wi-Fi의
+    # 다른 사람도 http://<이_PC_IP>:PORT/ 로 접속할 수 있다.
+    HOST = sys.argv[2] if len(sys.argv) > 2 else '127.0.0.1'
+    with ReusableTCPServer((HOST, PORT), LiveReloadHandler) as httpd:
+        if HOST == '0.0.0.0':
+            import socket as _s
+            try:
+                _ip = _s.gethostbyname(_s.gethostname())
+            except Exception:
+                _ip = '이_PC의_IP'
+            print(f'Live preview (외부 공유): http://{_ip}:{PORT}/  (같은 Wi-Fi에서 접속, Ctrl+C to stop)')
+        else:
+            print(f'Live preview: http://localhost:{PORT}/  (Ctrl+C to stop)')
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
