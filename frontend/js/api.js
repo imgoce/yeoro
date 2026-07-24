@@ -55,21 +55,9 @@ function sejongCoord(mapy, mapx) {
     return { lat, lng };
 }
 
-/* 국문관광정보 API — contentTypeId: 12=관광지, 14=문화시설, 15=축제, 39=음식점
-   세종시(areaCode=8)에 등록된 전체 데이터를 가져온다 — 다른 지역은 포함되지 않음.
-   거리 계산·가까운 순 정렬은 places.js에서 좌표 기반으로 처리한다. */
-async function callTourApi(contentTypeId, rows=100) {
-    if (!API_CONFIG.DATA_GO_KR_KEY) return null;
-    const url = 'https://apis.data.go.kr/B551011/KorService2/areaBasedList2?' +
-        new URLSearchParams({
-            serviceKey:    API_CONFIG.DATA_GO_KR_KEY,
-            numOfRows: rows, pageNo:1,
-            MobileOS:'ETC', MobileApp:'Yero', _type:'json',
-            areaCode: API_CONFIG.TOUR_AREA_CODE, contentTypeId,
-        });
-    const json = await safeFetch(url);
-    if (!json) return null;
-    return extractItems(json).map(it=>({
+/* 관광공사 item 1건 → 여로 표준 장소 객체로 변환 */
+function mapTourItem(it) {
+    return {
         id:    'tour-'+(it.contentid||it.title),
         name:  (it.title||'').trim(),
         addr:  ((it.addr1||'')+' '+(it.addr2||'')).trim(),
@@ -78,7 +66,45 @@ async function callTourApi(contentTypeId, rows=100) {
         tel:   it.tel||'',
         image: it.firstimage||it.firstimage2||'',
         source:'tourapi',
-    })).filter(p=>p.name);
+    };
+}
+
+/* 관광공사 areaBasedList2 한 페이지 호출 (원본 json 반환) */
+function tourApiUrl(contentTypeId, rows, pageNo) {
+    return 'https://apis.data.go.kr/B551011/KorService2/areaBasedList2?' +
+        new URLSearchParams({
+            serviceKey:    API_CONFIG.DATA_GO_KR_KEY,
+            numOfRows: rows, pageNo,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json',
+            areaCode: API_CONFIG.TOUR_AREA_CODE, contentTypeId,
+        });
+}
+
+/* 국문관광정보 API — contentTypeId: 12=관광지, 14=문화시설, 15=축제, 39=음식점
+   세종시(areaCode=8)에 "분류된 전체" 데이터를 가져온다 — 다른 지역은 포함되지 않음.
+   totalCount를 읽어 페이지를 끝까지 순회하므로 100건이 넘어도 전부 표시된다.
+   거리 계산·가까운 순 정렬은 places.js에서 좌표 기반으로 처리한다. */
+async function callTourApi(contentTypeId, rows=100) {
+    if (!API_CONFIG.DATA_GO_KR_KEY) return null;
+
+    /* 1페이지를 먼저 받아 전체 개수(totalCount)를 확인한다 */
+    const first = await safeFetch(tourApiUrl(contentTypeId, rows, 1));
+    if (!first) return null;
+
+    const total = parseInt(first?.response?.body?.totalCount, 10) || 0;
+    let items = extractItems(first);
+
+    /* 100건(rows)보다 많으면 남은 페이지를 병렬로 모두 받아 이어붙인다 */
+    const lastPage = Math.ceil(total / rows);
+    if (lastPage > 1) {
+        const rest = [];
+        for (let p = 2; p <= lastPage; p++) rest.push(safeFetch(tourApiUrl(contentTypeId, rows, p)));
+        const pages = await Promise.all(rest);
+        pages.forEach(j => { if (j) items = items.concat(extractItems(j)); });
+    }
+
+    console.info(`[관광API] contentType ${contentTypeId}: 세종시 전체 ${total}건 중 ${items.length}건 수신`);
+    return items.map(mapTourItem).filter(p=>p.name);
 }
 
 /* 웰니스 관광 API */
@@ -104,6 +130,48 @@ async function callWellnessApi(rows=10) {
     })).filter(p=>p.name);
 }
 
+/* ── 실제 도로 기준 이동시간·거리 (OSRM 공개 서버 — 키 불필요, CORS 허용) ──
+   직선거리는 실제 이동거리와 크게 달라서(예: 세종시청→호수공원 직선 3.2km,
+   실도로 6.2km) 목록에는 자동차 기준 실거리·소요시간을 보여준다.
+   table API 한 번 호출로 내 위치→모든 장소를 한꺼번에 계산한다. */
+async function fetchDrivingInfo(places) {
+    const withCoord = places.filter(p => p.lat && p.lng);
+    if (!withCoord.length) return;
+    const CHUNK = 60;   // URL 길이 제한 대비 분할
+    for (let i = 0; i < withCoord.length; i += CHUNK) {
+        const chunk  = withCoord.slice(i, i + CHUNK);
+        const coords = [`${userLoc.lng},${userLoc.lat}`,
+                        ...chunk.map(p => `${p.lng},${p.lat}`)].join(';');
+        const url = `https://router.project-osrm.org/table/v1/driving/${coords}` +
+                    `?sources=0&annotations=duration,distance`;
+        const json = await safeFetch(url);
+        if (!json || json.code !== 'Ok') return;   // 실패 시 직선거리 폴백 유지
+        chunk.forEach((p, idx) => {
+            const sec = json.durations?.[0]?.[idx + 1];
+            const m   = json.distances?.[0]?.[idx + 1];
+            if (sec != null && m != null) {
+                p._driveMin = Math.max(1, Math.round(sec / 60));
+                p._driveKm  = Math.round(m / 100) / 10;
+            }
+        });
+    }
+}
+
+/* 카카오 로컬 API 공통 헤더.
+   브라우저/WebView에서 dapi.kakao.com을 부르면 KA 헤더가 필수다(없으면 401).
+   KA 헤더의 origin 값은 카카오 콘솔의 [플랫폼 > Web 사이트 도메인]에 등록돼 있어야 한다. */
+function kakaoHeaders() {
+    /* 안드로이드 WebView(file://)에서는 location.origin이 유효한 웹 도메인이 아니므로
+       카카오 콘솔에 등록된 도메인(KAKAO_WEB_ORIGIN)을 대신 쓴다. */
+    const origin = (typeof location !== 'undefined' && /^https?:/.test(location.origin||''))
+        ? location.origin
+        : (API_CONFIG.KAKAO_WEB_ORIGIN || 'http://localhost:5500');
+    return {
+        Authorization: 'KakaoAK ' + API_CONFIG.KAKAO_REST_KEY,
+        KA: 'sdk/1.0.0 os/javascript lang/ko-KR origin/' + origin,
+    };
+}
+
 /* 카카오맵 로컬 검색 — 카테고리 코드: FD6=음식점, HP8=병원, AT4=관광명소 */
 async function callKakaoCategory(code, size=15) {
     if (!API_CONFIG.KAKAO_REST_KEY) return null;
@@ -114,7 +182,7 @@ async function callKakaoCategory(code, size=15) {
             /* 카카오 로컬 API의 최대 반경은 20km (그 이상은 정책상 불가) */
             radius: 20000, size: Math.min(size,15), sort:'distance',
         });
-    const json = await safeFetch(url, {headers:{Authorization:'KakaoAK '+API_CONFIG.KAKAO_REST_KEY}});
+    const json = await safeFetch(url, {headers:kakaoHeaders()});
     if (!json) return null;
     return (json.documents||[]).map(d=>({
         id:    'kakao-'+d.id,
@@ -201,7 +269,7 @@ async function callKakaoKeyword(keyword, size=10) {
     const url = 'https://dapi.kakao.com/v2/local/search/keyword.json?' +
         new URLSearchParams({query:keyword, x:userLoc.lng, y:userLoc.lat,
             radius:20000, size:Math.min(size,15)});
-    const json = await safeFetch(url, {headers:{Authorization:'KakaoAK '+API_CONFIG.KAKAO_REST_KEY}});
+    const json = await safeFetch(url, {headers:kakaoHeaders()});
     if (!json) return null;
     return (json.documents||[]).map(d=>({
         id:'kakao-kw-'+d.id, name:d.place_name||'',
