@@ -49,7 +49,7 @@ class TourismApiClient:
             params["sigunguCode"] = sigungu_code
         if content_type_id is not None:
             params["contentTypeId"] = content_type_id
-        return await self._get("/areaBasedList1", params=params)
+        return await self._get("/areaBasedList2", params=params)
 
     async def get_location_based_list(
         self,
@@ -74,7 +74,7 @@ class TourismApiClient:
         }
         if content_type_id is not None:
             params["contentTypeId"] = content_type_id
-        return await self._get("/locationBasedList1", params=params)
+        return await self._get("/locationBasedList2", params=params)
 
     async def get_common_detail(
         self,
@@ -95,7 +95,7 @@ class TourismApiClient:
         }
         if content_type_id is not None:
             params["contentTypeId"] = content_type_id
-        return await self._get("/detailCommon1", params=params)
+        return await self._get("/detailCommon2", params=params)
 
     async def _get(self, path: str, *, params: dict[str, Any]) -> dict[str, Any]:
         try:

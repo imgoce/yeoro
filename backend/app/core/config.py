@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-this-secret-key"
     access_token_expire_minutes: int = 60 * 24
     jwt_algorithm: str = "HS256"
-    tourism_api_base_url: str = "https://apis.data.go.kr/B551011/KorService1"
+    tourism_api_base_url: str = "https://apis.data.go.kr/B551011/KorService2"
     tourism_api_key: str = ""
     tourism_api_timeout_seconds: float = 10.0
     kakao_map_api_base_url: str = "https://dapi.kakao.com"
