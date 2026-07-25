@@ -4,10 +4,11 @@ async function generateRandomSchedule() {
     box.innerHTML=`<div style="text-align:center;padding:32px;color:var(--yeoro-muted);">🎲 일정 생성 중...</div>`;
     changeScreen('schedule');
     cart=[];
-    for (const cat of ['관광명소','먹거리','축제']) {
-        const pool=await getPlaces(cat);
+    /* 3개 카테고리를 병렬 로딩 (미리받기 캐시 덕에 대부분 즉시) */
+    const pools = await Promise.all(['관광명소','먹거리','축제'].map(c=>getPlaces(c)));
+    pools.forEach(pool=>{
         if(pool.length) cart.push(pool[Math.floor(Math.random()*pool.length)]);
-    }
+    });
     document.getElementById('omni-cart-counter-badge').textContent=cart.length;
     document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
     recalculateAndSortRoute();
@@ -16,15 +17,16 @@ async function recalculateAndSortRoute() {
     if(!cart.length) return;
     cart.forEach(item=>{item._dist=(item.lat&&item.lng)
         ?haversine(userLoc.lat,userLoc.lng,item.lat,item.lng):null;});
-    /* 실제 도로 주행거리·시간 (목록에서 이미 받아온 값이 있으면 그대로, 없으면 새로 조회) */
-    if (cart.some(item=>item.lat&&item.lng&&item._driveMin==null)) await fetchDrivingInfo(cart);
     const sortKey = p => p._driveMin!=null ? p._driveMin
                        : p._dist!=null     ? p._dist*3 : Infinity;
     cart.sort((a,b)=>sortKey(a)-sortKey(b));
+
+    /* 즉시 렌더 — 실도로 값이 이미 있으면 바로, 없으면 직선거리로 먼저 보여준다 */
     const box=document.getElementById('schedule-timeline-box');
     box.innerHTML='';
     cart.forEach(item=>{
         const node=document.createElement('div'); node.className='timeline-node';
+        node.dataset.pid = item.id;   // 백그라운드 실도로 갱신 시 라벨 찾기용
         /* 좌표가 없는 장소(관광공사 데이터에 미등록·오류)는 길찾기 대신 안내를 보여준다 */
         const routeBtn = (item.lat && item.lng)
             ? `<button class="btn btn-sm mt-2 px-3 fw-bold rounded-3"
@@ -39,6 +41,19 @@ async function recalculateAndSortRoute() {
             ${routeBtn}`;
         box.appendChild(node);
     });
+
+    /* 실도로 값이 빠진 항목은 백그라운드로 채우고, 노드 재생성 없이 라벨만 교체
+       (눈길 경고 등 나중에 덧붙는 안내가 지워지지 않도록) */
+    if (cart.some(item=>item.lat&&item.lng&&item._driveMin==null)) {
+        fetchDrivingInfo(cart).then(()=>{
+            cart.forEach(item=>{
+                if (item._driveMin==null) return;
+                const sub = document.querySelector(
+                    `#schedule-timeline-box .timeline-node[data-pid="${CSS.escape(item.id)}"] .timeline-sub`);
+                if (sub) sub.textContent = `🚗 약 ${item._driveMin}분 (${item._driveKm}km) · ${item.category}`;
+            });
+        }).catch(()=>{});
+    }
 }
 
 /* ── 앱 내부 카카오맵 길찾기 ─────────────────────────────────────

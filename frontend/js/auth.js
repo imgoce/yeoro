@@ -301,12 +301,10 @@ function confirmFontSizeAndGoHome(){
 function setFont(s){document.getElementById('app-root-wrapper').style.setProperty('--app-font-size',s);}
 function finalizeAuth() {
     document.getElementById('user-profile-indicator').textContent=userSession.nickname;
-    const guide=userSession.targetGroup==='5060'
-        ?'현위치 기반 무장애 맞춤 가이드가 켜졌어요.'
-        :'영유아 동반 코스 가이드가 켜졌어요.';
     document.getElementById('main-welcome-msg').innerHTML=
-        `반갑습니다, ${esc(userSession.nickname)}님<br>
-         <span style="font-size:.82em;font-weight:500;opacity:.88;">${guide}</span>`;
+        `반갑습니다, ${esc(userSession.nickname)}님`;
+    /* 안내 문구 대신 날씨 문구를 표시 (home-weather-line은 환영 문구와 별개 요소) */
+    if (typeof renderHomeWeather === 'function') renderHomeWeather();
     renderProfile();
     changeScreen('main');
     initGeolocation();
