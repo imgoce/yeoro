@@ -16,6 +16,7 @@ class KakaoMapApiClient:
         base_url: str,
         rest_api_key: str,
         timeout_seconds: float = 10.0,
+        ka_origin: str = "http://localhost:5500",
     ) -> None:
         self._client = httpx.AsyncClient(
             base_url=base_url.rstrip("/"),
@@ -23,6 +24,9 @@ class KakaoMapApiClient:
             headers={
                 "Accept": "application/json",
                 "Authorization": f"KakaoAK {rest_api_key}",
+                # 카카오 dapi는 KA 헤더가 없으면 401을 반환한다.
+                # origin은 카카오 콘솔 [플랫폼 > Web]에 등록된 도메인이어야 한다.
+                "KA": f"sdk/1.0.0 os/javascript lang/ko-KR origin/{ka_origin}",
             },
         )
 

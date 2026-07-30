@@ -46,6 +46,13 @@ class MainActivity : AppCompatActivity() {
         "accounts.google.com",
     )
 
+    // 카카오맵 길찾기(map.kakao.com)는 WebView 안이 아니라 Custom Tabs로 연다 —
+    // 뒤로가기 한 번으로 여로 화면에 그대로 복귀할 수 있다.
+    private val externalMapHosts = setOf(
+        "map.kakao.com",
+        "m.map.kakao.com",
+    )
+
     private companion object {
         const val REQ_LOCATION = 100
     }
@@ -66,9 +73,21 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             // minSdk 24부터는 String 오버로드가 아니라 이 WebResourceRequest 버전이 호출된다.
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                val host = request.url.host ?: return false
-                if (host in externalAuthHosts) {
-                    openInCustomTabs(request.url.toString())
+                val url = request.url
+                // kakaomap:// intent:// 같은 앱 스킴 — 카카오맵 앱으로 넘긴다.
+                // 앱이 없으면 조용히 무시 (WebView가 ERR_UNKNOWN_URL_SCHEME으로 깨지는 것 방지)
+                val scheme = url.scheme ?: return false
+                if (scheme != "http" && scheme != "https") {
+                    try {
+                        startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, url))
+                    } catch (e: Exception) {
+                        Log.w("Yeoro", "외부 앱 스킴 열기 실패: $url", e)
+                    }
+                    return true
+                }
+                val host = url.host ?: return false
+                if (host in externalAuthHosts || host in externalMapHosts) {
+                    openInCustomTabs(url.toString())
                     return true
                 }
                 return false

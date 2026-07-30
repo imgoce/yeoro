@@ -164,6 +164,7 @@ body {
     margin-bottom: 20px;
     position: relative;
     overflow: hidden;
+    transition: background 0.6s ease;   /* 날씨 변화 시 배경색이 부드럽게 전환 */
 }
 .hero-banner-text {
     color: var(--yeoro-text);
