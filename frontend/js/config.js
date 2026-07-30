@@ -43,6 +43,8 @@ const API_CONFIG = {
     /* 카카오 콘솔 [플랫폼 > Web]에 등록된 도메인 — WebView(file://)에서 KA 헤더 origin으로 사용 */
     KAKAO_WEB_ORIGIN: 'http://localhost:5500',
     TOUR_AREA_CODE: '8',   // 세종시 지역코드
+    WEATHER_NX: 66,        // 기상청 격자 좌표 (세종시)
+    WEATHER_NY: 103,
     MEDICAL_SIDO_CD: '410000',  // 심평원 병원정보 시도코드(세종). 병원정보가 안 나오면 이 값을 확인.
     DEFAULT_LAT: 36.4800,
     DEFAULT_LNG: 127.2890,

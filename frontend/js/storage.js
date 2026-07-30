@@ -72,16 +72,35 @@ function removeFromTravelLog(logId) {
         apiFetchAuthed(`/users/me/travel-logs/${logId}`, { method:'DELETE' });
     }
 }
+let _historyQuery = '';   // 여행로그 검색어
+
+function onHistorySearch(value) {
+    _historyQuery = (value || '').trim();
+    document.getElementById('history-search-clear').style.display = _historyQuery ? 'inline' : 'none';
+    renderTravelLog();
+}
+function clearHistorySearch() {
+    const input = document.getElementById('history-search-input');
+    if (input) input.value = '';
+    _historyQuery = '';
+    document.getElementById('history-search-clear').style.display = 'none';
+    renderTravelLog();
+}
+
 function renderTravelLog() {
     const banner = document.getElementById('history-guest-banner');
     const empty  = document.getElementById('history-empty-state');
+    const noRes  = document.getElementById('history-no-result');
+    const search = document.getElementById('history-search-bar');
     const list   = document.getElementById('history-log-list');
     if (!banner || !list) return;
 
     banner.classList.toggle('hidden', userSession.loggedIn);
+    noRes?.classList.add('hidden');
 
     if (!userSession.userId) {
         empty.classList.remove('hidden');
+        search?.classList.add('hidden');
         list.innerHTML='';
         return;
     }
@@ -89,13 +108,27 @@ function renderTravelLog() {
     const log = getTravelLog(userSession.userId);
     if (log.length===0) {
         empty.classList.remove('hidden');
+        search?.classList.add('hidden');   // 기록 없으면 검색창도 숨김
         list.innerHTML='';
         return;
     }
     empty.classList.add('hidden');
+    search?.classList.remove('hidden');    // 기록이 있으면 검색창 노출
+
+    /* 검색어로 이름·카테고리·주소·날짜 필터링 */
+    const q = _historyQuery.toLowerCase();
+    const shown = q
+        ? log.filter(e => `${e.name||''} ${e.category||''} ${e.addr||''} ${e.date||''}`.toLowerCase().includes(q))
+        : log;
+
+    if (shown.length === 0) {
+        noRes?.classList.remove('hidden');
+        list.innerHTML='';
+        return;
+    }
 
     const catIcon = {'관광명소':'landscape','먹거리':'restaurant','축제':'festival','의료기관':'local_hospital'};
-    list.innerHTML = log.map(entry=>`
+    list.innerHTML = shown.map(entry=>`
         <div class="log-entry-card">
             <div class="log-entry-icon"><span class="material-icons">${catIcon[entry.category]||'place'}</span></div>
             <div>

@@ -130,6 +130,34 @@ async function callWellnessApi(rows=10) {
     })).filter(p=>p.name);
 }
 
+/* ── 기상청 초단기실황 (세종시 격자 nx=66, ny=103) ────────────────
+   PTY(강수형태): 0없음 · 1비 · 2비/눈 · 3눈 · 5빗방울 · 6빗방울눈날림 · 7눈날림
+   T1H(기온℃) · RN1(1시간 강수량mm) · WSD(풍속m/s)
+   발표가 매시 40분쯤 나오므로 45분 전 시각의 정시 발표분을 조회한다. */
+async function callWeatherNow() {
+    if (!API_CONFIG.DATA_GO_KR_KEY) return null;
+    const t  = new Date(Date.now() - 45 * 60 * 1000);
+    const bd = `${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`;
+    const bt = String(t.getHours()).padStart(2,'0') + '00';
+    const url = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.DATA_GO_KR_KEY,
+            numOfRows: 10, pageNo: 1, dataType: 'JSON',
+            base_date: bd, base_time: bt,
+            nx: API_CONFIG.WEATHER_NX, ny: API_CONFIG.WEATHER_NY,
+        });
+    const json = await safeFetch(url);
+    const items = json?.response?.body?.items?.item;
+    if (!items || !items.length) return null;
+    const val = c => { const it = items.find(i => i.category === c);
+                       return it ? parseFloat(it.obsrValue) : null; };
+    const pty = val('PTY') ?? 0;
+    const kind = [1,5].includes(pty)     ? 'rain'
+               : [2,3,6,7].includes(pty) ? 'snow'   // 비/눈·눈날림도 미끄럼 위험으로 취급
+               : 'clear';
+    return { temp: val('T1H'), rain1h: val('RN1'), wind: val('WSD'), pty, kind };
+}
+
 /* ── 실제 도로 기준 이동시간·거리 (OSRM 공개 서버 — 키 불필요, CORS 허용) ──
    직선거리는 실제 이동거리와 크게 달라서(예: 세종시청→호수공원 직선 3.2km,
    실도로 6.2km) 목록에는 자동차 기준 실거리·소요시간을 보여준다.
