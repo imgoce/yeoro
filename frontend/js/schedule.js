@@ -27,24 +27,25 @@ async function recalculateAndSortRoute() {
     const routePlaces = cart.filter(item => item.lat && item.lng);
     if (routePlaces.length >= 2) {
         const routeNames = routePlaces.slice(0, 6).map(item => esc(item.name)).join(' → ');
-        box.insertAdjacentHTML('beforeend', `
-            <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--yeoro-border);">
-                <button class="btn w-100 fw-bold rounded-3"
-                    style="background:#FEE500;color:#191919;border:none;padding:10px 12px;font-size:.9em;"
-                    onclick="openKakaoRouteForPlaces(cart)">🚗 전체 경로 길찾기</button>
-                <div style="font-size:.76em;color:var(--yeoro-muted);line-height:1.45;margin-top:8px;">
-                    내 위치 → ${routeNames}${routePlaces.length > 6 ? ' 외' : ''}
-                </div>
-            </div>`);
+        const routeSummary = document.createElement('div');
+        routeSummary.style.cssText = 'margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--yeoro-border);';
+        routeSummary.innerHTML = `
+            <button class="btn w-100 fw-bold rounded-3 schedule-route-all-btn"
+                style="background:#FEE500;color:#191919;border:none;padding:10px 12px;font-size:.9em;">🚗 전체 경로 길찾기</button>
+            <div style="font-size:.76em;color:var(--yeoro-muted);line-height:1.45;margin-top:8px;">
+                내 위치 → ${routeNames}${routePlaces.length > 6 ? ' 외' : ''}
+            </div>`;
+        routeSummary.querySelector('.schedule-route-all-btn')
+            ?.addEventListener('click', () => openKakaoRouteForPlaces(cart));
+        box.appendChild(routeSummary);
     }
     cart.forEach(item=>{
         const node=document.createElement('div'); node.className='timeline-node';
         node.dataset.pid = item.id;   // 백그라운드 실도로 갱신 시 라벨 찾기용
         /* 좌표가 없는 장소(관광공사 데이터에 미등록·오류)는 길찾기 대신 안내를 보여준다 */
         const routeBtn = (item.lat && item.lng)
-            ? `<button class="btn btn-sm mt-2 px-3 fw-bold rounded-3"
-                   style="font-size:.78em;background:#FEE500;color:#191919;border:none;"
-                   onclick="openKakaoRoute('${esc(item.name).replace(/'/g,'')}',${item.lat},${item.lng})">🚗 길찾기</button>`
+            ? `<button class="btn btn-sm mt-2 px-3 fw-bold rounded-3 timeline-route-btn"
+                   style="font-size:.78em;background:#FEE500;color:#191919;border:none;">🚗 길찾기</button>`
             : `<div class="mt-2" style="font-size:.75em;color:var(--yeoro-muted);">위치 정보가 없어 길찾기를 지원하지 않아요</div>`;
         const distLabel = item._driveMin!=null ? `🚗 약 ${item._driveMin}분 (${item._driveKm}km) · `
                         : item._dist!=null     ? `직선거리 ${item._dist}km · ` : '';
@@ -52,6 +53,8 @@ async function recalculateAndSortRoute() {
             <div class="timeline-title">${esc(item.name)}</div>
             <div class="timeline-sub">${distLabel}${esc(item.category)}</div>
             ${routeBtn}`;
+        node.querySelector('.timeline-route-btn')
+            ?.addEventListener('click', () => openKakaoRoute(item.name, item.lat, item.lng));
         box.appendChild(node);
     });
 
@@ -181,10 +184,14 @@ async function showInAppRoutePreview(name, lat, lng) {
     map.setBounds(bounds, 60);
 
     const km = haversine(userLoc.lat, userLoc.lng, lat, lng);
-    document.getElementById('inapp-map-info').innerHTML =
+    const info = document.getElementById('inapp-map-info');
+    info.innerHTML =
         `출발: <b>내 위치</b> (자동 입력됨) → 도착: <b>${esc(name)}</b><br>직선거리 약 ${km}km<br>
-        <a href="#" onclick="openKakaoRoute('${esc(name).replace(/'/g,'')}',${lat},${lng});return false;"
-           style="font-weight:700;">🚗 카카오맵 길안내 시작 →</a>`;
+        <a href="#" class="inapp-route-link" style="font-weight:700;">🚗 카카오맵 길안내 시작 →</a>`;
+    info.querySelector('.inapp-route-link')?.addEventListener('click', e => {
+        e.preventDefault();
+        openKakaoRoute(name, lat, lng);
+    });
 }
 
 function closeInAppMap() {
