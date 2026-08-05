@@ -24,14 +24,28 @@ async function recalculateAndSortRoute() {
     /* 즉시 렌더 — 실도로 값이 이미 있으면 바로, 없으면 직선거리로 먼저 보여준다 */
     const box=document.getElementById('schedule-timeline-box');
     box.innerHTML='';
+    const routePlaces = cart.filter(item => item.lat && item.lng);
+    if (routePlaces.length >= 2) {
+        const routeNames = routePlaces.slice(0, 6).map(item => esc(item.name)).join(' → ');
+        const routeSummary = document.createElement('div');
+        routeSummary.style.cssText = 'margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--yeoro-border);';
+        routeSummary.innerHTML = `
+            <button class="btn w-100 fw-bold rounded-3 schedule-route-all-btn"
+                style="background:#FEE500;color:#191919;border:none;padding:10px 12px;font-size:.9em;">🚗 전체 경로 길찾기</button>
+            <div style="font-size:.76em;color:var(--yeoro-muted);line-height:1.45;margin-top:8px;">
+                내 위치 → ${routeNames}${routePlaces.length > 6 ? ' 외' : ''}
+            </div>`;
+        routeSummary.querySelector('.schedule-route-all-btn')
+            ?.addEventListener('click', () => openKakaoRouteForPlaces(cart));
+        box.appendChild(routeSummary);
+    }
     cart.forEach(item=>{
         const node=document.createElement('div'); node.className='timeline-node';
         node.dataset.pid = item.id;   // 백그라운드 실도로 갱신 시 라벨 찾기용
         /* 좌표가 없는 장소(관광공사 데이터에 미등록·오류)는 길찾기 대신 안내를 보여준다 */
         const routeBtn = (item.lat && item.lng)
-            ? `<button class="btn btn-sm mt-2 px-3 fw-bold rounded-3"
-                   style="font-size:.78em;background:#FEE500;color:#191919;border:none;"
-                   onclick="openKakaoRoute('${esc(item.name).replace(/'/g,'')}',${item.lat},${item.lng})">🚗 길찾기</button>`
+            ? `<button class="btn btn-sm mt-2 px-3 fw-bold rounded-3 timeline-route-btn"
+                   style="font-size:.78em;background:#FEE500;color:#191919;border:none;">🚗 길찾기</button>`
             : `<div class="mt-2" style="font-size:.75em;color:var(--yeoro-muted);">위치 정보가 없어 길찾기를 지원하지 않아요</div>`;
         const distLabel = item._driveMin!=null ? `🚗 약 ${item._driveMin}분 (${item._driveKm}km) · `
                         : item._dist!=null     ? `직선거리 ${item._dist}km · ` : '';
@@ -39,6 +53,8 @@ async function recalculateAndSortRoute() {
             <div class="timeline-title">${esc(item.name)}</div>
             <div class="timeline-sub">${distLabel}${esc(item.category)}</div>
             ${routeBtn}`;
+        node.querySelector('.timeline-route-btn')
+            ?.addEventListener('click', () => openKakaoRoute(item.name, item.lat, item.lng));
         box.appendChild(node);
     });
 
@@ -75,14 +91,39 @@ function loadKakaoMapSdk() {
     return _kakaoSdkPromise;
 }
 
+function kakaoRoutePoint(name, lat, lng, fallback='도착지') {
+    const safeName = String(name)
+        .replace(/[,\/]/g, ' ')
+        .trim() || fallback;
+    return `${encodeURIComponent(safeName)},${lat},${lng}`;
+}
+
 /* 카카오맵 공식 길찾기 링크 — 출발지(내 위치)와 도착지가 자동 입력된 채
    실제 도로 경로·소요시간 안내 화면이 열린다.
    패턴: https://map.kakao.com/link/from/이름,위도,경도/to/이름,위도,경도 */
 function kakaoRouteUrl(name, lat, lng) {
-    const safe = encodeURIComponent(String(name).replace(/[,\/]/g, ' ').trim() || '도착지');
     return 'https://map.kakao.com/link/from/' +
-        encodeURIComponent('내 위치') + `,${userLoc.lat},${userLoc.lng}` +
-        `/to/${safe},${lat},${lng}`;
+        kakaoRoutePoint('내 위치', userLoc.lat, userLoc.lng, '내 위치') +
+        `/to/${kakaoRoutePoint(name, lat, lng)}`;
+}
+
+/* 여러 목적지가 있는 일정은 현재 위치를 출발지로 두고,
+   앞 장소들은 순서대로 경유지, 마지막 장소는 도착지로 넘긴다.
+   카카오맵 경유지는 최대 5개라 장소는 최대 6개까지만 링크에 포함된다. */
+function kakaoRouteUrlForPlaces(places) {
+    const routePlaces = (places || []).filter(item => item && item.lat && item.lng);
+    if (routePlaces.length === 0) return null;
+    if (routePlaces.length === 1) {
+        const only = routePlaces[0];
+        return kakaoRouteUrl(only.name, only.lat, only.lng);
+    }
+
+    const kakaoLimitPlaces = routePlaces.slice(0, 6);
+    const points = [
+        kakaoRoutePoint('내 위치', userLoc.lat, userLoc.lng, '내 위치'),
+        ...kakaoLimitPlaces.map(item => kakaoRoutePoint(item.name, item.lat, item.lng)),
+    ];
+    return `https://map.kakao.com/link/by/car/${points.join('/')}`;
 }
 
 /* 길찾기 버튼 → 카카오맵 길찾기로 바로 연결.
@@ -93,6 +134,26 @@ function openKakaoRoute(name, lat, lng) {
     /* 안드로이드 앱(WebView): 현재 화면을 이동시키면 네이티브가 가로채 외부로 연다 */
     if (window.YeoroNative) { location.href = url; return; }
     /* 웹 브라우저: 새 탭으로 카카오맵 길찾기 열기 (팝업 차단 시 현재 탭) */
+    const win = window.open(url, '_blank');
+    if (!win) location.href = url;
+}
+
+function openKakaoRouteForPlaces(places) {
+    const routePlaces = (places || []).filter(item => item && item.lat && item.lng);
+    if (!routePlaces.length) {
+        showToast('좌표 정보가 있는 장소가 없어 길찾기를 열 수 없어요', 'error');
+        return;
+    }
+    if (routePlaces.length < (places || []).length) {
+        showToast('좌표가 없는 장소는 경로에서 제외했어요');
+    }
+    if (routePlaces.length > 6) {
+        showToast('카카오맵 경유지는 최대 5개라 앞 6개 장소까지만 연결했어요');
+    }
+
+    const url = kakaoRouteUrlForPlaces(routePlaces);
+    if (!url) return;
+    if (window.YeoroNative) { location.href = url; return; }
     const win = window.open(url, '_blank');
     if (!win) location.href = url;
 }
@@ -123,10 +184,14 @@ async function showInAppRoutePreview(name, lat, lng) {
     map.setBounds(bounds, 60);
 
     const km = haversine(userLoc.lat, userLoc.lng, lat, lng);
-    document.getElementById('inapp-map-info').innerHTML =
+    const info = document.getElementById('inapp-map-info');
+    info.innerHTML =
         `출발: <b>내 위치</b> (자동 입력됨) → 도착: <b>${esc(name)}</b><br>직선거리 약 ${km}km<br>
-        <a href="#" onclick="openKakaoRoute('${esc(name).replace(/'/g,'')}',${lat},${lng});return false;"
-           style="font-weight:700;">🚗 카카오맵 길안내 시작 →</a>`;
+        <a href="#" class="inapp-route-link" style="font-weight:700;">🚗 카카오맵 길안내 시작 →</a>`;
+    info.querySelector('.inapp-route-link')?.addEventListener('click', e => {
+        e.preventDefault();
+        openKakaoRoute(name, lat, lng);
+    });
 }
 
 function closeInAppMap() {
