@@ -1,17 +1,52 @@
+/* ── 추천 결과 확정/재추천 ─────────────────────────────────────────
+   추천은 곧바로 여행로그에 저장하지 않는다. 사용자가 [이대로 여행하기]를
+   눌러 마음에 든다고 확인했을 때만 기록으로 남긴다.                    */
+let _lastRecommendKind = null;   // 'random' | 'weather'
+
+function showRecommendActions(kind) {
+    _lastRecommendKind = kind;
+    document.getElementById('recommend-actions')?.classList.remove('hidden');
+}
+function hideRecommendActions() {
+    document.getElementById('recommend-actions')?.classList.add('hidden');
+    _lastRecommendKind = null;
+}
+function confirmRecommendation() {
+    if (!cart.length) { showToast('추천된 장소가 없어요', 'error'); return; }
+    addToTravelLog(cart, _lastRecommendKind || 'random');
+    hideRecommendActions();
+    showToast('여행로그에 저장됐어요 ✓ 즐거운 여행 되세요!');
+}
+function retryRecommendation() {
+    if (_lastRecommendKind === 'weather') generateWeatherSchedule();
+    else generateRandomSchedule();
+}
+
 /* ── 일정·동선 ────────────────────────────────────────────────── */
 async function generateRandomSchedule() {
     const box=document.getElementById('schedule-timeline-box');
     box.innerHTML=`<div style="text-align:center;padding:32px;color:var(--yeoro-muted);">🎲 일정 생성 중...</div>`;
     changeScreen('schedule');
     cart=[];
-    /* 3개 카테고리를 병렬 로딩 (미리받기 캐시 덕에 대부분 즉시) */
-    const pools = await Promise.all(['관광명소','먹거리','축제'].map(c=>getPlaces(c)));
-    pools.forEach(pool=>{
-        if(pool.length) cart.push(pool[Math.floor(Math.random()*pool.length)]);
-    });
+    /* 축제는 기간이 정해져 있어 아무 날에나 갈 수 없으므로 추천에서 제외한다.
+       일정에 담긴 장소의 소요시간은 recalculateAndSortRoute에서 계산하므로
+       여기서는 목록만 받아온다. */
+    const [spots, food] = await Promise.all([
+        getPlaces('관광명소', { withDrive:false }),
+        getPlaces('먹거리',   { withDrive:false }),
+    ]);
+    const pick = (pool, n) => {
+        const rest = [...pool];
+        const out = [];
+        while (rest.length && out.length < n)
+            out.push(rest.splice(Math.floor(Math.random()*rest.length), 1)[0]);
+        return out;
+    };
+    cart.push(...pick(spots, 2), ...pick(food, 1));
     document.getElementById('omni-cart-counter-badge').textContent=cart.length;
     document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
-    recalculateAndSortRoute();
+    await recalculateAndSortRoute();
+    showRecommendActions('random');   // [이대로 여행하기 / 다시 추천] 노출
 }
 async function recalculateAndSortRoute() {
     if(!cart.length) return;
