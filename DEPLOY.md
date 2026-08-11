@@ -1,164 +1,238 @@
-# 여로(Yeoro) 배포 가이드 — Google Cloud Run
+# 여로 배포하기 — 따라만 하면 됩니다
 
-이 문서 하나만 따라 하면 배포가 됩니다. 명령어는 복사해서 붙여넣으면 됩니다.
+> **배포가 뭔가요?**
+> 지금 여로는 **내 컴퓨터에서만** 돌아갑니다. 컴퓨터를 끄면 아무도 못 씁니다.
+> 배포는 **24시간 켜져 있는 남의 컴퓨터**에 여로를 옮겨두는 일입니다.
 
-> **이 배포의 특징**
-> 백엔드(API)와 웹 화면을 **주소 하나로 함께** 제공합니다.
-> → CORS 설정 불필요, 카카오 콘솔에도 도메인 하나만 등록하면 됩니다.
+**총 걸리는 시간: 약 30분**
 
 ---
 
-## 0. 미리 준비할 것
+## 전체 흐름
+
+```
+ 1단계           2단계            3단계          4단계
+저장소 만들기 → 서버에 올리기 → 열쇠 넣기 → 카카오에 알리기
+  (5분)           (10분)          (5분)         (3분)
+```
+
+각 단계 끝에 **"잘 됐는지 확인하는 법"** 이 있습니다. 하나씩 확인하며 진행하세요.
+
+---
+
+## 준비물
 
 | 준비물 | 설명 |
 |---|---|
-| Google 계정 + 카드 등록 | 무료 범위(월 200만 요청) 안이면 청구되지 않습니다 |
-| `gcloud` CLI | https://cloud.google.com/sdk/docs/install 에서 설치 |
-| PostgreSQL 주소 | 아래 1단계 참고 (무료로 만들 수 있습니다) |
+| 구글 계정 | 이미 있으실 겁니다 |
+| 카드 등록 | 가입 시 필요. **무료 범위 안이면 돈이 나가지 않습니다** |
+| `gcloud` 프로그램 | 아래에서 설치 |
+
+**gcloud 설치:** https://cloud.google.com/sdk/docs/install 에서 Windows용을 받아 설치하세요.
+설치 후 **새 터미널**을 열고 아래를 입력합니다.
+
+```
+gcloud --version
+```
+
+버전 숫자가 나오면 성공입니다.
 
 ---
 
-## 1. 데이터베이스 준비 (필수)
+## 1단계 — 데이터 저장소 만들기 (5분)
 
-> ⚠️ **Cloud Run은 서버가 꺼지면 파일이 사라집니다.** SQLite를 그대로 쓰면 회원 정보와
-> 여행로그가 전부 날아갑니다. 반드시 외부 PostgreSQL을 연결하세요.
+### 왜 필요한가요?
 
-무료로 쓸 수 있는 곳:
+구글 서버는 **잠들 때 안에 있던 파일을 지웁니다.**
+지금처럼 파일에 회원 정보를 저장하면, 서버가 한 번 잠들 때마다
+**가입한 사람과 여행 기록이 전부 사라집니다.**
 
-| 서비스 | 무료 제공 |
+그래서 **데이터만 따로 보관하는 곳**이 필요합니다. 무료입니다.
+
+### 어떻게 하나요?
+
+1. https://neon.tech 접속 → **Sign up** (구글 계정으로 가입 가능)
+2. 프로젝트 이름은 아무거나 (예: `yeoro`)
+3. 만들어지면 **Connection string** 이라는 긴 주소가 보입니다
+4. 그 주소를 **복사해서 메모장에 붙여넣어 두세요**
+
+이렇게 생긴 주소입니다:
+
+```
+postgres://이름:비밀번호@어딘가.neon.tech/디비이름
+```
+
+### ✅ 확인
+메모장에 `postgres://` 로 시작하는 주소가 저장되어 있으면 성공입니다.
+
+---
+
+## 2단계 — 서버에 올리기 (10분)
+
+### 어떻게 하나요?
+
+터미널을 열고 여로 폴더로 이동합니다.
+
+```
+cd c:/python/yeoro
+```
+
+아래를 **통째로 복사해서 붙여넣고 엔터**를 누르세요.
+
+```
+gcloud run deploy yeoro --source . --region asia-northeast3 --allow-unauthenticated
+```
+
+> `asia-northeast3` 은 **서울**이라는 뜻입니다. 한국에서 제일 빠릅니다.
+
+### 중간에 물어보는 것들
+
+| 질문 | 답 |
 |---|---|
-| **Neon** (neon.tech) | PostgreSQL 무료, 가입 즉시 주소 발급 |
-| **Supabase** (supabase.com) | PostgreSQL 500MB 무료 |
+| API를 켤까요? (Enable API?) | **y** 엔터 |
+| 프로젝트를 만들까요? | **y** 엔터 |
+| 계속할까요? (Continue?) | **y** 엔터 |
 
-가입하면 아래 같은 접속 주소를 줍니다. 이걸 복사해 두세요.
+처음이라 **5~10분** 걸립니다. 기다리세요.
+
+### 끝나면 이런 주소가 나옵니다
 
 ```
-postgres://사용자:비밀번호@호스트/디비이름
+Service URL: https://yeoro-abc123xyz.a.run.app
 ```
 
-> 접두어가 `postgres://` 든 `postgresql://` 든 상관없습니다. 코드가 알아서 변환합니다.
+**이 주소를 메모장에 복사해 두세요.** 앞으로 계속 씁니다.
+
+### ✅ 확인
+브라우저에 그 주소를 넣어보세요. **여로 화면이 뜨면 성공**입니다.
+(아직 관광지는 예시 데이터만 나옵니다 — 3단계에서 해결됩니다)
 
 ---
 
-## 2. 배포하기
+## 3단계 — 열쇠(키) 넣어주기 (5분)
 
-프로젝트 폴더(`yeoro/`)에서 아래 명령어를 실행합니다.
+### 왜 필요한가요?
 
-```bash
-gcloud run deploy yeoro \
-  --source . \
-  --region asia-northeast3 \
-  --allow-unauthenticated
-```
+방금 올린 서버는 **API 키를 모릅니다.**
+키는 안전을 위해 코드에 넣지 않고 서버에 따로 알려줍니다.
+그래야 깃허브에 올라가지 않습니다.
 
-- `asia-northeast3` = 서울 리전 (한국 사용자에게 가장 빠름)
-- `--allow-unauthenticated` = 누구나 접속 가능 (앱 서비스이므로 필요)
+### 어떻게 하나요?
 
-처음 실행하면 API 활성화 여부를 물어보는데 모두 `y`로 답하면 됩니다.
-완료되면 이런 주소를 알려줍니다:
+아래에서 **대괄호 부분만 내 값으로 바꿔서** 한 줄로 붙여넣으세요.
 
 ```
-https://yeoro-xxxxxxxx.a.run.app
+gcloud run services update yeoro --region asia-northeast3 --set-env-vars DATABASE_URL=[1단계주소],SECRET_KEY=[아무거나긴글자],PUBLIC_DATA_GO_KR_KEY=[공공데이터키],PUBLIC_KAKAO_REST_KEY=[카카오키],KAKAO_MAP_REST_API_KEY=[카카오키],KAKAO_KA_ORIGIN=[2단계주소]
 ```
+
+### 무엇을 넣나요?
+
+| 자리 | 넣을 값 | 어디서 찾나요 |
+|---|---|---|
+| `[1단계주소]` | `postgres://...` | 1단계에서 메모한 것 |
+| `[아무거나긴글자]` | 예: `yeoro-secret-2026-abcdefg` | **직접 지어내세요** (길수록 안전) |
+| `[공공데이터키]` | 공공데이터포털 키 | `frontend/js/config.local.js` 안에 있음 |
+| `[카카오키]` | 카카오 REST 키 | 같은 파일 안에 있음 (**2군데 모두 같은 값**) |
+| `[2단계주소]` | `https://yeoro-....run.app` | 2단계에서 받은 주소 |
+
+> ⚠️ 값 사이에 **띄어쓰기를 넣지 마세요.** 쉼표로만 구분합니다.
+
+### ✅ 확인
+1~2분 뒤 배포 주소를 새로고침하세요.
+**관광명소에 진짜 장소들이 뜨고, 홈 화면에 날씨가 나오면 성공**입니다.
 
 ---
 
-## 3. 환경변수(키) 등록
+## 4단계 — 카카오에 새 주소 알리기 (3분)
 
-배포된 서비스에 키를 넣습니다. **키는 코드가 아니라 여기에만 저장됩니다.**
+### 왜 필요한가요?
 
-```bash
-gcloud run services update yeoro \
-  --region asia-northeast3 \
-  --set-env-vars \
-DATABASE_URL="postgres://...1단계에서 복사한 주소...",\
-SECRET_KEY="아무도_모르는_긴_문자열_32자_이상",\
-PUBLIC_DATA_GO_KR_KEY="공공데이터포털 키",\
-PUBLIC_KAKAO_REST_KEY="카카오 REST 키",\
-KAKAO_MAP_REST_API_KEY="카카오 REST 키",\
-KAKAO_KA_ORIGIN="https://yeoro-xxxxxxxx.a.run.app"
-```
+카카오는 **등록된 주소에서 온 요청만** 받아줍니다.
+알려주지 않으면 로그인과 지도 검색이 거부됩니다.
 
-### 환경변수 설명
+### 어떻게 하나요?
 
-| 변수 | 필수 | 설명 |
-|---|:---:|---|
-| `DATABASE_URL` | ✅ | 1단계의 PostgreSQL 주소 |
-| `SECRET_KEY` | ✅ | 로그인 토큰 서명용. 아무거나 길게(32자 이상) |
-| `PUBLIC_DATA_GO_KR_KEY` | ✅ | 공공데이터포털 키 (관광·날씨·의료 공용) |
-| `PUBLIC_KAKAO_REST_KEY` | ✅ | 카카오 REST 키 (지도 검색) |
-| `KAKAO_MAP_REST_API_KEY` | ✅ | 위와 같은 값 (백엔드 프록시용) |
-| `KAKAO_KA_ORIGIN` | ✅ | **2단계에서 받은 배포 주소** |
-| `PUBLIC_KAKAO_JS_KEY` | | 별도 JS 키가 있다면. 없으면 REST 키를 씁니다 |
-| `CORS_EXTRA_ORIGINS` | | 다른 도메인을 추가로 쓸 때만 |
+https://developers.kakao.com → 내 애플리케이션 → **여로**
 
----
-
-## 4. 카카오 콘솔 설정
-
-[developers.kakao.com](https://developers.kakao.com) → 내 애플리케이션 → **여로**
-
-| 메뉴 | 등록할 값 |
+| 메뉴 | 넣을 값 |
 |---|---|
-| 앱 설정 → 플랫폼 → **Web** | `https://yeoro-xxxxxxxx.a.run.app` |
-| 카카오 로그인 → **Redirect URI** | `https://yeoro-xxxxxxxx.a.run.app/` |
+| 앱 설정 → 플랫폼 → **Web** → 사이트 도메인 | `https://yeoro-abc123xyz.a.run.app` |
+| 카카오 로그인 → **Redirect URI** | `https://yeoro-abc123xyz.a.run.app/` (끝에 `/` 포함) |
 
-> 기존 `http://localhost:5500` 은 **지우지 말고 그대로 두세요.** 개발할 때 계속 씁니다.
+> 💡 기존 `http://localhost:5500` 은 **지우지 마세요.** 개발할 때 계속 필요합니다.
+> 여러 개 등록할 수 있습니다.
 
----
-
-## 5. 확인
-
-```bash
-# 서버 살아있는지
-curl https://yeoro-xxxxxxxx.a.run.app/health
-
-# 웹 화면 열기 — 브라우저에 주소 입력
-https://yeoro-xxxxxxxx.a.run.app
-```
-
-체크리스트:
-
-- [ ] 화면이 뜨는가
-- [ ] 게스트 로그인이 되는가 (백엔드 연결 확인)
-- [ ] 관광명소 목록이 실제 데이터로 나오는가 (키 주입 확인)
-- [ ] 홈 배너에 날씨가 뜨는가
+### ✅ 확인
+배포 주소에서 **카카오 로그인 버튼**을 눌러보세요. 카카오 로그인 창이 뜨면 성공입니다.
 
 ---
 
-## 6. 안드로이드 앱에 배포 주소 반영
+## 🎉 끝났습니다
 
-앱은 화면을 APK 안에서 읽기 때문에 **서버 주소를 한 번 적어줘야** 합니다.
+이제 **누구나 이 주소로 여로를 쓸 수 있습니다.**
 
-`frontend/js/config.js` 상단:
+### 마지막 체크리스트
+
+- [ ] 화면이 뜬다
+- [ ] 게스트 로그인이 된다
+- [ ] 관광명소에 진짜 장소가 나온다 (예시 데이터가 아님)
+- [ ] 홈 화면에 날씨가 뜬다
+- [ ] 카카오 로그인 창이 뜬다
+
+---
+
+## 안드로이드 앱에도 반영하기
+
+앱은 화면을 **앱 안에서** 읽기 때문에 서버 주소를 한 번 적어줘야 합니다.
+
+`frontend/js/config.js` 위쪽에서 이 줄을 찾아:
 
 ```js
-const DEPLOY_API_BASE_URL = 'https://yeoro-xxxxxxxx.a.run.app';
+const DEPLOY_API_BASE_URL = '';
 ```
 
-수정 후 APK를 다시 빌드하면 앱이 배포 서버를 사용합니다.
+배포 주소를 넣으세요:
+
+```js
+const DEPLOY_API_BASE_URL = 'https://yeoro-abc123xyz.a.run.app';
+```
+
+그다음 APK를 다시 빌드하면 됩니다.
 
 ---
 
-## 자주 겪는 문제
+## 문제가 생겼을 때
 
-| 증상 | 원인·해결 |
-|---|---|
-| 화면은 뜨는데 목록이 예시 데이터만 나옴 | `PUBLIC_DATA_GO_KR_KEY` 미등록 → 3단계 확인 |
-| 로그인 시 오류 | `DATABASE_URL` 또는 `SECRET_KEY` 미등록 |
-| 지도 검색이 안 됨 | `KAKAO_KA_ORIGIN`이 배포 주소와 다르거나, 카카오 콘솔에 도메인 미등록 |
-| 카카오 로그인 `KOE006` | 카카오 콘솔에 Redirect URI 미등록 → 4단계 |
-| 첫 접속이 1~3초 느림 | 정상입니다. 접속이 없으면 서버가 절전하고, 요청이 오면 깨어납니다 |
+| 증상 | 이유 | 해결 |
+|---|---|---|
+| 관광지가 예시 데이터만 나옴 | 키가 안 들어감 | 3단계 다시 (오타·띄어쓰기 확인) |
+| 로그인하면 오류 | DB 주소가 틀림 | 3단계 `DATABASE_URL` 확인 |
+| 지도 검색이 안 됨 | 카카오가 주소를 모름 | 4단계 Web 도메인 등록 |
+| 로그인 시 `KOE006` | Redirect URI 미등록 | 4단계 (끝 `/` 확인) |
+| 첫 접속이 1~3초 느림 | **정상입니다** | 아무도 안 쓰면 잠들고, 접속하면 깨어납니다 |
+| 명령어 `not found` | gcloud 미설치 | 준비물 항목으로 |
+
+### 코드를 고친 뒤 다시 올리려면
+
+**2단계 명령어만 다시** 실행하면 됩니다. 키는 그대로 유지됩니다.
+
+```
+gcloud run deploy yeoro --source . --region asia-northeast3 --allow-unauthenticated
+```
+
+### 서버 상태를 보려면
+
+https://console.cloud.google.com/run 에서 로그와 접속량을 볼 수 있습니다.
 
 ---
 
-## 로컬 개발은 그대로입니다
+## 개발할 때는 지금과 똑같습니다
 
-배포 설정을 넣어도 로컬 개발 방식은 바뀌지 않습니다.
+배포했다고 개발 방식이 바뀌지 않습니다.
 
-```bash
-cd frontend
-python tools/live_server.py 5500      # 미리보기(5500) + 백엔드(8000) 자동 실행
+```
+cd c:/python/yeoro/frontend
+python tools/live_server.py 5500
 ```
 
-`PUBLIC_*` 환경변수가 없으면 서버는 기존 `frontend/js/config.local.js` 파일을 그대로 사용합니다.
+브라우저에서 `http://localhost:5500` 으로 확인하시면 됩니다.
