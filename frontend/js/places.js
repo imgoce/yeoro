@@ -33,12 +33,23 @@ function updateVisibleDriveLabels(places) {
     });
 }
 
-async function getPlaces(category) {
-    if (apiCache[category]) return apiCache[category];
+async function getPlaces(category, options = {}) {
+    /* withDrive: 자동차 소요시간까지 계산할지. 화면에 목록을 보여줄 때만 true.
+       (미리받기처럼 화면에 안 쓰는 호출은 false로 두어 API 호출을 아낀다) */
+    const withDrive = options.withDrive !== false;
 
-    /* ① 저장 캐시 — 실도로 값까지 담겨 있어 즉시 완성형으로 표시 */
+    if (apiCache[category]) {
+        if (withDrive) ensureDrivingInfo(category, apiCache[category]);
+        return apiCache[category];
+    }
+
+    /* ① 저장 캐시 — 소요시간까지 담겨 있으면 즉시 완성형으로 표시 */
     const cached = loadPlacesFromStorage(category);
-    if (cached) { apiCache[category] = cached; return cached; }
+    if (cached) {
+        apiCache[category] = cached;
+        if (withDrive) ensureDrivingInfo(category, cached);
+        return cached;
+    }
 
     let places = null;
 
@@ -116,8 +127,23 @@ async function getPlaces(category) {
 
     apiCache[category] = places;
 
-    /* ② 실도로 거리·시간은 백그라운드에서 채움 — 완료되면 보이는 라벨만 갱신하고
-       실도로 기준 정렬본을 캐시에 저장(다음 표시부터 반영) */
+    /* ② 자동차 소요시간은 백그라운드에서 채운다 (화면 표시를 막지 않음) */
+    if (withDrive) ensureDrivingInfo(category, places);
+    else savePlacesToStorage(category, places);
+
+    return places;
+}
+
+/* 자동차 소요시간·거리를 백그라운드로 채우고, 이미 그려진 라벨만 갱신한다.
+   같은 카테고리에 대해 동시에 두 번 돌지 않도록 진행 중 표시를 둔다. */
+const _driveInFlight = new Set();
+function ensureDrivingInfo(category, places) {
+    if (_driveInFlight.has(category)) return;
+    /* 좌표가 있는 장소가 모두 이미 계산돼 있으면 다시 부르지 않는다 */
+    const pending = places.filter(p => p.lat && p.lng && p._driveMin == null);
+    if (!pending.length) return;
+
+    _driveInFlight.add(category);
     fetchDrivingInfo(places).then(() => {
         updateVisibleDriveLabels(places);
         const sortKey = p => p._driveMin!=null ? p._driveMin
@@ -125,15 +151,18 @@ async function getPlaces(category) {
         const sorted = [...places].sort((a,b)=>sortKey(a)-sortKey(b));
         apiCache[category] = sorted;
         savePlacesToStorage(category, sorted);
-    }).catch(()=>{ savePlacesToStorage(category, places); });
-
-    return places;
+    }).catch(()=>{ savePlacesToStorage(category, places); })
+      .finally(()=>{ _driveInFlight.delete(category); });
 }
 
-/* ③ 앱 시작 직후 전 카테고리를 백그라운드로 미리 받아둔다 (main.js에서 호출)
-   → 사용자가 탭을 처음 눌러도 메모리 캐시에서 즉시 표시 */
+/* ③ 앱 시작 직후 전 카테고리 '목록'만 미리 받아둔다 (main.js에서 호출)
+   → 탭을 처음 눌러도 즉시 표시된다.
+   소요시간 계산은 화면에 실제로 보여줄 때만 한다. 앱을 켜자마자 4개 카테고리
+   전부를 계산하면 길찾기 API에 수백 건이 한꺼번에 몰려 일부가 실패한다. */
 function prefetchPlaces() {
-    ['관광명소','먹거리','축제','의료기관'].forEach(c => { getPlaces(c).catch(()=>{}); });
+    ['관광명소','먹거리','축제','의료기관'].forEach(c => {
+        getPlaces(c, { withDrive: false }).catch(()=>{});
+    });
 }
 
 /* ── 카드 렌더링 ──────────────────────────────────────────────── */
@@ -176,7 +205,7 @@ function renderPlaceCards(places, box) {
             <div class="place-desc">${esc(item.desc||'')}</div>
             ${item.tel?`<div style="font-size:.78em;color:var(--yeoro-muted);margin-bottom:6px;">📞 ${esc(item.tel)}</div>`:''}
             <span class="place-tag">${esc(item.category)}</span>
-            ${(item.lat&&item.lng)?`<button class="route-btn" style="background:#FEE500;color:#191919;border:none;border-radius:8px;padding:6px 12px;font-size:.8em;font-weight:700;margin-right:6px;cursor:pointer;">🚗 길찾기</button>`:''}
+            ${(item.lat&&item.lng)?`<button class="route-btn">🚗 길찾기</button>`:''}
             <button class="add-btn" ${inCart?'disabled style="opacity:.5"':''}>
                 ${inCart?'담김':'추가'}</button>`;
         card.querySelector('.route-btn')?.addEventListener('click', ()=>{
@@ -224,8 +253,9 @@ async function runGlobalSearch(query) {
         <div style="font-size:2em;margin-bottom:8px;">🔍</div>
         <div style="font-size:.85em;font-weight:600;">"${esc(q)}" 검색 중...</div></div>`;
 
-    /* 전 카테고리 데이터 로딩 (캐시 우선) 후 이름·주소·설명에서 검색 */
-    const lists = await Promise.all(SEARCH_CATEGORIES.map(c=>getPlaces(c)));
+    /* 전 카테고리 목록만 불러와(소요시간 계산은 생략) 이름·주소·설명에서 검색 */
+    const lists = await Promise.all(
+        SEARCH_CATEGORIES.map(c=>getPlaces(c, { withDrive:false })));
     const nq = q.toLowerCase();
     const seen = new Set();
     const results = [];
@@ -248,4 +278,7 @@ async function runGlobalSearch(query) {
     box.insertAdjacentHTML('afterbegin',
         `<div style="font-size:.8em;color:var(--yeoro-muted);margin-bottom:10px;padding:0 2px;">
             "${esc(q)}" 검색 결과 ${results.length}곳</div>`);
+
+    /* 검색 결과에 대해서만 소요시간을 계산해 라벨을 채운다 */
+    fetchDrivingInfo(results).then(()=>updateVisibleDriveLabels(results)).catch(()=>{});
 }

@@ -13,13 +13,82 @@
     --app-font-size: 100%;
     /* 모드별 글꼴 — 기본은 Noto Sans, 유아동반 모드에서 Jua로 교체 */
     --app-font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    --yeoro-outer-bg: #C8DEEE;   /* 앱 바깥(브라우저) 배경 */
 }
+
+/* ── 어두운 모드 ──────────────────────────────────────────────────
+   내 정보 화면에서 켜면 <html>에 data-theme="dark"가 붙는다.
+   색 이름(변수)은 그대로 두고 값만 바꿔, 화면 코드는 손대지 않는다.  */
+html[data-theme="dark"] {
+    /* GitHub 다크 테마 팔레트를 그대로 따른다 (눈이 편한 중성 회색 계열) */
+    --yeoro-navy:    #e6edf3;   /* 어두운 배경 위에서는 '잉크'가 밝은 색이 된다 (fg.default) */
+    --yeoro-blue:    #4493f8;   /* GitHub 링크 파랑 (accent.fg) */
+    --yeoro-sky:     #163356;   /* 배지·칩 배경 (accent.muted) */
+    --yeoro-mist:    #161b22;   /* 카드 면 (canvas.subtle) */
+    --yeoro-white:   #161b22;   /* 흰 배경이던 곳 → 어두운 면 */
+    --yeoro-bg:      #0d1117;   /* 전체 배경 (canvas.default) */
+    --yeoro-text:    #e6edf3;   /* 주 텍스트 */
+    --yeoro-sub:     #b1bac4;   /* 보조 텍스트 */
+    --yeoro-muted:   #8b949e;   /* 흐린 텍스트 (fg.muted) */
+    --yeoro-border:  #30363d;   /* 헤어라인 (border.default) */
+    --yeoro-outer-bg:#010409;   /* 앱 바깥 (canvas.inset) */
+}
+/* 어두운 모드에서 흰색으로 고정돼 있던 면들을 어두운 면으로 맞춘다.
+   (CSS 변수를 쓰지 않고 #fff 등으로 직접 칠해둔 곳들) */
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .search-bar,
+html[data-theme="dark"] .y-card,
+html[data-theme="dark"] .app-header,
+.theme-dark .modal-content,
+.theme-dark .search-bar,
+.theme-dark .y-card,
+.theme-dark .app-header {
+    background-color: var(--yeoro-white) !important;
+    color: var(--yeoro-text);
+}
+html[data-theme="dark"] .app-bottom-nav,
+.theme-dark .app-bottom-nav {
+    background-color: rgba(22,28,40,0.97) !important;
+}
+/* 하단 메뉴 — 어두운 배경에서 안 보이던 문제.
+   .theme-dark는 화면을 감싸는 요소에도 붙여, 최상위 속성만으로 하위 스타일이
+   다시 계산되지 않는 브라우저에서도 확실히 반영되게 한다. */
+.theme-dark .nav-item,
+.theme-dark .nav-item .material-icons,
+.theme-dark .nav-item .nav-label        { color: #6E7B8F !important; }
+.theme-dark .nav-item.active,
+.theme-dark .nav-item.active .material-icons,
+.theme-dark .nav-item.active .nav-label { color: var(--yeoro-blue) !important; }
+
+/* 게스트 안내 배너 — 밝은 노랑 대신 어두운 톤으로 */
+html[data-theme="dark"] .guest-banner,
+.theme-dark .guest-banner {
+    background: linear-gradient(135deg,#2C2617 0%,#332B18 100%) !important;
+    border-color: #5A4A22 !important;
+    color: #F0E2BC;
+}
+html[data-theme="dark"] .guest-banner a,
+.theme-dark .guest-banner a { color: #FFD97A; }
+
+/* 입력창 글자·안내문 */
+html[data-theme="dark"] input,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select,
+.theme-dark input,
+.theme-dark textarea,
+.theme-dark select { color: var(--yeoro-text); }
+html[data-theme="dark"] input::placeholder,
+.theme-dark input::placeholder { color: var(--yeoro-muted); }
+
+/* 카드에 드리운 밝은 그림자는 어두운 화면에서 뿌옇게 보이므로 줄인다 */
+html[data-theme="dark"] .phone-wrapper,
+.theme-dark.phone-wrapper { box-shadow: 0 20px 60px rgba(0,0,0,0.55); }
 
 * { box-sizing: border-box; }
 
 body {
     font-family: var(--app-font-family);
-    background-color: #C8DEEE;
+    background-color: var(--yeoro-outer-bg);
     margin: 0;
     display: flex;
     justify-content: center;
@@ -38,6 +107,9 @@ body {
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(27,58,107,0.18);
     font-size: var(--app-font-size);
+    /* 글씨체 변수를 이 요소에서도 실제로 쓰도록 선언해야 한다.
+       (body에만 선언해두면, 이 요소에 변수 값을 바꿔줘도 화면 글꼴이 바뀌지 않는다) */
+    font-family: var(--app-font-family);
 }
 
 /* ── 헤더 ── */
@@ -255,14 +327,28 @@ body {
 .place-name  { font-size: 1.05em; font-weight: 700; color: var(--yeoro-navy); margin-bottom: 3px; }
 .place-meta  { font-size: 0.8em; color: var(--yeoro-muted); margin-bottom: 6px; }
 .place-desc  { font-size: 0.82em; color: var(--yeoro-sub); font-weight: 500; margin-bottom: 8px; }
-.place-tag   {
-    font-size: 0.75em;
+/* 카테고리 표시와 길찾기 버튼은 나란히 놓이므로 크기·모양을 맞춘다 */
+.place-tag, .route-btn {
+    font-size: 0.8em;
+    font-weight: 700;
+    padding: 7px 13px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.2;
+    vertical-align: middle;
+    border: none;
+}
+.place-tag {
     background-color: var(--yeoro-white);
     color: var(--yeoro-blue);
-    padding: 3px 9px;
-    border-radius: 8px;
-    display: inline-block;
     font-weight: 600;
+    margin-right: 6px;
+}
+.route-btn {
+    background: #FEE500;
+    color: #191919;
+    cursor: pointer;
 }
 .add-btn {
     background: var(--yeoro-blue);

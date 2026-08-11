@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('splash-logo').src = LOGO_SRC;
     document.getElementById('onboard-screen').classList.add('hidden');
 
+    /* 저장해둔 화면 설정(글씨 크기·글꼴·밝은/어두운 모드) 복원 */
+    initDisplayPrefs();
+
     /* 앱 진입 스플래시: 로고 등장 애니메이션 재생 후(1.5초) 제거 */
     setTimeout(() => {
         document.getElementById('splash-screen').classList.add('hidden');
