@@ -12,7 +12,7 @@ const LOGO_SRC = 'data:image/png;base64,' + LOGO_BASE64.trim();
    없다. 그래서 앱에서 쓸 서버 주소는 여기에 한 번 적어줘야 한다.
    백엔드를 배포한 뒤 아래 한 줄만 채우고 APK를 다시 빌드하면 된다.
    예) 'https://yeoro-xxxxx.a.run.app'                                  */
-const DEPLOY_API_BASE_URL = '';
+const DEPLOY_API_BASE_URL = 'https://yeoro-1083822668014.asia-northeast3.run.app';
 
 /* 실행 환경에 따라 백엔드 주소를 자동으로 고른다.
    ① 배포된 웹      → 지금 접속한 주소 (백엔드가 화면도 같이 주므로 동일 출처)
