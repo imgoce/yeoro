@@ -90,18 +90,60 @@
         <button class="y-btn-secondary mb-3" onclick="browseAsGuest()">게스트로 둘러보기</button>
     </div>
 
-    <!-- ══════════════ 위치 정보 허용 (회원가입/로그인/게스트 공통 — 글자 크기 설정 후, 메인 진입 전 필수) ══════════════ -->
-    <div class="auth-screen hidden" id="location-permission-screen">
-        <div class="auth-brand">
-            <span class="material-icons" style="font-size:3.2rem;color:#fff;">gps_fixed</span>
-            <div class="auth-brand-name" style="margin-top:10px;">위치 정보가 필요해요</div>
-            <div class="auth-brand-tagline">내 위치를 기준으로 가까운 무장애 장소와<br>동선을 추천해드리려면 위치 정보 허용이 꼭 필요해요</div>
+    <!-- ══════════════ 위치 정보 허용 (회원가입/로그인/게스트 공통 — 글자 크기 설정 후, 메인 진입 전 필수)
+         안드로이드 네이티브 권한 창과 같은 모양: 정확한/대략적인 위치 선택 + 허용 방식 3버튼 ══════════════ -->
+    <div class="auth-screen hidden" id="location-permission-screen" style="justify-content:flex-end;padding:0;">
+        <div style="background:#fff;border-radius:28px 28px 0 0;padding:30px 26px 26px;box-shadow:0 -8px 30px rgba(0,0,0,.18);">
+            <div style="text-align:center;margin-bottom:14px;">
+                <span class="material-icons" style="font-size:2.6rem;color:var(--yeoro-blue);">location_on</span>
+            </div>
+            <div style="text-align:center;font-weight:700;font-size:1.02em;line-height:1.5;margin-bottom:20px;">
+                <b>여로</b>에서 이 기기의 위치 정보에 액세스하도록<br>허용하시겠습니까?
+            </div>
+
+            <!-- 정확한 위치 / 대략적인 위치 선택 -->
+            <div style="display:flex;gap:18px;justify-content:center;margin-bottom:22px;">
+                <div id="loc-precise-opt" onclick="setLocationPrecision(true)" style="text-align:center;cursor:pointer;">
+                    <div style="width:104px;height:104px;border-radius:50%;border:3px solid var(--yeoro-blue);
+                                display:flex;align-items:center;justify-content:center;background:var(--yeoro-mist);margin:0 auto 8px;">
+                        <span class="material-icons" style="font-size:3rem;color:var(--yeoro-blue);">place</span>
+                    </div>
+                    <div id="loc-precise-label" style="font-weight:800;font-size:.9em;">정확한 위치</div>
+                </div>
+                <div id="loc-approx-opt" onclick="setLocationPrecision(false)" style="text-align:center;cursor:pointer;">
+                    <div style="width:104px;height:104px;border-radius:50%;border:3px solid transparent;
+                                display:flex;align-items:center;justify-content:center;background:var(--yeoro-mist);margin:0 auto 8px;">
+                        <span class="material-icons" style="font-size:3rem;color:var(--yeoro-muted);">map</span>
+                    </div>
+                    <div id="loc-approx-label" style="font-weight:500;font-size:.9em;color:var(--yeoro-muted);">대략적인 위치</div>
+                </div>
+            </div>
+
+            <div class="text-danger small text-center mb-3 hidden" id="location-permission-error"
+                 style="background:var(--yeoro-mist);border-radius:10px;padding:10px 14px;"></div>
+
+            <!-- 허용 방식 3버튼 (네이티브 다이얼로그와 동일한 구성) -->
+            <button class="y-btn-primary mb-2" id="location-permission-btn"
+                    onclick="handleLocationPermissionRequest(true)">앱 사용 중에만 허용</button>
+            <button class="y-btn-secondary mb-2" id="location-permission-once-btn"
+                    onclick="handleLocationPermissionRequest(false)">이번만 허용</button>
+            <button class="btn w-100 fw-bold" style="color:var(--yeoro-muted);font-size:.95em;"
+                    onclick="denyLocationPermission()">허용 안함</button>
         </div>
-        <div class="text-danger small text-center mb-3 hidden" id="location-permission-error"
-             style="background:#fff;border-radius:10px;padding:10px 14px;"></div>
-        <button class="y-btn-primary mb-2" id="location-permission-btn" onclick="handleLocationPermissionRequest()">위치 허용하고 시작하기</button>
     </div>
 
+
+    <!-- ══════════════ 앱 내부 카카오맵 길찾기 화면 (외부 브라우저로 나가지 않음) ══════════════ -->
+    <div class="hidden" id="inapp-map-screen"
+         style="position:absolute;inset:0;z-index:200;background:#fff;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--yeoro-border);flex:0 0 auto;">
+            <span class="material-icons" onclick="closeInAppMap()" style="cursor:pointer;font-size:1.6rem;">arrow_back</span>
+            <div id="inapp-map-title" style="font-weight:800;font-size:1em;">길찾기</div>
+        </div>
+        <div id="inapp-map" style="flex:1 1 auto;min-height:0;"></div>
+        <div id="inapp-map-info"
+             style="padding:14px 16px;border-top:1px solid var(--yeoro-border);font-size:.9em;line-height:1.5;flex:0 0 auto;"></div>
+    </div>
 
     <!-- 헤더 -->
     <div class="app-header">
@@ -174,6 +216,7 @@
                 <div class="hero-banner-text" id="main-welcome-msg">
                     안전하고 편안한<br>세종 무장애 인프라 가이드
                 </div>
+                <div id="home-weather-line" style="position:relative;z-index:1;margin-top:8px;font-size:.92em;font-weight:800;color:var(--yeoro-text);text-shadow:0 1px 2px rgba(255,255,255,.5);"></div>
             </div>
 
             <div class="section-label">무엇을 찾으시나요?</div>
@@ -182,15 +225,13 @@
                     <div class="menu-icon-box"><span class="material-icons icon-blue">landscape</span></div>
                     <div>
                         <div class="menu-title">관광명소</div>
-                        <div class="menu-sub">국문관광정보 + 웰니스 관광 API 연동</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
                 <div class="menu-row" onclick="loadUnifiedCategory('먹거리')">
                     <div class="menu-icon-box"><span class="material-icons icon-amber">restaurant</span></div>
                     <div>
-                        <div class="menu-title">추천 맛집</div>
-                        <div class="menu-sub">휠체어·유모차 진입 가능한 식당</div>
+                        <div class="menu-title">음식점</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
@@ -198,7 +239,13 @@
                     <div class="menu-icon-box"><span class="material-icons icon-teal">festival</span></div>
                     <div>
                         <div class="menu-title">지역 축제</div>
-                        <div class="menu-sub">세종시 장애물 없는 안전 행사</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="generateWeatherSchedule()">
+                    <div class="menu-icon-box"><span class="material-icons icon-blue">wb_sunny</span></div>
+                    <div>
+                        <div class="menu-title">날씨 맞춤 코스</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
@@ -206,7 +253,6 @@
                     <div class="menu-icon-box"><span class="material-icons icon-green">local_hospital</span></div>
                     <div>
                         <div class="menu-title">의료기관 정보</div>
-                        <div class="menu-sub">돌발 상황 대비 실시간 의료 정보</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
@@ -218,10 +264,11 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="fw-bold" style="font-size:1.15em; color: var(--yeoro-navy);">오늘의 최적 일정</div>
                 <div class="d-flex gap-2">
+                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-blue); border:1px solid var(--yeoro-border);" onclick="generateWeatherSchedule()">🌤️ 날씨 맞춤</button>
                     <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-blue); border:1px solid var(--yeoro-border);" onclick="generateRandomSchedule()">🎲 랜덤 추천</button>
-                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-sub); border:1px solid var(--yeoro-border);" onclick="recalculateAndSortRoute()">🔄 재정렬</button>
                 </div>
             </div>
+            <div id="weather-banner" class="y-card hidden" style="padding:12px 14px;font-size:.85em;line-height:1.5;margin-bottom:10px;"></div>
             <div id="schedule-timeline-box" class="y-card">
                 <p class="text-center py-4 small m-0" style="color:var(--yeoro-muted);">장바구니에 장소를 담거나<br><strong style="color:var(--yeoro-sub);">'🎲 랜덤 추천'</strong> 버튼을 눌러보세요.</p>
             </div>
@@ -229,6 +276,18 @@
 
         <!-- 장소 목록 화면 -->
         <div id="screen-api-list" class="hidden">
+            <div class="search-bar" style="display:flex;align-items:center;gap:8px;background:#fff;
+                 border:1.5px solid var(--yeoro-border);border-radius:16px;padding:11px 15px;margin-bottom:14px;
+                 box-shadow:0 2px 10px rgba(27,58,107,.06);">
+                <span class="material-icons" style="color:var(--yeoro-blue);font-size:1.3rem;">search</span>
+                <input id="global-search-input" type="search" inputmode="search" enterkeyhint="search"
+                       placeholder="관광지·음식점·의료기관 검색"
+                       oninput="onSearchInput(this.value)"
+                       onkeydown="if(event.key==='Enter')runGlobalSearch(this.value)"
+                       style="border:none;outline:none;flex:1;font-size:1em;background:transparent;color:var(--yeoro-text);">
+                <span id="search-clear" class="material-icons" onclick="clearGlobalSearch()"
+                      style="display:none;color:var(--yeoro-muted);font-size:1.2rem;cursor:pointer;">close</span>
+            </div>
             <div class="cat-tabs">
                 <button class="cat-tab" id="tab-관광명소" onclick="loadUnifiedCategory('관광명소')">관광명소</button>
                 <button class="cat-tab" id="tab-먹거리" onclick="loadUnifiedCategory('먹거리')">먹거리</button>
@@ -251,9 +310,26 @@
                 </div>
             </div>
 
+            <div id="history-search-bar" class="search-bar hidden" style="display:flex;align-items:center;gap:8px;background:#fff;
+                 border:1.5px solid var(--yeoro-border);border-radius:16px;padding:11px 15px;margin-bottom:14px;
+                 box-shadow:0 2px 10px rgba(27,58,107,.06);">
+                <span class="material-icons" style="color:var(--yeoro-blue);font-size:1.3rem;">search</span>
+                <input id="history-search-input" type="search" inputmode="search" enterkeyhint="search"
+                       placeholder="다녀온 곳 검색 (이름·카테고리)"
+                       oninput="onHistorySearch(this.value)"
+                       style="border:none;outline:none;flex:1;font-size:1em;background:transparent;color:var(--yeoro-text);">
+                <span id="history-search-clear" class="material-icons" onclick="clearHistorySearch()"
+                      style="display:none;color:var(--yeoro-muted);font-size:1.2rem;cursor:pointer;">close</span>
+            </div>
+
             <div id="history-empty-state" class="y-card text-center py-5 hidden">
                 <span class="material-icons mb-2" style="font-size:2.5rem; color:var(--yeoro-border);">map</span>
                 <p class="fw-bold m-0 small" style="color:var(--yeoro-sub);">아직 다녀온 곳이 없어요.<br>장소를 둘러보고 일정에 담아보세요!</p>
+            </div>
+
+            <div id="history-no-result" class="y-card text-center py-5 hidden">
+                <span class="material-icons mb-2" style="font-size:2.5rem; color:var(--yeoro-border);">search_off</span>
+                <p class="fw-bold m-0 small" style="color:var(--yeoro-sub);">검색 결과가 없어요.</p>
             </div>
 
             <div id="history-log-list"></div>
@@ -356,6 +432,8 @@
 <!-- 기능별로 분리된 프론트엔드 스크립트 (의존 순서대로 로드) -->
 <script src="js/logo-data.js"></script>
 <script src="js/config.js"></script>
+<!-- 비커밋 로컬 키 파일(있으면 config.js의 빈 키를 덮어씀). 없으면 폴백으로 동작 -->
+<script src="js/config.local.js" onerror="void 0"></script>
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/storage.js"></script>
@@ -367,6 +445,7 @@
 <script src="js/places.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/schedule.js"></script>
+<script src="js/weather.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

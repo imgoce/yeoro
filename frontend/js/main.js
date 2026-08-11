@@ -39,4 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasKakaoCode && !restoredSession && !userSession.loggedIn) {
         goToAuthScreen();
     }
+
+    /* 날씨: 즉시 표시 + 5분마다(그리고 앱 복귀 시) 실시간 갱신 */
+    startWeatherWatch();
+
+    /* 스플래시가 끝날 즈음 장소 데이터를 백그라운드로 미리 받아둔다
+       → 탭 첫 클릭·랜덤/날씨 추천도 1초 이내(사실상 즉시) */
+    setTimeout(prefetchPlaces, 1200);
 });

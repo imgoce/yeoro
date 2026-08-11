@@ -15,9 +15,9 @@ function showToast(msg, type='info') {
     setTimeout(()=>d.remove(),2800);
 }
 function sourceBadge(src) {
-    const m={tourapi:['관광API','#E8F3FF','#2E5FA3'],wellness:['웰니스API','#E6F9F0','#10A37F'],
-             kakao:['카카오맵','#FEF7C3','#A98600'],local:['기본정보','#F2F4F6','#7A97B8']};
-    const [lbl,bg,col]=m[src]||m.local;
+    /* 데이터 출처(관광API·웰니스API·카카오맵 등) 라벨은 표시하지 않는다.
+       단, '응급의료기관'은 이용자에게 유용한 정보라 이것만 뱃지로 남긴다. */
+    if (src !== 'egen') return '';
     return `<span style="font-size:.7em;font-weight:700;padding:2px 7px;border-radius:6px;
-                background:${bg};color:${col};margin-left:6px;vertical-align:middle;">${lbl}</span>`;
+                background:#FDE7E7;color:#C0392B;margin-left:6px;vertical-align:middle;">응급의료</span>`;
 }
