@@ -190,6 +190,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 카카오 세션 끊기 (로그아웃).
+     * 기기에 저장된 카카오 토큰을 만료시켜, 다음에 카카오 버튼을 누르면
+     * 다시 카카오톡 확인 절차를 거치게 한다.
+     * 실패하더라도 앱 자체 로그아웃은 이미 끝난 상태라 화면 흐름은 막지 않는다.
+     */
+    fun logoutKakao() {
+        if (BuildConfig.KAKAO_NATIVE_APP_KEY.isBlank()) return
+        UserApiClient.instance.logout { error ->
+            if (error != null) Log.w("Yeoro", "카카오 로그아웃 실패", error)
+        }
+    }
+
     // 카카오톡 미설치 시: SDK가 자동으로 시스템 브라우저(Custom Tabs)를 열어 로그인시키고,
     // AndroidManifest에 등록된 AuthCodeHandlerActivity로 결과를 되돌려준다.
     private fun loginWithKakaoAccount() {
