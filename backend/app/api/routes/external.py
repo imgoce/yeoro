@@ -1,27 +1,26 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import secrets
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from redis.exceptions import RedisError
 
 from app.api.dependencies import (
+    get_kakao_auth_api_client,
     get_kakao_map_api_client,
     get_redis_cache,
     get_tourism_api_client,
     get_weather_api_client,
-    get_kakao_auth_api_client,
 )
+from app.clients.kakao import KakaoAuthApiClient, KakaoAuthApiError
 from app.clients.kakaomap import KakaoMapApiClient, KakaoMapApiError
 from app.clients.tourism import TourismApiClient, TourismApiError
 from app.clients.weather import WeatherApiClient, WeatherApiError
 from app.core.cache import RedisCache
-from app.clients.kakao import KakaoAuthApiClient, KakaoAuthApiError
-
-
 
 tourism_router = APIRouter(prefix="/tourism", tags=["external-tourism"])
 kakao_router = APIRouter(prefix="/kakao-map", tags=["external-kakao-map"])
 weather_router = APIRouter(prefix="/weather", tags=["external-weather"])
 kakao_auth_router = APIRouter(prefix="/kakao-auth", tags=["external-kakao-auth"])
-
 
 security = HTTPBearer()
 
@@ -260,7 +259,7 @@ async def callback(
             code=code,
         )
     except KakaoAuthApiError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc    
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @kakao_auth_router.get("/me")
@@ -268,7 +267,7 @@ async def me(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
 ):
-    access_token = credentials.credentials
+    access_token = credentials.credentials.strip()
 
     try:
         return await client.get_user_info(
@@ -284,7 +283,7 @@ async def logout(
     client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
 ):
     """카카오 access_token을 만료시켜 로그아웃 처리합니다."""
-    access_token = credentials.credentials
+    access_token = credentials.credentials.strip()
 
     try:
         return await client.logout(
@@ -300,7 +299,7 @@ async def unlink(
     client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
 ):
     """카카오 계정과의 연결을 완전히 해제합니다."""
-    access_token = credentials.credentials
+    access_token = credentials.credentials.strip()
 
     try:
         return await client.unlink(
@@ -308,4 +307,3 @@ async def unlink(
         )
     except KakaoAuthApiError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
-    
