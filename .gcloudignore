@@ -1,0 +1,15 @@
+# gcloud가 소스를 클라우드로 올릴 때 제외할 목록
+# ⚠️ 키 파일은 아예 업로드조차 하지 않는다.
+frontend/js/config.local.js
+backend/.env
+android/local.properties
+
+.git
+.gitignore
+backend/venv/
+**/__pycache__/
+**/*.pyc
+*.db
+backend/sejong_tour.db
+android/
+.claude/

@@ -1,0 +1,19 @@
+# ⚠️ API 키가 든 파일 — 절대 이미지에 넣지 않는다.
+#    배포 환경에서는 서버가 환경변수로 설정을 만들어 내려준다(main.py 참고).
+frontend/js/config.local.js
+backend/.env
+android/local.properties
+
+# 개발 전용 · 배포에 불필요한 것들
+.git
+.gitignore
+backend/venv/
+**/__pycache__/
+**/*.pyc
+*.db
+backend/sejong_tour.db
+frontend/tools/
+android/
+.claude/
+*.md
+!README.md

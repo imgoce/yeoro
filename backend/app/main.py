@@ -1,8 +1,12 @@
+import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes.auth import router as auth_router
 from app.api.routes.cart import router as cart_router
@@ -75,7 +79,96 @@ def create_application() -> FastAPI:
     application.include_router(routes_router)
     application.include_router(travel_log_router)
     application.include_router(medical_router)
-    
+
+    # 정적 파일 mount('/')보다 반드시 먼저 등록해야 이 경로가 가려지지 않는다
+    _register_frontend_config_route(application)
+    _mount_frontend(application)
+
     return application
+
+
+def _register_frontend_config_route(application: FastAPI) -> None:
+    """프론트엔드가 쓰는 공개 키를 서버 환경변수에서 만들어 내려준다.
+
+    이렇게 하면 키를 깃 저장소나 배포 이미지에 넣지 않고 배포 환경(Cloud Run 환경변수)
+    한 곳에서만 관리할 수 있다. 로컬 개발에서는 frontend/js/config.local.js 파일이
+    그대로 쓰이고, 배포 환경에서는 이 응답이 그 자리를 대신한다.
+    """
+    if not settings.serve_frontend:
+        return
+    # PUBLIC_* 환경변수가 하나도 없으면(=로컬 개발) 이 경로를 만들지 않는다.
+    # 그래야 개발자가 쓰던 frontend/js/config.local.js 파일이 그대로 사용된다.
+    if not any(
+        (
+            settings.public_data_go_kr_key,
+            settings.public_kakao_rest_key,
+            settings.public_kakao_js_key,
+        )
+    ):
+        return
+
+    kakao_rest = settings.public_kakao_rest_key or settings.kakao_map_rest_api_key
+
+    @application.get("/js/config.local.js", include_in_schema=False)
+    def frontend_runtime_config() -> Response:
+        values = {
+            "DATA_GO_KR_KEY": settings.public_data_go_kr_key,
+            "MEDICAL_API_KEY": settings.public_data_go_kr_key,
+            "KAKAO_REST_KEY": kakao_rest,
+            "KAKAO_JS_KEY": settings.public_kakao_js_key or kakao_rest,
+        }
+        assigns = "\n".join(
+            f"    API_CONFIG.{name} = {json.dumps(value)};"
+            for name, value in values.items()
+            if value
+        )
+        body = (
+            "/* 배포 환경: 서버가 환경변수로부터 만들어 내려주는 설정 */\n"
+            "if (typeof API_CONFIG !== 'undefined') {\n"
+            f"{assigns}\n"
+            "}\n"
+        )
+        # 키가 바뀌면 바로 반영되도록 캐시하지 않는다
+        return Response(
+            content=body,
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-store"},
+        )
+
+
+def _find_frontend_dir() -> Path | None:
+    """프론트엔드 정적 파일 위치를 찾는다.
+    - 배포(Docker): 이미지 안의 /app/frontend 로 복사해 둔다
+    - 로컬 개발: 저장소의 ../frontend
+    """
+    candidates = [
+        Path(__file__).resolve().parents[2] / "frontend",   # backend/app/main.py → backend/ → 저장소 루트
+        Path("/app/frontend"),
+    ]
+    for path in candidates:
+        if (path / "index.html").is_file():
+            return path
+    return None
+
+
+def _mount_frontend(application: FastAPI) -> None:
+    """웹 화면(HTML/CSS/JS)을 API와 같은 주소에서 함께 제공한다.
+    주소가 하나로 합쳐지므로 프론트엔드 입장에서는 '같은 출처'가 되어
+    CORS 설정도, 카카오 콘솔에 도메인을 두 개 등록할 필요도 없어진다.
+
+    라우터 등록이 모두 끝난 뒤 마지막에 붙여야 '/'가 API 경로를 가리지 않는다.
+    프론트 파일이 없으면(API 전용 배포) 조용히 건너뛴다.
+    """
+    if not settings.serve_frontend:
+        return
+    frontend_dir = _find_frontend_dir()
+    if frontend_dir is None:
+        return
+    application.mount(
+        "/",
+        StaticFiles(directory=str(frontend_dir), html=True),
+        name="frontend",
+    )
+
 
 app = create_application()
