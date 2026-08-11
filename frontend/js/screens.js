@@ -6,7 +6,10 @@ function changeScreen(id) {
     document.querySelectorAll('.nav-item').forEach((t,i)=>t.classList.toggle('active',
         (id==='main'&&i===0)||(id==='schedule'&&i===1)||(id==='history'&&i===2)||(id==='login'&&i===3)));
     if (id==='history') renderTravelLog();
-    if (id==='login')   renderProfile();   // 내 정보 탭 진입 시 프로필 갱신
+    if (id==='login') {
+        renderProfile();          // 내 정보 탭 진입 시 프로필 갱신
+        refreshPrefButtons();     // 화면 설정 버튼에 현재 선택 표시
+    }
 }
 
 /* ── 시작 로그인 페이지(독립 오버레이) 열기/닫기 ──────────────── */

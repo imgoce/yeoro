@@ -59,6 +59,10 @@ const API_CONFIG = {
     DATA_GO_KR_KEY: '',    // ← 공공데이터 인증키 (Decoding)
     KAKAO_REST_KEY: '',    // ← 카카오 REST API 키
     KAKAO_JS_KEY:   '',    // ← 카카오 JavaScript 키 (선택)
+    /* 카카오내비(모빌리티) 길찾기 키 — 목록의 소요시간·거리를 카카오맵 길찾기와
+       똑같이 맞추는 데 사용. 비워두면 대체 경로(OSRM)로 계산한다.
+       ※ JavaScript 키로는 이 API가 거부되므로 REST API 키를 넣어야 한다. */
+    KAKAO_NAVI_KEY: '',
 
     /* 의료기관 — data.go.kr 서비스키 (응급의료기관 E-Gen + 병원정보 심평원)
        실제 키는 config.local.js(비커밋)에서 채운다. 비워두면 폴백 데이터로 동작. */

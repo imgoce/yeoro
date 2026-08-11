@@ -6,7 +6,9 @@
     <title>여로 - 세종시 맞춤형 무장애 큐레이션</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Jua&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Nanum Myeongjo: 훈민정음 계열의 전통 명조체(무료·OFL 라이선스).
+         AG 훈민정음체는 유료 폰트라 웹에 포함할 수 없어 가장 가까운 무료 글꼴을 쓴다. -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Jua&family=Gaegu:wght@400;700&family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
@@ -184,6 +186,44 @@
                 </div>
             </div>
 
+            <!-- 화면 설정 -->
+            <div class="section-label mb-2">화면 설정</div>
+            <div class="y-card mb-3" style="padding:16px 14px;">
+
+                <!-- 글씨 크기 -->
+                <div style="font-size:.86em;font-weight:800;color:var(--yeoro-navy);margin-bottom:9px;">글씨 크기</div>
+                <div style="display:flex;gap:6px;margin-bottom:18px;">
+                    <button class="pref-size" data-size="100%" onclick="setPrefFontSize('100%')"
+                        style="flex:1;border:1px solid var(--yeoro-border);border-radius:11px;padding:10px 2px;font-size:.78em;font-weight:700;cursor:pointer;">작게</button>
+                    <button class="pref-size" data-size="115%" onclick="setPrefFontSize('115%')"
+                        style="flex:1;border:1px solid var(--yeoro-border);border-radius:11px;padding:10px 2px;font-size:.88em;font-weight:700;cursor:pointer;">보통</button>
+                    <button class="pref-size" data-size="130%" onclick="setPrefFontSize('130%')"
+                        style="flex:1;border:1px solid var(--yeoro-border);border-radius:11px;padding:10px 2px;font-size:.98em;font-weight:700;cursor:pointer;">크게</button>
+                    <button class="pref-size" data-size="150%" onclick="setPrefFontSize('150%')"
+                        style="flex:1;border:1px solid var(--yeoro-border);border-radius:11px;padding:10px 2px;font-size:1.08em;font-weight:700;cursor:pointer;">아주 크게</button>
+                </div>
+
+                <!-- 글씨체 -->
+                <div style="font-size:.86em;font-weight:800;color:var(--yeoro-navy);margin-bottom:9px;">글씨체</div>
+                <div style="display:flex;gap:6px;margin-bottom:18px;">
+                    <button class="pref-font" data-font="sans" onclick="setPrefFontFamily('sans')"
+                        style="flex:1;border:1px solid var(--yeoro-border);border-radius:11px;padding:11px 4px;font-size:.85em;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">
+                        가나다 <span style="display:block;font-size:.85em;font-weight:500;opacity:.75;margin-top:2px;">기본 고딕체</span></button>
+                    <button class="pref-font" data-font="myeongjo" onclick="setPrefFontFamily('myeongjo')"
+                        style="flex:1;border:1px solid var(--yeoro-border);border-radius:11px;padding:11px 4px;font-size:.85em;font-weight:700;cursor:pointer;font-family:'Nanum Myeongjo',serif;">
+                        가나다 <span style="display:block;font-size:.85em;font-weight:500;opacity:.75;margin-top:2px;">훈민정음 명조체</span></button>
+                </div>
+
+                <!-- 화면 모드 -->
+                <div style="font-size:.86em;font-weight:800;color:var(--yeoro-navy);margin-bottom:9px;">화면 모드</div>
+                <div style="display:flex;gap:6px;">
+                    <button class="pref-theme" data-theme="light" onclick="setPrefTheme('light')"
+                        style="flex:1;border:1px solid var(--yeoro-border);border-radius:11px;padding:11px 4px;font-size:.85em;font-weight:700;cursor:pointer;">☀️ 밝은 모드</button>
+                    <button class="pref-theme" data-theme="dark" onclick="setPrefTheme('dark')"
+                        style="flex:1;border:1px solid var(--yeoro-border);border-radius:11px;padding:11px 4px;font-size:.85em;font-weight:700;cursor:pointer;">🌙 어두운 모드</button>
+                </div>
+            </div>
+
             <!-- 계정 액션 -->
             <div class="section-label mb-2">계정</div>
             <div class="y-card" style="padding:6px 14px;">
@@ -269,6 +309,21 @@
                 </div>
             </div>
             <div id="weather-banner" class="y-card hidden" style="padding:12px 14px;font-size:.85em;line-height:1.5;margin-bottom:10px;"></div>
+            <div id="recommend-actions" class="hidden" style="margin-bottom:12px;">
+                <div style="display:flex;gap:8px;">
+                    <button onclick="confirmRecommendation()"
+                        style="flex:1;border:none;border-radius:14px;padding:13px 8px;font-size:.95em;font-weight:800;background:var(--yeoro-blue);color:#fff;cursor:pointer;">
+                        ✈️ 이대로 여행하기</button>
+                    <button onclick="retryRecommendation()"
+                        style="flex:1;border:1px solid var(--yeoro-border);border-radius:14px;padding:13px 8px;font-size:.95em;font-weight:800;background:#fff;color:var(--yeoro-blue);cursor:pointer;">
+                        🔄 다시 추천</button>
+                </div>
+                <div style="text-align:center;margin-top:9px;">
+                    <span onclick="openOmniCartModal()"
+                        style="font-size:.82em;color:var(--yeoro-muted);text-decoration:underline;cursor:pointer;">
+                        ✏️ 직접 수정하기</span>
+                </div>
+            </div>
             <div id="schedule-timeline-box" class="y-card">
                 <p class="text-center py-4 small m-0" style="color:var(--yeoro-muted);">장바구니에 장소를 담거나<br><strong style="color:var(--yeoro-sub);">'🎲 랜덤 추천'</strong> 버튼을 눌러보세요.</p>
             </div>
@@ -320,6 +375,15 @@
                        style="border:none;outline:none;flex:1;font-size:1em;background:transparent;color:var(--yeoro-text);">
                 <span id="history-search-clear" class="material-icons" onclick="clearHistorySearch()"
                       style="display:none;color:var(--yeoro-muted);font-size:1.2rem;cursor:pointer;">close</span>
+            </div>
+
+            <div id="history-filter" class="hidden" style="display:flex;gap:6px;margin-bottom:12px;">
+                <button class="hist-chip" data-filter="all" onclick="setHistoryFilter('all')"
+                    style="flex:1;border:none;border-radius:12px;padding:9px 6px;font-size:.82em;font-weight:700;background:var(--yeoro-blue);color:#fff;cursor:pointer;">전체</button>
+                <button class="hist-chip" data-filter="cart" onclick="setHistoryFilter('cart')"
+                    style="flex:1;border:none;border-radius:12px;padding:9px 6px;font-size:.82em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">내가 담은 곳</button>
+                <button class="hist-chip" data-filter="rec" onclick="setHistoryFilter('rec')"
+                    style="flex:1;border:none;border-radius:12px;padding:9px 6px;font-size:.82em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">추천받은 곳</button>
             </div>
 
             <div id="history-empty-state" class="y-card text-center py-5 hidden">
@@ -398,7 +462,32 @@
         <div class="modal-content">
             <div class="modal-body p-4">
                 <div class="page-title" style="font-size:1.15em; margin-bottom:14px;">선택한 장소 목록</div>
-                <div id="omni-cart-items-list-box" style="max-height:220px; overflow-y:auto;" class="mb-4"></div>
+                <div id="omni-cart-items-list-box" style="max-height:180px; overflow-y:auto;" class="mb-3"></div>
+
+                <!-- 장소 추가하기 — 검색해서 바로 담거나, 목록 페이지로 이동 -->
+                <div style="border-top:1px solid var(--yeoro-border);padding-top:14px;margin-bottom:14px;">
+                    <div style="font-size:.88em;font-weight:800;color:var(--yeoro-navy);margin-bottom:9px;">장소 추가하기</div>
+
+                    <div style="display:flex;align-items:center;gap:8px;background:#fff;
+                         border:1.5px solid var(--yeoro-border);border-radius:14px;padding:9px 13px;margin-bottom:10px;">
+                        <span class="material-icons" style="color:var(--yeoro-blue);font-size:1.2rem;">search</span>
+                        <input id="cart-add-search" type="search" enterkeyhint="search"
+                               placeholder="관광지·음식점 이름으로 검색"
+                               oninput="onCartAddSearch(this.value)"
+                               style="border:none;outline:none;flex:1;font-size:.95em;background:transparent;color:var(--yeoro-text);">
+                    </div>
+                    <div id="cart-add-results" style="max-height:190px;overflow-y:auto;"></div>
+
+                    <div style="display:flex;gap:6px;margin-top:10px;">
+                        <button onclick="goPickFromCategory('관광명소')" class="cart-pick-btn"
+                            style="flex:1;border:1px solid var(--yeoro-border);background:#fff;border-radius:11px;padding:9px 4px;font-size:.8em;font-weight:700;color:var(--yeoro-blue);cursor:pointer;">🏞️ 관광명소</button>
+                        <button onclick="goPickFromCategory('먹거리')" class="cart-pick-btn"
+                            style="flex:1;border:1px solid var(--yeoro-border);background:#fff;border-radius:11px;padding:9px 4px;font-size:.8em;font-weight:700;color:var(--yeoro-blue);cursor:pointer;">🍽️ 음식점</button>
+                        <button onclick="goPickFromCategory('축제')" class="cart-pick-btn"
+                            style="flex:1;border:1px solid var(--yeoro-border);background:#fff;border-radius:11px;padding:9px 4px;font-size:.8em;font-weight:700;color:var(--yeoro-blue);cursor:pointer;">🎪 축제</button>
+                    </div>
+                </div>
+
                 <button class="y-btn-primary" onclick="injectCartToTimelineRoute()">현위치 동선 최적화하기</button>
             </div>
         </div>
@@ -435,6 +524,7 @@
 <!-- 비커밋 로컬 키 파일(있으면 config.js의 빈 키를 덮어씀). 없으면 폴백으로 동작 -->
 <script src="js/config.local.js" onerror="void 0"></script>
 <script src="js/state.js"></script>
+<script src="js/prefs.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/onboarding.js"></script>

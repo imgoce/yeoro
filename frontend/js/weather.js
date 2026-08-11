@@ -56,14 +56,24 @@ function weatherShortLabel(w) {
    badge:[배경, 글자], banner:배너 배경 그라데이션 */
 function weatherTheme(w) {
     const mode = weatherModeOf(w) || 'clear';
-    const THEMES = {
+    const LIGHT = {
         clear: { text: '#8A5A00', shadow: 'rgba(255,255,255,.55)', banner: 'linear-gradient(135deg,#A9D3FF 0%,#CFE6FF 45%,#FFE28A 100%)' },
         rain:  { text: '#0B2E56', shadow: 'rgba(255,255,255,.45)', banner: 'linear-gradient(135deg,#8FB4DA 0%,#6D93BC 55%,#54789F 100%)' },
         snow:  { text: '#2A3F7A', shadow: 'rgba(255,255,255,.55)', banner: 'linear-gradient(135deg,#C4D6F4 0%,#DCE8FB 50%,#AFC6EC 100%)' },
         heat:  { text: '#8A2E06', shadow: 'rgba(255,255,255,.45)', banner: 'linear-gradient(135deg,#FFC48A 0%,#FFA267 55%,#FF7E52 100%)' },
         cold:  { text: '#0F3E6E', shadow: 'rgba(255,255,255,.5)',  banner: 'linear-gradient(135deg,#A6C8EA 0%,#CADEF2 50%,#8FB4DC 100%)' },
     };
-    return THEMES[mode] || THEMES.clear;
+    /* 어두운 모드 — 같은 날씨 느낌을 유지하되 어둡게, 글자는 밝게 */
+    const DARK = {
+        clear: { text: '#FFD98A', shadow: 'rgba(0,0,0,.5)', banner: 'linear-gradient(135deg,#16233D 0%,#1E2C48 45%,#3A3320 100%)' },
+        rain:  { text: '#BFD8F2', shadow: 'rgba(0,0,0,.5)', banner: 'linear-gradient(135deg,#141E2E 0%,#1B2B40 55%,#22374F 100%)' },
+        snow:  { text: '#CBD9F5', shadow: 'rgba(0,0,0,.5)', banner: 'linear-gradient(135deg,#1A2237 0%,#232F4A 50%,#2B3757 100%)' },
+        heat:  { text: '#FFC59A', shadow: 'rgba(0,0,0,.5)', banner: 'linear-gradient(135deg,#33210F 0%,#48290F 55%,#5A2E14 100%)' },
+        cold:  { text: '#C3DAF2', shadow: 'rgba(0,0,0,.5)', banner: 'linear-gradient(135deg,#14202F 0%,#1C2B3E 50%,#243449 100%)' },
+    };
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const set = isDark ? DARK : LIGHT;
+    return set[mode] || set.clear;
 }
 
 /* 홈 배너 — 로그인 전/게스트/이메일/카카오 어떤 상태에서도 항상 표시되며
@@ -168,8 +178,11 @@ async function generateWeatherSchedule(forceKind) {
     const mode = weatherModeOf(w);
 
     /* 2) 장소 풀 로딩 (캐시 덕에 빠름) */
-    const [spots, food, fest] = await Promise.all([
-        getPlaces('관광명소'), getPlaces('먹거리'), getPlaces('축제'),
+    /* 축제는 기간이 정해져 있어 아무 날에나 갈 수 없으므로 코스에서 제외한다.
+       코스에 담긴 장소의 소요시간은 recalculateAndSortRoute에서 계산한다. */
+    const [spots, food] = await Promise.all([
+        getPlaces('관광명소', { withDrive:false }),
+        getPlaces('먹거리',   { withDrive:false }),
     ]);
     const indoor  = spots.filter(isIndoorPlace);
     const outdoor = spots.filter(p => !isIndoorPlace(p));
@@ -177,8 +190,7 @@ async function generateWeatherSchedule(forceKind) {
     /* 3) 날씨별 코스 구성 (맛집은 실내라 모든 날씨에 포함) */
     let course = [];
     if (mode === 'clear') {
-        course = [...pickRandom(outdoor, 2), ...pickRandom(indoor, 1),
-                  ...pickRandom(fest.filter(p=>p.lat&&p.lng), 1), ...pickRandom(food, 1)];
+        course = [...pickRandom(outdoor, 2), ...pickRandom(indoor, 1), ...pickRandom(food, 1)];
     } else if (mode === 'rain' || mode === 'heat' || mode === 'cold') {
         course = [...pickRandom(indoor, 3), ...pickRandom(food, 1)];
     } else if (mode === 'snow') {
@@ -212,4 +224,6 @@ async function generateWeatherSchedule(forceKind) {
             n.appendChild(warn);
         });
     }
+
+    showRecommendActions('weather');   // [이대로 여행하기 / 다시 추천] 노출
 }

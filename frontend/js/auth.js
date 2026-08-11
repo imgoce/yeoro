@@ -256,18 +256,26 @@ function proceedAfterOnboarding() {
     if (userSession.targetGroup==='5060') {
         applyFontFamily('5060');
         const slider = document.getElementById('fontsize-slider');
+        /* 전에 골라둔 글씨 크기가 있으면 슬라이더를 그 값에서 시작한다.
+           (그러지 않으면 로그인할 때마다 기본값으로 되돌아간다) */
+        const savedSize = parseInt((loadPrefs().size || '').replace('%',''), 10);
+        if (savedSize >= 90 && savedSize <= 160) slider.value = savedSize;
         onFontSliderInput(slider.value);   // 미리보기 초기 동기화
         new bootstrap.Modal(document.getElementById('fontSizeSettingModal')).show();
     } else {
-        /* 유아동반 모드: 예쁜 둥근 폰트 + 기본 크기 */
+        /* 유아동반 모드: 예쁜 둥근 폰트 + 저장된 크기(없으면 기본) */
         applyFontFamily('family');
-        setFont('100%');
+        setFont(loadPrefs().size || '100%');
         requestLocationThenEnter();
     }
 }
 
-/* 모드별 글꼴 적용 — family 모드일 때 Jua(둥근 손글씨풍) 적용 */
+/* 모드별 기본 글꼴 — family 모드일 때 Jua(둥근 손글씨풍) 적용.
+   단, 사용자가 [내 정보 > 화면 설정]에서 글씨체를 직접 골랐다면 그 선택이 우선한다. */
 function applyFontFamily(group){
+    const prefs = (typeof loadPrefs === 'function') ? loadPrefs() : null;
+    if (prefs && prefs.fontExplicit) { applyFontStack(prefs.font); return; }
+
     const root = document.getElementById('app-root-wrapper');
     if (group==='family') {
         root.style.setProperty('--app-font-family', "'Jua', 'Noto Sans KR', sans-serif");
@@ -298,7 +306,12 @@ function confirmFontSizeAndGoHome(){
     bootstrap.Modal.getInstance(document.getElementById('fontSizeSettingModal'))?.hide();
     requestLocationThenEnter();
 }
-function setFont(s){document.getElementById('app-root-wrapper').style.setProperty('--app-font-size',s);}
+/* 글씨 크기 적용 — 온보딩에서 고른 크기도 기기에 저장해두어
+   [내 정보 > 화면 설정]에 그대로 표시되고, 다음에 열 때도 유지된다. */
+function setFont(s){
+    if (typeof setPrefFontSize === 'function') { setPrefFontSize(s); return; }
+    document.getElementById('app-root-wrapper').style.setProperty('--app-font-size', s);
+}
 function finalizeAuth() {
     document.getElementById('user-profile-indicator').textContent=userSession.nickname;
     document.getElementById('main-welcome-msg').innerHTML=
