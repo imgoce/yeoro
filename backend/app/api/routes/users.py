@@ -1,6 +1,7 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
+from app.clients.kakao_auth import KakaoAuthError, unlink_kakao
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -40,3 +41,35 @@ def update_my_profile(
     db.commit()
     db.refresh(current_user)
     return UserProfileEnvelope(user=serialize_user_profile(current_user))
+
+
+@router.delete("/me", status_code=status.HTTP_200_OK)
+async def delete_my_account(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    kakao_access_token: str | None = Header(None, alias="X-Kakao-Access-Token"),
+) -> dict[str, str]:
+    """회원 탈퇴 처리: 카카오 연동 해제 및 DB 계정 처리"""
+    
+    # 1. 카카오 로그인 유저인 경우 카카오 연동 해제
+    if current_user.auth_provider == "kakao":
+        if not kakao_access_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="카카오 계정 탈퇴를 위해 X-Kakao-Access-Token 헤더가 필요합니다.",
+            )
+        try:
+            await unlink_kakao(kakao_access_token)
+        except KakaoAuthError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            ) from exc
+
+    # 2. 서비스 DB 처리 (비활성화 또는 삭제 중 선택)
+    current_user.is_active = False  # 비활성화 처리
+    # db.delete(current_user)       # DB 완전히 삭제 시 사용
+    
+    db.add(current_user)
+    db.commit()
+
+    return {"message": "성공적으로 회원 탈퇴 및 계정이 삭제되었습니다."}

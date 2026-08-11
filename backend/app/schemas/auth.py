@@ -37,3 +37,7 @@ class UserProfileResponse(BaseModel):
     preferred_themes: list[str]
     preferred_transport: str | None
     is_active: bool
+
+
+class KakaoLogoutRequest(BaseModel):
+    access_token: str

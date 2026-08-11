@@ -1,11 +1,6 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-<<<<<<< HEAD
 
-security = HTTPBearer()
-
-=======
->>>>>>> 62377eb (백엔드 카카오계정 연동 중 missing에러 해결)
 
 from app.api.dependencies import (
     get_kakao_map_api_client,
@@ -270,31 +265,47 @@ async def callback(
 
 @kakao_auth_router.get("/me")
 async def me(
-<<<<<<< HEAD
-    # HTTPBearer가 스웨거에 'Authorize' 버튼을 만들고 헤더 주입을 알아서 보장합니다.
     credentials: HTTPAuthorizationCredentials = Depends(security),
     client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
 ):
-    # credentials.credentials에 'Bearer ' 가 제외된 순수 토큰만 자동으로 담깁니다.
-    access_token = credentials.credentials.strip()
-        
-=======
-    # 2. Header 대신 Depends(security)를 주입받습니다.
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
-):
-    # credentials.credentials 안에는 "Bearer "가 자동으로 제거된 '순수 토큰 문자열'만 들어옵니다.
     access_token = credentials.credentials
-    
->>>>>>> 62377eb (백엔드 카카오계정 연동 중 missing에러 해결)
+
     try:
         return await client.get_user_info(
             access_token=access_token,
         )
     except KakaoAuthApiError as exc:
-<<<<<<< HEAD
-        raise HTTPException(status_code=502, detail=str(exc)) from exc  
-=======
         raise HTTPException(status_code=502, detail=str(exc)) from exc
->>>>>>> 62377eb (백엔드 카카오계정 연동 중 missing에러 해결)
-      
+
+
+@kakao_auth_router.post("/logout", summary="카카오 로그아웃")
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
+):
+    """카카오 access_token을 만료시켜 로그아웃 처리합니다."""
+    access_token = credentials.credentials
+
+    try:
+        return await client.logout(
+            access_token=access_token,
+        )
+    except KakaoAuthApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@kakao_auth_router.post("/unlink", summary="카카오 연결 끊기 (회원탈퇴)")
+async def unlink(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
+):
+    """카카오 계정과의 연결을 완전히 해제합니다."""
+    access_token = credentials.credentials
+
+    try:
+        return await client.unlink(
+            access_token=access_token,
+        )
+    except KakaoAuthApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    
