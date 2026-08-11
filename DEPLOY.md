@@ -122,7 +122,7 @@ Service URL: https://yeoro-abc123xyz.a.run.app
 아래에서 **대괄호 부분만 내 값으로 바꿔서** 한 줄로 붙여넣으세요.
 
 ```
-gcloud run services update yeoro --region asia-northeast3 --set-env-vars DATABASE_URL=[1단계주소],SECRET_KEY=[아무거나긴글자],PUBLIC_DATA_GO_KR_KEY=[공공데이터키],PUBLIC_KAKAO_REST_KEY=[카카오키],KAKAO_MAP_REST_API_KEY=[카카오키],KAKAO_KA_ORIGIN=[2단계주소]
+gcloud run services update yeoro --region asia-northeast3 --set-env-vars DATABASE_URL=[1단계주소],SECRET_KEY=[아무거나긴글자],PUBLIC_DATA_GO_KR_KEY=[공공데이터키],PUBLIC_KAKAO_REST_KEY=[카카오키],KAKAO_MAP_REST_API_KEY=[카카오키],PUBLIC_KAKAO_NAVI_KEY=[카카오내비키],KAKAO_KA_ORIGIN=[2단계주소]
 ```
 
 ### 무엇을 넣나요?
@@ -132,8 +132,11 @@ gcloud run services update yeoro --region asia-northeast3 --set-env-vars DATABAS
 | `[1단계주소]` | `postgres://...` | 1단계에서 메모한 것 |
 | `[아무거나긴글자]` | 예: `yeoro-secret-2026-abcdefg` | **직접 지어내세요** (길수록 안전) |
 | `[공공데이터키]` | 공공데이터포털 키 | `frontend/js/config.local.js` 안에 있음 |
-| `[카카오키]` | 카카오 REST 키 | 같은 파일 안에 있음 (**2군데 모두 같은 값**) |
+| `[카카오키]` | 카카오 REST 키 | 같은 파일 안 `KAKAO_REST_KEY` (**2군데 모두 같은 값**) |
+| `[카카오내비키]` | 카카오내비 길찾기 키 | 같은 파일 안 `KAKAO_NAVI_KEY` |
 | `[2단계주소]` | `https://yeoro-....run.app` | 2단계에서 받은 주소 |
+
+> 💡 `[카카오내비키]`를 빼먹으면 목록의 "약 N분" 값이 **길찾기 화면과 달라집니다.**
 
 > ⚠️ 값 사이에 **띄어쓰기를 넣지 마세요.** 쉼표로만 구분합니다.
 

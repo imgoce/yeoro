@@ -103,6 +103,7 @@ def _register_frontend_config_route(application: FastAPI) -> None:
             settings.public_data_go_kr_key,
             settings.public_kakao_rest_key,
             settings.public_kakao_js_key,
+            settings.public_kakao_navi_key,
         )
     ):
         return
@@ -116,6 +117,7 @@ def _register_frontend_config_route(application: FastAPI) -> None:
             "MEDICAL_API_KEY": settings.public_data_go_kr_key,
             "KAKAO_REST_KEY": kakao_rest,
             "KAKAO_JS_KEY": settings.public_kakao_js_key or kakao_rest,
+            "KAKAO_NAVI_KEY": settings.public_kakao_navi_key,
         }
         assigns = "\n".join(
             f"    API_CONFIG.{name} = {json.dumps(value)};"

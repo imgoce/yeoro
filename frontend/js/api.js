@@ -158,16 +158,74 @@ async function callWeatherNow() {
     return { temp: val('T1H'), rain1h: val('RN1'), wind: val('WSD'), pty, kind };
 }
 
-/* ── 실제 도로 기준 이동시간·거리 (OSRM 공개 서버 — 키 불필요, CORS 허용) ──
-   직선거리는 실제 이동거리와 크게 달라서(예: 세종시청→호수공원 직선 3.2km,
-   실도로 6.2km) 목록에는 자동차 기준 실거리·소요시간을 보여준다.
-   table API 한 번 호출로 내 위치→모든 장소를 한꺼번에 계산한다. */
-async function fetchDrivingInfo(places) {
-    const withCoord = places.filter(p => p.lat && p.lng);
-    if (!withCoord.length) return;
+/* ── 자동차 기준 이동시간·거리 ─────────────────────────────────────
+   목록에 보여주는 "🚗 약 N분 (Nkm)"은 길찾기 버튼을 눌렀을 때 열리는
+   카카오맵 화면의 값과 반드시 같아야 한다. 그래서 계산도 카카오내비
+   (모빌리티) 길찾기 API로 한다. 실시간 교통·신호가 반영된 값이다.
+
+   ⚠️ 다중 목적지 API는 간이 계산이라 길찾기 화면과 거리가 미세하게 어긋난다.
+      그래서 길찾기 화면이 쓰는 것과 동일한 '단일 길찾기' API를 장소마다 호출한다.
+      결과는 10분간 캐시되므로(places.js) 실제 호출은 자주 일어나지 않는다.
+
+   계산 순서
+     ① 카카오 단일 길찾기 — 장소마다 호출 (동시 호출 수 제한)
+     ② 카카오 키가 없거나 실패하면 OSRM으로 대체 (그것도 실패하면 직선거리 표시)
+   ────────────────────────────────────────────────────────────────*/
+const KAKAO_NAVI_CONCURRENCY = 4;    // 동시에 보낼 요청 수
+const KAKAO_NAVI_MIN_GAP_MS  = 45;   // 요청 사이 최소 간격 — 너무 몰아서 보내면
+                                     // 카카오가 "API limit has been exceeded"로 거절한다
+const KAKAO_NAVI_RETRY_MS    = 700;  // 거절당했을 때 잠시 쉬었다 재시도하는 간격
+
+/* 요청을 일정 간격으로 흘려보낸다 (초당 호출 제한 대응) */
+let _naviNextSlot = 0;
+function naviPace() {
+    const now = Date.now();
+    const slot = Math.max(now, _naviNextSlot);
+    _naviNextSlot = slot + KAKAO_NAVI_MIN_GAP_MS;
+    const wait = slot - now;
+    return wait > 0 ? new Promise(r => setTimeout(r, wait)) : Promise.resolve();
+}
+
+function applyDriveSummary(place, meters, seconds) {
+    if (meters == null || seconds == null) return;
+    place._driveMin = Math.max(1, Math.round(seconds / 60));
+    place._driveKm  = Math.round(meters / 100) / 10;
+}
+
+/* 카카오 단일 길찾기 — 길찾기 버튼이 여는 카카오맵 화면과 같은 기준으로 계산한다.
+   거리 제한이 없어 먼 장소도 그대로 처리된다. */
+async function fetchKakaoDriveSingle(place, attempt = 0) {
+    const url = 'https://apis-navi.kakaomobility.com/v1/directions?' +
+        new URLSearchParams({
+            origin: `${userLoc.lng},${userLoc.lat}`,
+            destination: `${place.lng},${place.lat}`,
+        });
+    await naviPace();
+    try {
+        const res  = await fetch(url, {
+            headers: { Authorization: 'KakaoAK ' + API_CONFIG.KAKAO_NAVI_KEY },
+        });
+        const json = await res.json();
+
+        /* 호출이 몰려 거절당하면(code -10) 잠시 쉬었다 한 번 더 시도 */
+        if (json?.code === -10 && attempt < 2) {
+            await new Promise(r => setTimeout(r, KAKAO_NAVI_RETRY_MS * (attempt + 1)));
+            return fetchKakaoDriveSingle(place, attempt + 1);
+        }
+        const route = json?.routes?.[0];
+        if (route?.result_code === 0 && route.summary) {
+            applyDriveSummary(place, route.summary.distance, route.summary.duration);
+        }
+    } catch (e) {
+        /* 네트워크 오류 등 — 값이 없으면 직선거리로 표시된다 */
+    }
+}
+
+/* 대체 수단: 카카오를 못 쓸 때만 사용 (값이 카카오맵과 다를 수 있음) */
+async function fetchDrivingInfoOsrm(places) {
     const CHUNK = 60;   // URL 길이 제한 대비 분할
-    for (let i = 0; i < withCoord.length; i += CHUNK) {
-        const chunk  = withCoord.slice(i, i + CHUNK);
+    for (let i = 0; i < places.length; i += CHUNK) {
+        const chunk  = places.slice(i, i + CHUNK);
         const coords = [`${userLoc.lng},${userLoc.lat}`,
                         ...chunk.map(p => `${p.lng},${p.lat}`)].join(';');
         const url = `https://router.project-osrm.org/table/v1/driving/${coords}` +
@@ -175,13 +233,32 @@ async function fetchDrivingInfo(places) {
         const json = await safeFetch(url);
         if (!json || json.code !== 'Ok') return;   // 실패 시 직선거리 폴백 유지
         chunk.forEach((p, idx) => {
-            const sec = json.durations?.[0]?.[idx + 1];
-            const m   = json.distances?.[0]?.[idx + 1];
-            if (sec != null && m != null) {
-                p._driveMin = Math.max(1, Math.round(sec / 60));
-                p._driveKm  = Math.round(m / 100) / 10;
-            }
+            applyDriveSummary(p, json.distances?.[0]?.[idx + 1], json.durations?.[0]?.[idx + 1]);
         });
+    }
+}
+
+async function fetchDrivingInfo(places) {
+    const withCoord = places.filter(p => p.lat && p.lng);
+    if (!withCoord.length) return;
+
+    /* 카카오 키가 없으면 대체 수단으로 */
+    if (!API_CONFIG.KAKAO_NAVI_KEY) return fetchDrivingInfoOsrm(withCoord);
+
+    /* ① 가까운 곳부터, 동시 호출 수를 제한해가며 개별 조회 */
+    const queue = [...withCoord].sort((a, b) => (a._dist ?? Infinity) - (b._dist ?? Infinity));
+    let cursor = 0;
+    const worker = async () => {
+        while (cursor < queue.length) {
+            await fetchKakaoDriveSingle(queue[cursor++]);
+        }
+    };
+    await Promise.all(
+        Array.from({ length: Math.min(KAKAO_NAVI_CONCURRENCY, queue.length) }, worker));
+
+    /* ② 카카오가 통째로 실패했다면(키 오류·장애) 대체 수단으로 한 번 더 */
+    if (!withCoord.some(p => p._driveMin != null)) {
+        await fetchDrivingInfoOsrm(withCoord);
     }
 }
 

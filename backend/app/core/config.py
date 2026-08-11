@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     public_data_go_kr_key: str = ""   # 공공데이터포털 키 (관광·날씨·의료 공용)
     public_kakao_rest_key: str = ""   # 카카오 REST 키 (지도 검색용)
     public_kakao_js_key: str = ""     # 카카오 JavaScript 키 (앱 내 지도 표시용)
+    public_kakao_navi_key: str = ""   # 카카오내비 길찾기 키 (목록의 소요시간·거리 계산용, REST 키)
 
     kakao_auth_base_url: str = "https://kauth.kakao.com"
     kakao_api_base_url: str = "https://kapi.kakao.com"
