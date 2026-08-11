@@ -7,7 +7,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.clients.kakao_auth import KakaoAuthError, exchange_code_for_token, fetch_kakao_profile
+from app.clients.kakao_auth import KakaoAuthError, exchange_code_for_token, fetch_kakao_profile, logout_kakao
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.user import User
@@ -18,6 +18,7 @@ from app.schemas.auth import (
     TokenResponse,
     UserProfileResponse,
     UserRegisterRequest,
+    KakaoLogoutRequest
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -157,3 +158,16 @@ def login_as_guest(db: Session = Depends(get_db)) -> TokenResponse:
 
     access_token = create_access_token(str(user.id))
     return TokenResponse(access_token=access_token)
+
+
+@router.post("/kakao/logout", status_code=status.HTTP_200_OK)
+async def logout_kakao_user(payload: KakaoLogoutRequest) -> dict[str, str]:
+    """카카오 access_token을 전달받아 카카오 세션을 로그아웃(토큰 만료) 처리한다."""
+    try:
+        kakao_id = await logout_kakao(payload.access_token)
+    except KakaoAuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    return {"message": "성공적으로 로그아웃되었습니다.", "kakao_id": kakao_id}
