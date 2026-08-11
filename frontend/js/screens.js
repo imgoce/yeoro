@@ -48,6 +48,12 @@ function renderProfile() {
 
 /* ── 로그아웃 → 시작 로그인 페이지로 ──────────────────────────── */
 function handleLogout() {
+    /* 앱이면 카카오 세션도 함께 끊는다.
+       이걸 안 하면 로그아웃해도 카카오 토큰이 기기에 남아,
+       카카오 버튼을 다시 누르는 순간 곧바로 재로그인된다. */
+    if (window.YeoroNative && typeof window.YeoroNative.logoutKakao === 'function') {
+        try { window.YeoroNative.logoutKakao(); } catch (e) {}
+    }
     localStorage.removeItem('yeoro_last_user');
     localStorage.removeItem('yeoro_jwt');
     userSession = { loggedIn:false, targetGroup:'5060', nickname:'게스트', userId:null, authType:null };
