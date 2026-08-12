@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.kakao.sdk.auth.model.Prompt
 import com.kakao.sdk.common.model.ClientError
 import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.user.UserApiClient
@@ -37,6 +38,9 @@ class MainActivity : AppCompatActivity() {
     // 사용자가 권한 팝업에서 응답하면 onRequestPermissionsResult에서 이 콜백을 다시 살려준다.
     private var pendingGeolocationOrigin: String? = null
     private var pendingGeolocationCallback: GeolocationPermissions.Callback? = null
+
+    // 로그아웃 직후 표시. 다음 카카오 로그인에서 계정 확인을 다시 받게 한다.
+    private var forceKakaoReauth = false
 
     // 만에 하나 웹 콘텐츠 안의 링크가 카카오/OAuth 로그인 페이지로 직접 이동하려 하면
     // WebView 로딩을 막고 Chrome Custom Tabs로 열어주는 안전망.
@@ -173,6 +177,12 @@ class MainActivity : AppCompatActivity() {
             notifyJs(success = false, message = "카카오 로그인이 아직 설정되지 않았습니다")
             return
         }
+        // 로그아웃한 뒤라면 카카오톡으로 자동 로그인되지 않게, 계정 확인부터 다시 받는다.
+        if (forceKakaoReauth) {
+            forceKakaoReauth = false
+            loginWithKakaoAccount(reauth = true)
+            return
+        }
         if (UserApiClient.instance.isKakaoTalkLoginAvailable(this)) {
             UserApiClient.instance.loginWithKakaoTalk(this) { token, error ->
                 if (error != null) {
@@ -191,10 +201,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // 카카오톡 미설치 시: SDK가 자동으로 시스템 브라우저(Custom Tabs)를 열어 로그인시키고,
-    // AndroidManifest에 등록된 AuthCodeHandlerActivity로 결과를 되돌려준다.
-    private fun loginWithKakaoAccount() {
-        UserApiClient.instance.loginWithKakaoAccount(this) { token, error ->
+    /**
+     * 카카오 세션 끊기 (로그아웃).
+     *
+     * 토큰만 지워서는 부족하다. 기기에 카카오톡이 로그인되어 있으면
+     * 다음에 카카오 버튼을 누르는 순간 카카오톡이 곧바로 로그인시켜 주기 때문에,
+     * 사용자 입장에서는 "로그아웃이 안 된 것"처럼 보인다.
+     * 그래서 다음 로그인은 계정 확인을 다시 받도록 표시해 둔다.
+     */
+    fun logoutKakao() {
+        if (BuildConfig.KAKAO_NATIVE_APP_KEY.isBlank()) return
+        forceKakaoReauth = true
+        UserApiClient.instance.logout { error ->
+            if (error != null) Log.w("Yeoro", "카카오 로그아웃 실패", error)
+        }
+    }
+
+    // 카카오톡 미설치 시(또는 로그아웃 직후 재인증이 필요할 때): SDK가 시스템 브라우저를 열어
+    // 로그인시키고, AndroidManifest에 등록된 AuthCodeHandlerActivity로 결과를 되돌려준다.
+    // reauth=true면 이미 로그인돼 있어도 계정 확인을 다시 받는다.
+    private fun loginWithKakaoAccount(reauth: Boolean = false) {
+        val prompts = if (reauth) listOf(Prompt.LOGIN) else null
+        UserApiClient.instance.loginWithKakaoAccount(this, prompts = prompts) { token, error ->
             if (error != null) {
                 notifyJs(success = false, message = error.message ?: "카카오 로그인 실패")
             } else if (token != null) {

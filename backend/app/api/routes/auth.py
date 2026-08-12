@@ -6,13 +6,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
-from app.clients.kakao_auth import KakaoAuthError, exchange_code_for_token, fetch_kakao_profile
+from app.api.deps import get_current_user, get_db
+from app.clients.kakao_auth import (
+    KakaoAuthError,
+    exchange_code_for_token,
+    fetch_kakao_profile,
+    logout_kakao,
+)
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.user import User
 from app.schemas.auth import (
     KakaoCallbackLoginRequest,
+    KakaoLogoutRequest,
     KakaoTokenLoginRequest,
     LoginRequest,
     TokenResponse,
@@ -80,15 +86,27 @@ def _generate_unique_nickname(db: Session, base: str) -> str:
 
 
 def _unusable_password_hash() -> str:
-    # 카카오/게스트 계정은 비밀번호로 로그인할 수 없어야 하므로, 아무도 알 수 없는
-    # 무작위 값을 해시해서 채워 넣는다 (verify_password가 항상 실패하게 됨).
+    # 카카오/게스트 계정은 비밀번호 로그인을 막기 위해 아무도 모르는 값을 해시해 둔다.
     return get_password_hash(secrets.token_urlsafe(32))
+
+
+def _retire_user_identity(user: User) -> None:
+    suffix = uuid4().hex
+    user.email = f"deleted_{user.id}_{suffix}@deleted.yeoro-noemail.com"
+    user.nickname = f"deleted_user_{user.id}_{suffix[:12]}"
+    user.kakao_id = None
+    user.is_active = False
 
 
 def _get_or_create_kakao_user(db: Session, *, kakao_id: str, nickname_hint: str) -> User:
     user = db.scalar(select(User).where(User.kakao_id == kakao_id))
     if user is not None:
-        return user
+        if user.is_active:
+            return user
+
+        _retire_user_identity(user)
+        db.add(user)
+        db.commit()
 
     user = User(
         email=f"kakao_{kakao_id}@kakao.yeoro-noemail.com",
@@ -107,7 +125,7 @@ def _get_or_create_kakao_user(db: Session, *, kakao_id: str, nickname_hint: str)
 
 @router.post("/kakao/token", response_model=TokenResponse)
 async def login_with_kakao_token(payload: KakaoTokenLoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
-    """안드로이드 네이티브 카카오 SDK 경로 — 이미 발급받은 access_token을 검증한다."""
+    """안드로이드 네이티브 카카오 SDK 경로 - 이미 발급받은 access_token을 검증한다."""
     try:
         kakao_id, nickname = await fetch_kakao_profile(payload.access_token)
     except KakaoAuthError as exc:
@@ -122,7 +140,7 @@ async def login_with_kakao_token(payload: KakaoTokenLoginRequest, db: Session = 
 async def login_with_kakao_callback(
     payload: KakaoCallbackLoginRequest, db: Session = Depends(get_db)
 ) -> TokenResponse:
-    """웹 브라우저 OAuth 리다이렉트 경로 — authorization code를 access_token으로 교환한 뒤 검증한다."""
+    """웹 브라우저 OAuth 경로 - authorization code를 access_token으로 교환한 뒤 검증한다."""
     try:
         access_token = await exchange_code_for_token(
             code=payload.code,
@@ -141,8 +159,7 @@ async def login_with_kakao_callback(
 
 @router.post("/guest", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def login_as_guest(db: Session = Depends(get_db)) -> TokenResponse:
-    """게스트 둘러보기 — 매 요청마다 새 익명 계정을 만들어 즉시 토큰을 발급한다.
-    프론트엔드는 발급받은 토큰을 저장해두고 재방문 시 재사용해야 한다 (계정 중복 생성 방지)."""
+    """게스트 둘러보기 - 매 요청마다 새 익명 계정을 만들어 즉시 토큰을 발급한다."""
     user = User(
         email=f"guest_{uuid4().hex}@guest.yeoro-noemail.com",
         nickname=_generate_unique_nickname(db, "게스트"),
@@ -157,3 +174,33 @@ def login_as_guest(db: Session = Depends(get_db)) -> TokenResponse:
 
     access_token = create_access_token(str(user.id))
     return TokenResponse(access_token=access_token)
+
+
+@router.post("/kakao/logout", status_code=status.HTTP_200_OK)
+async def logout_kakao_user(
+    payload: KakaoLogoutRequest,
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
+    if current_user.auth_provider != "kakao" or not current_user.kakao_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="카카오 연동 계정만 카카오 로그아웃을 요청할 수 있습니다.",
+        )
+
+    try:
+        token_kakao_id, _ = await fetch_kakao_profile(payload.access_token)
+        if token_kakao_id != current_user.kakao_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="카카오 access token이 현재 사용자와 일치하지 않습니다.",
+            )
+        kakao_id = await logout_kakao(payload.access_token)
+    except KakaoAuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    return {
+        "message": "카카오 토큰이 만료되었습니다. 앱 로그아웃을 완료하려면 클라이언트의 서비스 토큰도 삭제하세요.",
+        "kakao_id": kakao_id,
+    }

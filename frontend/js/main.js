@@ -18,30 +18,21 @@ document.addEventListener('DOMContentLoaded', () => {
     /* 뒤 배경으로 메인을 깔아둠 (로그인/온보딩이 그 위에 오버레이로 뜸) */
     changeScreen('main');
 
-    /* 새로고침/재방문 시 이전 로그인 세션 복원 (카카오·이메일 로그인만 저장됨) —
-       로그인 화면을 건너뛰고 바로 인사말·위치 정보까지 복원된 메인 화면으로 진입 */
-    let restoredSession = false;
-    try {
-        const saved = JSON.parse(localStorage.getItem('yeoro_last_user') || 'null');
-        if (saved && saved.loggedIn) {
-            userSession = saved;
-            applyFontFamily(saved.targetGroup);
-            if (getAuthToken()) syncTravelLogFromServer();
-            hideAuthScreen();
-            finalizeAuth();
-            restoredSession = true;
-        }
-    } catch(e) {}
-    if (!restoredSession) renderProfile();
+    /* 앱을 켤 때는 항상 로그인 화면부터 시작한다.
+       (이전에는 저장된 세션을 복원해 바로 메인으로 들어갔는데,
+        누가 쓰는지 매번 확인할 수 있도록 자동 로그인을 하지 않는다)
+       지난 로그인 정보는 지워서 '내 정보'에도 남지 않게 한다. */
+    localStorage.removeItem('yeoro_last_user');
+    localStorage.removeItem('yeoro_jwt');
+    userSession = { loggedIn:false, targetGroup:'5060', nickname:'게스트', userId:null, authType:null };
+    renderProfile();
 
-    /* 카카오 콜백으로 돌아온 경우: handleKakaoCallback 내부에서 afterAuth() 진행 */
+    /* 카카오 로그인을 마치고 돌아온 경우(웹)에는 그 처리가 끝날 때까지 기다린다.
+       handleKakaoCallback 안에서 로그인 완료 후 메인으로 들어간다. */
     const hasKakaoCode = new URLSearchParams(window.location.search).get('code');
     handleKakaoCallback();
 
-    /* 콜백도 아니고, 복원된 세션도 없으면 시작 로그인 페이지 노출 */
-    if (!hasKakaoCode && !restoredSession && !userSession.loggedIn) {
-        goToAuthScreen();
-    }
+    if (!hasKakaoCode) goToAuthScreen();   // 그 외에는 항상 로그인 화면부터
 
     /* 날씨: 즉시 표시 + 5분마다(그리고 앱 복귀 시) 실시간 갱신 */
     startWeatherWatch();

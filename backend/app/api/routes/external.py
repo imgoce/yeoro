@@ -7,24 +7,24 @@ from redis.exceptions import RedisError
 security = HTTPBearer()
 
 from app.api.dependencies import (
+    get_kakao_auth_api_client,
     get_kakao_map_api_client,
     get_redis_cache,
     get_tourism_api_client,
     get_weather_api_client,
-    get_kakao_auth_api_client,
 )
+from app.clients.kakao import KakaoAuthApiClient, KakaoAuthApiError
 from app.clients.kakaomap import KakaoMapApiClient, KakaoMapApiError
 from app.clients.tourism import TourismApiClient, TourismApiError
 from app.clients.weather import WeatherApiClient, WeatherApiError
 from app.core.cache import RedisCache
-from app.clients.kakao import KakaoAuthApiClient, KakaoAuthApiError
-
-
 
 tourism_router = APIRouter(prefix="/tourism", tags=["external-tourism"])
 kakao_router = APIRouter(prefix="/kakao-map", tags=["external-kakao-map"])
 weather_router = APIRouter(prefix="/weather", tags=["external-weather"])
 kakao_auth_router = APIRouter(prefix="/kakao-auth", tags=["external-kakao-auth"])
+
+security = HTTPBearer()
 
 
 @tourism_router.get("/places")
@@ -290,15 +290,45 @@ async def callback(
 
 @kakao_auth_router.get("/me")
 async def me(
-    # HTTPBearer가 스웨거에 'Authorize' 버튼을 만들고 헤더 주입을 알아서 보장합니다.
     credentials: HTTPAuthorizationCredentials = Depends(security),
     client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
 ):
-    # credentials.credentials에 'Bearer ' 가 제외된 순수 토큰만 자동으로 담깁니다.
     access_token = credentials.credentials.strip()
-        
+
     try:
         return await client.get_user_info(
+            access_token=access_token,
+        )
+    except KakaoAuthApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@kakao_auth_router.post("/logout", summary="카카오 로그아웃")
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
+):
+    """카카오 access_token을 만료시켜 로그아웃 처리합니다."""
+    access_token = credentials.credentials.strip()
+
+    try:
+        return await client.logout(
+            access_token=access_token,
+        )
+    except KakaoAuthApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@kakao_auth_router.post("/unlink", summary="카카오 연결 끊기 (회원탈퇴)")
+async def unlink(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    client: KakaoAuthApiClient = Depends(get_kakao_auth_api_client),
+):
+    """카카오 계정과의 연결을 완전히 해제합니다."""
+    access_token = credentials.credentials.strip()
+
+    try:
+        return await client.unlink(
             access_token=access_token,
         )
     except KakaoAuthApiError as exc:

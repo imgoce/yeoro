@@ -59,3 +59,46 @@ async def fetch_kakao_profile(access_token: str) -> tuple[str, str]:
         or "카카오 회원"
     )
     return str(kakao_id), nickname
+
+
+
+async def logout_kakao(access_token: str) -> str:
+    """카카오 access token을 받아 토큰을 만료(로그아웃)시킨다. 반환: 로그아웃된 kakao_id(str)"""
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.post(
+            "https://kapi.kakao.com/v1/user/logout",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+        )
+    if response.status_code != 200:
+        raise KakaoAuthError(f"카카오 로그아웃 실패: {response.text}")
+
+    payload = response.json()
+    kakao_id = payload.get("id")
+    if kakao_id is None:
+        raise KakaoAuthError("카카오 응답에 사용자 ID가 없습니다.")
+
+    return str(kakao_id)
+
+
+async def unlink_kakao(access_token: str) -> str:
+    """카카오 access token을 받아 카카오 계정 연동을 완전히 해제(회원탈퇴)한다. 반환: 해제된 kakao_id(str)"""
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.post(
+            "https://kapi.kakao.com/v1/user/unlink",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+        )
+    if response.status_code != 200:
+        raise KakaoAuthError(f"카카오 연동 해제 실패: {response.text}")
+
+    payload = response.json()
+    kakao_id = payload.get("id")
+    if kakao_id is None:
+        raise KakaoAuthError("카카오 응답에 사용자 ID가 없습니다.")
+
+    return str(kakao_id)
