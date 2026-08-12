@@ -253,19 +253,26 @@ function afterAuth() {
    ▸ 5060 모드     : 글자 크기 슬라이더 모달을 띄워 사용자가 직접 조정
    ▸ 유아동반 모드 : 둥글고 친근한 폰트(Jua)로 교체 후 바로 진입       */
 function proceedAfterOnboarding() {
+    const prefs = loadPrefs();
     if (userSession.targetGroup==='5060') {
         applyFontFamily('5060');
+        /* 글씨 크기를 한 번이라도 정한 적이 있으면 설정 창을 다시 띄우지 않는다.
+           (로그인할 때마다 창이 뜨면 홈까지 들어가는 길이 길어져 버벅이는 느낌을 준다.
+            나중에 바꾸고 싶으면 [내 정보 > 화면 설정]에서 언제든 조절할 수 있다) */
+        if (prefs.sizeChosen) {
+            applyFontSize(prefs.size);
+            requestLocationThenEnter();
+            return;
+        }
         const slider = document.getElementById('fontsize-slider');
-        /* 전에 골라둔 글씨 크기가 있으면 슬라이더를 그 값에서 시작한다.
-           (그러지 않으면 로그인할 때마다 기본값으로 되돌아간다) */
-        const savedSize = parseInt((loadPrefs().size || '').replace('%',''), 10);
+        const savedSize = parseInt((prefs.size || '').replace('%',''), 10);
         if (savedSize >= 90 && savedSize <= 160) slider.value = savedSize;
         onFontSliderInput(slider.value);   // 미리보기 초기 동기화
         new bootstrap.Modal(document.getElementById('fontSizeSettingModal')).show();
     } else {
         /* 유아동반 모드: 예쁜 둥근 폰트 + 저장된 크기(없으면 기본) */
         applyFontFamily('family');
-        setFont(loadPrefs().size || '100%');
+        applyFontSize(prefs.sizeChosen ? prefs.size : '100%');
         requestLocationThenEnter();
     }
 }
