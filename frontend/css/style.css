@@ -426,8 +426,11 @@ body {
 /* ── 바텀시트 모달 ── */
 .modal.fade .modal-dialog { transform: translateY(100%); transition: transform 0.25s ease-out; }
 .modal.show .modal-dialog { transform: translateY(0); }
+/* 아래에서 올라오는 시트.
+   좌우 margin을 auto로 둬야 앱(430px 폭) 한가운데에 맞춰진다.
+   왼쪽 0으로 두면 태블릿처럼 넓은 화면에서 앱 밖(왼쪽 끝)에 붙어버린다. */
 .bottom-sheet {
-    margin: auto 0 0 0 !important;
+    margin: auto auto 0 auto !important;
     max-width: 430px !important;
     width: 100%;
 }

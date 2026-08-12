@@ -28,9 +28,12 @@ function loadPrefs() {
             theme: _sessionTheme,        // 저장값이 아니라 '지금 세션' 값
             /* 사용자가 글씨체를 직접 골랐는지 — 골랐다면 모드별 기본 글꼴보다 우선한다 */
             fontExplicit: !!saved.fontExplicit,
+            /* 글씨 크기를 한 번이라도 직접 정했는지 — 정했다면 로그인할 때마다
+               크기 설정 창을 다시 띄우지 않는다 */
+            sizeChosen: !!saved.sizeChosen,
         };
     } catch (e) {
-        return { size: '115%', font: 'sans', theme: _sessionTheme, fontExplicit: false };
+        return { size: '115%', font: 'sans', theme: _sessionTheme, fontExplicit: false, sizeChosen: false };
     }
 }
 function savePrefs(prefs) {
@@ -81,7 +84,10 @@ function refreshPrefButtons() {
 
 /* ── 사용자가 버튼을 눌렀을 때 ───────────────────────────────────── */
 function setPrefFontSize(size) {
-    const p = loadPrefs(); p.size = size; savePrefs(p);
+    const p = loadPrefs();
+    p.size = size;
+    p.sizeChosen = true;   // 한 번 정했으면 다음 로그인부터 설정 창을 건너뛴다
+    savePrefs(p);
     applyFontSize(size);
     refreshPrefButtons();
 }
