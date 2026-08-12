@@ -319,6 +319,22 @@ function setFont(s){
     if (typeof setPrefFontSize === 'function') { setPrefFontSize(s); return; }
     document.getElementById('app-root-wrapper').style.setProperty('--app-font-size', s);
 }
+/* 로그인 화면의 여행 모드 알약 — 고른 쪽만 흰색으로 채운다.
+   라디오는 여기서 직접 체크하고 색도 직접 칠한다.
+   (다른 화면의 선택 버튼들도 같은 방식이라 동작이 한결같다) */
+function setTravelMode(value) {
+    const radio = document.querySelector(`input[name="loginTargetRadio"][value="${value}"]`);
+    if (radio) radio.checked = true;
+
+    document.querySelectorAll('.auth-mode-opt').forEach(el => {
+        const input = document.getElementById(el.getAttribute('for'));
+        const on = !!input && input.value === value;
+        el.style.background  = on ? '#fff' : 'rgba(255,255,255,.16)';
+        el.style.borderColor = on ? '#fff' : 'rgba(255,255,255,.34)';
+        el.style.color       = on ? 'var(--yeoro-blue)' : '#fff';
+    });
+}
+
 function finalizeAuth() {
     document.getElementById('user-profile-indicator').textContent=userSession.nickname;
     /* 히어로 문구는 고정 문구를 그대로 둔다.

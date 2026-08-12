@@ -6,28 +6,14 @@ function initGeolocation() {
         ()=>{}, {timeout:5000});
 }
 
-/* ── 위치 정보 허용 게이트 ─────────────────────────────────────────
-   회원가입/로그인/게스트 둘러보기 공통 경로: 글자 크기를 정한 뒤,
-   위치 정보를 허용해야만 메인 화면(finalizeAuth)으로 들어갈 수 있다.
-   안드로이드 네이티브 권한 창처럼 [정확한 위치/대략적인 위치] 선택과
-   [앱 사용 중에만 허용/이번만 허용/허용 안함] 3가지 버튼을 제공한다. */
+/* ── 위치 접근권한 안내 ────────────────────────────────────────────
+   글자 크기를 정한 뒤, 왜 위치가 필요한지 한 화면으로 설명하고
+   [확인]을 누르면 그때 실제 권한 요청(안드로이드 권한 창)이 뜬다.
+   허용하지 않아도 둘러보기는 가능하다 — 가까운 순 정렬만 빠진다. */
 
-/* true = 정확한 위치(GPS 고정밀) / false = 대략적인 위치(저전력·기지국 수준) */
-let locationPrecise = true;
-
-function setLocationPrecision(precise) {
-    locationPrecise = precise;
-    const pre = document.getElementById('loc-precise-opt').firstElementChild;
-    const apx = document.getElementById('loc-approx-opt').firstElementChild;
-    const preLb = document.getElementById('loc-precise-label');
-    const apxLb = document.getElementById('loc-approx-label');
-    pre.style.borderColor = precise ? 'var(--yeoro-blue)' : 'transparent';
-    apx.style.borderColor = precise ? 'transparent' : 'var(--yeoro-blue)';
-    preLb.style.fontWeight = precise ? '800' : '500';
-    preLb.style.color = precise ? '' : 'var(--yeoro-muted)';
-    apxLb.style.fontWeight = precise ? '500' : '800';
-    apxLb.style.color = precise ? 'var(--yeoro-muted)' : '';
-}
+/* 정확한 위치(GPS 고정밀)로 요청한다.
+   여로는 "몇 분 거리인지"가 핵심이라 대략적인 위치로는 쓸모가 적다. */
+const locationPrecise = true;
 
 function requestLocationThenEnter() {
     document.getElementById('location-permission-error').classList.add('hidden');
@@ -52,27 +38,24 @@ function saveUserLocation(p) {
 /* persist=true → "앱 사용 중에만 허용" (선택 기억), false → "이번만 허용" */
 function handleLocationPermissionRequest(persist) {
     const btn = document.getElementById('location-permission-btn');
-    const onceBtn = document.getElementById('location-permission-once-btn');
     if (!navigator.geolocation) {
         showLocationPermissionError('이 기기/브라우저는 위치 정보를 지원하지 않아요. 설정에서 위치 서비스를 켜주세요.');
         return;
     }
-    btn.disabled = true; onceBtn.disabled = true;
-    (persist ? btn : onceBtn).textContent = '위치 확인 중...';
+    btn.disabled = true;
+    btn.textContent = '위치 확인 중...';
     navigator.geolocation.getCurrentPosition(
         p => {
             if (persist) localStorage.setItem('yeoro_loc_pref', 'while-using');
             else localStorage.removeItem('yeoro_loc_pref');
             saveUserLocation(p);
-            btn.disabled = false; onceBtn.disabled = false;
-            btn.textContent = '앱 사용 중에만 허용';
-            onceBtn.textContent = '이번만 허용';
+            btn.disabled = false;
+            btn.textContent = '확인';
             finalizeAuth();
         },
         (err) => {
-            btn.disabled = false; onceBtn.disabled = false;
-            btn.textContent = '앱 사용 중에만 허용';
-            onceBtn.textContent = '이번만 허용';
+            btn.disabled = false;
+            btn.textContent = '확인';
             // 권한을 막 허용한 직후 첫 요청은 기기의 위치 서비스가 준비되는 데 시간이 걸려
             // 타임아웃(code 3)이 나기도 한다. 이 경우는 권한 문제가 아니므로 안내 문구를 다르게 준다.
             const message = err.code === err.TIMEOUT

@@ -905,7 +905,8 @@ html[data-theme="dark"] .bf-detail, .theme-dark .bf-detail { color: #A9CFBA; }
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    padding: 0 22px 32px;
+    justify-content: center;     /* 내용을 한 덩어리로 모아 화면 가운데에 둔다 */
+    padding: 34px 26px;
     /* 코발트 → 연한 코발트 2색 대각선 그라데이션 */
     background: linear-gradient(160deg,
         var(--yeoro-blue) 0%,
@@ -914,9 +915,14 @@ html[data-theme="dark"] .bf-detail, .theme-dark .bf-detail { color: #A9CFBA; }
 .auth-screen::-webkit-scrollbar { display: none; }
 /* 콘텐츠 정렬 */
 .auth-screen > * { position: relative; z-index: 1; }
+/* ── 로그인 화면 ─────────────────────────────────────────────────
+   위쪽에 로고를 크게 두고 아래쪽에 시작 버튼을 모으는 구성.
+   가운데를 비워 두는 것이 이 화면의 핵심이라, 남는 공간은
+   margin:auto가 위아래로 나눠 갖게 한다.                          */
 .auth-brand {
     text-align: center;
-    padding: 52px 0 22px;
+    padding: 0 0 26px;
+    flex: 0 0 auto;
 }
 .auth-brand img {
     width: 72px; height: 72px;
@@ -941,10 +947,179 @@ html[data-theme="dark"] .bf-detail, .theme-dark .bf-detail { color: #A9CFBA; }
     margin-top: 4px;
 }
 .auth-brand-tagline {
-    font-size: 0.85em;
-    color: rgba(255,255,255,0.88);
+    font-size: 0.9em;
+    color: rgba(255,255,255,0.9);
     font-weight: 500;
-    margin-top: 6px;
+    margin-top: 8px;
+    letter-spacing: -0.2px;
+}
+
+/* ── 여행 모드 선택 (알약 두 칸) ──────────────────────────────────
+   카드와 라디오 동그라미를 없애고, 고른 쪽만 흰색으로 채운다.
+   5060 사용자를 위해 글자와 누르는 면적은 넉넉하게 둔다. */
+.auth-mode {
+    display: flex;
+    gap: 8px;
+    margin: 0 auto 26px;      /* 아래 버튼 묶음과 사이를 벌린다 */
+    width: 100%;
+}
+.auth-mode-opt {
+    flex: 1;
+    text-align: center;
+    padding: 13px 6px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.16);
+    border: 1.5px solid rgba(255,255,255,.34);
+    color: #fff;
+    font-size: .88em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    margin: 0;
+}
+/* 고른 쪽만 흰색으로 채운다.
+   라디오 상태(:checked)에 기대지 않고 JS가 .on을 붙인다 —
+   화면에서 숨긴 라디오는 브라우저에 따라 :checked 스타일이 늦게 반영된다. */
+.auth-mode-opt.on {
+    background: #fff;
+    border-color: #fff;
+    color: var(--yeoro-blue);
+}
+/* 화면에는 안 보이지만 키보드·스크린리더에는 남는 라디오 버튼 */
+.visually-hidden {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ── 위치 접근권한 안내 화면 ──────────────────────────────────────
+   흰 바탕에 필요한 말만 얹고, 확인 버튼은 아래에 붙인다.
+   여기서 [확인]을 누르면 그때 안드로이드 권한 창이 뜬다. */
+.perm-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 150;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 54px 26px 26px;
+    overflow-y: auto;
+}
+.perm-screen::-webkit-scrollbar { display: none; }
+.perm-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 26px;
+}
+.perm-brand img { width: 34px; height: 34px; border-radius: 9px; object-fit: cover; }
+.perm-brand span {
+    font-size: 1.32em;
+    font-weight: 800;
+    color: var(--yeoro-navy);
+    letter-spacing: -0.6px;
+}
+.perm-headline {
+    font-size: 1.06em;
+    font-weight: 700;
+    line-height: 1.6;
+    color: var(--yeoro-text);
+    margin-bottom: 34px;
+    letter-spacing: -0.3px;
+}
+.perm-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 26px;
+}
+.perm-item-icon {
+    width: 42px; height: 42px;
+    flex: 0 0 42px;
+    border-radius: 12px;
+    border: 1.5px solid var(--yeoro-border);
+    display: flex; align-items: center; justify-content: center;
+}
+.perm-item-icon .material-icons { font-size: 1.3rem; color: var(--yeoro-sub); }
+.perm-item-title {
+    font-size: .96em;
+    font-weight: 700;
+    color: var(--yeoro-text);
+    margin-bottom: 4px;
+}
+.perm-item-title span { font-weight: 500; color: var(--yeoro-muted); }
+.perm-item-desc {
+    font-size: .8em;
+    color: var(--yeoro-muted);
+    line-height: 1.55;
+}
+.perm-note {
+    font-size: .76em;
+    color: var(--yeoro-muted);
+    line-height: 1.65;
+    padding-top: 18px;
+    border-top: 1px solid var(--yeoro-border);
+}
+.perm-body { flex: 1; }
+.perm-actions { flex: 0 0 auto; }
+.perm-confirm {
+    width: 100%;
+    padding: 17px;
+    border: none;
+    border-radius: 14px;
+    background: var(--yeoro-blue);
+    color: #fff;
+    font-size: 1em;
+    font-weight: 800;
+    cursor: pointer;
+}
+.perm-confirm:active { opacity: .85; }
+.perm-skip {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--yeoro-muted);
+    font-size: .85em;
+    font-weight: 600;
+    padding: 14px 4px 2px;
+    cursor: pointer;
+}
+
+/* ── 시작 버튼 묶음 ──
+   로고·모드 선택 바로 아래에 이어 붙인다 (가운데를 비우지 않는다).
+   화면 전체는 .auth-screen의 justify-content:center로 위아래 가운데에 놓인다. */
+.auth-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.auth-btn-light {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 16px;
+    background: #fff;
+    color: var(--yeoro-blue);
+    font-size: .95em;
+    font-weight: 800;
+    cursor: pointer;
+}
+.auth-btn-light:active { opacity: .85; }
+/* 게스트 둘러보기 — 버튼 대신 글자 링크 */
+.auth-link {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,.9);
+    font-size: .88em;
+    font-weight: 600;
+    padding: 12px 4px 2px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
 }
 /* 그라데이션 위에 떠 보이도록 카드/탭 반투명 처리 */
 .auth-screen .y-card,
@@ -999,6 +1174,47 @@ html[data-theme="dark"] .bf-detail, .theme-dark .bf-detail { color: #A9CFBA; }
     margin-top: 6px;
     font-weight: 500;
 }
+/* 기능 목록 — 2×2 칸에 글을 욱여넣으면 줄이 어색하게 끊긴다.
+   한 줄에 하나씩 두어 문장이 그대로 읽히게 한다. */
+.onboard-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    padding: 22px 20px;
+    overflow-y: auto;
+}
+.onboard-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    background: rgba(255,255,255,0.93);
+    border: 1px solid rgba(255,255,255,0.7);
+    border-radius: 18px;
+    padding: 16px 16px;
+}
+.onboard-row-icon {
+    width: 44px; height: 44px;
+    flex: 0 0 44px;
+    border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(145deg, var(--yeoro-sky) 0%, var(--yeoro-mist) 100%);
+}
+.onboard-row-icon .material-icons { font-size: 22px; color: var(--yeoro-navy); }
+.onboard-row-title {
+    font-size: .96em;
+    font-weight: 800;
+    color: var(--yeoro-navy);
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+}
+.onboard-row-desc {
+    font-size: .8em;
+    color: var(--yeoro-sub);
+    line-height: 1.55;
+}
+
 .onboard-grid {
     flex: 1;
     display: grid;

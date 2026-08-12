@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('yeoro-logo').src = LOGO_SRC;
     document.getElementById('auth-logo').src  = LOGO_SRC;
     document.getElementById('splash-logo').src = LOGO_SRC;
+    document.getElementById('perm-logo').src  = LOGO_SRC;   // 위치 안내 화면
+    setTravelMode('5060');                                  // 여행 모드 기본 선택 표시
     document.getElementById('onboard-screen').classList.add('hidden');
 
     /* 저장해둔 화면 설정(글씨 크기·글꼴·밝은/어두운 모드) 복원 */

@@ -27,26 +27,35 @@
             <div class="onboard-header-title">세종시 무장애 여행,<br>여로가 도와드릴게요</div>
             <div class="onboard-header-sub">여로의 핵심 기능을 한눈에 살펴보세요</div>
         </div>
-        <div class="onboard-grid">
-            <div class="onboard-card">
-                <div class="onboard-card-illust"><span class="material-icons">accessible_forward</span></div>
-                <div class="onboard-card-title">무장애 동선<br>큐레이션</div>
-                <div class="onboard-card-desc">휠체어·유모차도 걱정 없는<br>평탄한 동선만 골라드려요</div>
+        <!-- 실제로 앱에서 할 수 있는 일을 한 줄씩 -->
+        <div class="onboard-list">
+            <div class="onboard-row">
+                <div class="onboard-row-icon"><span class="material-icons">accessible_forward</span></div>
+                <div>
+                    <div class="onboard-row-title">무장애 시설을 미리 확인</div>
+                    <div class="onboard-row-desc">휠체어 접근로·엘리베이터·장애인 화장실을 장소 카드에서 바로 봐요</div>
+                </div>
             </div>
-            <div class="onboard-card">
-                <div class="onboard-card-illust"><span class="material-icons">explore</span></div>
-                <div class="onboard-card-title">통합 정보<br>실시간 검색</div>
-                <div class="onboard-card-desc">관광·맛집·축제·의료기관을<br>한 번에 모아드려요</div>
+            <div class="onboard-row">
+                <div class="onboard-row-icon"><span class="material-icons">search</span></div>
+                <div>
+                    <div class="onboard-row-title">세종의 갈 곳을 한 번에</div>
+                    <div class="onboard-row-desc">관광지·음식점·축제·의료기관을 겹치는 곳 없이 모아드려요</div>
+                </div>
             </div>
-            <div class="onboard-card">
-                <div class="onboard-card-illust"><span class="material-icons">route</span></div>
-                <div class="onboard-card-title">내 위치 기반<br>동선 추천</div>
-                <div class="onboard-card-desc">담아둔 장소를 가까운 순서로<br>자동 정렬해드려요</div>
+            <div class="onboard-row">
+                <div class="onboard-row-icon"><span class="material-icons">auto_awesome</span></div>
+                <div>
+                    <div class="onboard-row-title">코스를 대신 짜드려요</div>
+                    <div class="onboard-row-desc">무장애·날씨맞춤·랜덤 코스, 그리고 취향과 장소 수를 고르는 맞춤 코스</div>
+                </div>
             </div>
-            <div class="onboard-card">
-                <div class="onboard-card-illust"><span class="material-icons">history_edu</span></div>
-                <div class="onboard-card-title">나만의<br>여행로그</div>
-                <div class="onboard-card-desc">게스트로 둘러봐도<br>기록은 저장돼요</div>
+            <div class="onboard-row">
+                <div class="onboard-row-icon"><span class="material-icons">near_me</span></div>
+                <div>
+                    <div class="onboard-row-title">길찾기와 여행로그</div>
+                    <div class="onboard-row-desc">내 위치에서 몇 분인지 보고, 카카오맵으로 바로 길찾기까지</div>
+                </div>
             </div>
         </div>
         <div class="onboard-bottom">
@@ -63,74 +72,66 @@
             <div class="auth-brand-tagline">세종시 무장애 여행 큐레이션</div>
         </div>
 
-        <div class="y-card mb-3">
-            <div class="section-label mb-3">여행 모드 선택</div>
-            <div class="y-radio-group">
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="loginTargetRadio" id="radio5060" value="5060" checked>
-                    <label class="form-check-label fw-semibold" for="radio5060" style="font-size:0.9em;">🚶 5060 액티브 시니어 산책 모드</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="loginTargetRadio" id="radioFamily" value="family">
-                    <label class="form-check-label fw-semibold" for="radioFamily" style="font-size:0.9em;">👪 영유아 동반 부모 코스 모드</label>
-                </div>
-            </div>
+        <!-- 여행 모드 — 카드 없이 두 칸짜리 알약으로 (선택한 쪽만 흰색으로 찬다) -->
+        <div class="auth-mode" role="radiogroup" aria-label="여행 모드 선택">
+            <input class="visually-hidden" type="radio" name="loginTargetRadio" id="radio5060" value="5060" checked>
+            <label class="auth-mode-opt on" for="radio5060" onclick="setTravelMode('5060')">🚶 5060 산책</label>
+            <input class="visually-hidden" type="radio" name="loginTargetRadio" id="radioFamily" value="family">
+            <label class="auth-mode-opt" for="radioFamily" onclick="setTravelMode('family')">👪 영유아 동반</label>
         </div>
 
-        <!-- 카카오 로그인 -->
-        <button class="kakao-btn mb-2" onclick="startKakaoOAuth()">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 1.5C5.03 1.5 1 4.66 1 8.55c0 2.5 1.66 4.7 4.17 5.96-.18.67-.67 2.48-.77 2.87-.12.48.18.47.38.34.16-.1 2.5-1.7 3.52-2.39.55.08 1.12.12 1.7.12 4.97 0 9-3.16 9-7.05S14.97 1.5 10 1.5z" fill="#181600"/></svg>
-            카카오로 3초 만에 시작하기
-        </button>
+        <!-- 아래쪽에 붙는 시작 버튼들 -->
+        <div class="auth-actions">
+            <button class="kakao-btn" onclick="startKakaoOAuth()">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 1.5C5.03 1.5 1 4.66 1 8.55c0 2.5 1.66 4.7 4.17 5.96-.18.67-.67 2.48-.77 2.87-.12.48.18.47.38.34.16-.1 2.5-1.7 3.52-2.39.55.08 1.12.12 1.7.12 4.97 0 9-3.16 9-7.05S14.97 1.5 10 1.5z" fill="#181600"/></svg>
+                카카오로 3초 만에 시작하기
+            </button>
 
-        <!-- 10초 로그인 (아이디/비밀번호 회원가입 폼으로 바로 이동) -->
-        <button class="y-btn-primary mb-2" onclick="focusEmailRegisterForm()">
-            <span class="material-icons" style="font-size:1.05em;vertical-align:-2px;margin-right:4px;">bolt</span>
-            10초 로그인으로 시작하기
-        </button>
+            <!-- 10초 로그인 (아이디/비밀번호 회원가입 폼으로 바로 이동) -->
+            <button class="auth-btn-light" onclick="focusEmailRegisterForm()">
+                <span class="material-icons" style="font-size:1.05em;vertical-align:-2px;margin-right:4px;">bolt</span>
+                10초 로그인으로 시작하기
+            </button>
 
-        <button class="y-btn-secondary mb-3" onclick="browseAsGuest()">게스트로 둘러보기</button>
+            <!-- 둘러보기는 버튼 대신 글자 링크로 — 화면이 한결 가벼워진다 -->
+            <button class="auth-link" onclick="browseAsGuest()">게스트로 둘러보기</button>
+        </div>
     </div>
 
     <!-- ══════════════ 위치 정보 허용 (회원가입/로그인/게스트 공통 — 글자 크기 설정 후, 메인 진입 전 필수)
          안드로이드 네이티브 권한 창과 같은 모양: 정확한/대략적인 위치 선택 + 허용 방식 3버튼 ══════════════ -->
-    <div class="auth-screen hidden" id="location-permission-screen" style="justify-content:flex-end;padding:0;">
-        <div style="background:#fff;border-radius:28px 28px 0 0;padding:30px 26px 26px;box-shadow:0 -8px 30px rgba(0,0,0,.18);">
-            <div style="text-align:center;margin-bottom:14px;">
-                <span class="material-icons" style="font-size:2.6rem;color:var(--yeoro-blue);">location_on</span>
-            </div>
-            <div style="text-align:center;font-weight:700;font-size:1.02em;line-height:1.5;margin-bottom:20px;">
-                <b>여로</b>에서 이 기기의 위치 정보에 액세스하도록<br>허용하시겠습니까?
+    <div class="perm-screen hidden" id="location-permission-screen">
+        <div class="perm-body">
+            <div class="perm-brand">
+                <img id="perm-logo" alt="여로 로고">
+                <span>여로</span>
             </div>
 
-            <!-- 정확한 위치 / 대략적인 위치 선택 -->
-            <div style="display:flex;gap:18px;justify-content:center;margin-bottom:22px;">
-                <div id="loc-precise-opt" onclick="setLocationPrecision(true)" style="text-align:center;cursor:pointer;">
-                    <div style="width:104px;height:104px;border-radius:50%;border:3px solid var(--yeoro-blue);
-                                display:flex;align-items:center;justify-content:center;background:var(--yeoro-mist);margin:0 auto 8px;">
-                        <span class="material-icons" style="font-size:3rem;color:var(--yeoro-blue);">place</span>
-                    </div>
-                    <div id="loc-precise-label" style="font-weight:800;font-size:.9em;">정확한 위치</div>
-                </div>
-                <div id="loc-approx-opt" onclick="setLocationPrecision(false)" style="text-align:center;cursor:pointer;">
-                    <div style="width:104px;height:104px;border-radius:50%;border:3px solid transparent;
-                                display:flex;align-items:center;justify-content:center;background:var(--yeoro-mist);margin:0 auto 8px;">
-                        <span class="material-icons" style="font-size:3rem;color:var(--yeoro-muted);">map</span>
-                    </div>
-                    <div id="loc-approx-label" style="font-weight:500;font-size:.9em;color:var(--yeoro-muted);">대략적인 위치</div>
+            <div class="perm-headline">
+                안전하고 편리한 서비스 이용을 위해<br>
+                아래 접근권한의 허용이 필요합니다.
+            </div>
+
+            <div class="perm-item">
+                <div class="perm-item-icon"><span class="material-icons">location_on</span></div>
+                <div>
+                    <div class="perm-item-title">위치 <span>(필수)</span></div>
+                    <div class="perm-item-desc">가까운 관광지·음식점·병원을 찾고, 길찾기 출발지를 잡는 데 사용해요.</div>
                 </div>
             </div>
 
-            <div class="text-danger small text-center mb-3 hidden" id="location-permission-error"
-                 style="background:var(--yeoro-mist);border-radius:10px;padding:10px 14px;"></div>
+            <div class="perm-note">
+                · 위치를 허용하지 않아도 앱은 쓸 수 있지만, 가까운 순 정렬과 소요시간 안내는 제공되지 않아요.
+            </div>
 
-            <!-- 허용 방식 3버튼 (네이티브 다이얼로그와 동일한 구성) -->
-            <button class="y-btn-primary mb-2" id="location-permission-btn"
-                    onclick="handleLocationPermissionRequest(true)">앱 사용 중에만 허용</button>
-            <button class="y-btn-secondary mb-2" id="location-permission-once-btn"
-                    onclick="handleLocationPermissionRequest(false)">이번만 허용</button>
-            <button class="btn w-100 fw-bold" style="color:var(--yeoro-muted);font-size:.95em;"
-                    onclick="denyLocationPermission()">허용 안함</button>
+            <div class="text-danger small text-center hidden" id="location-permission-error"
+                 style="background:var(--yeoro-mist);border-radius:10px;padding:10px 14px;margin-top:16px;"></div>
+        </div>
+
+        <div class="perm-actions">
+            <button class="perm-confirm" id="location-permission-btn"
+                    onclick="handleLocationPermissionRequest(true)">확인</button>
+            <button class="perm-skip" onclick="denyLocationPermission()">허용하지 않고 둘러보기</button>
         </div>
     </div>
 
