@@ -107,6 +107,86 @@ async function callTourApi(contentTypeId, rows=100) {
     return items.map(mapTourItem).filter(p=>p.name);
 }
 
+/* ── 축제 (한국관광공사 searchFestival2) ─────────────────────────────
+   지금까지 쓰던 areaBasedList2(축제15)는 행사 기간을 주지 않아서
+   이미 끝난 축제까지 섞여 나왔다 ("2025 세종미술주간 갤러리 가는 날" 등).
+   축제 전용 API는 시작·종료일을 함께 주므로 올해 열리는 축제만 고를 수 있다.
+   ────────────────────────────────────────────────────────────────*/
+function festivalUrl(year, pageNo) {
+    return 'https://apis.data.go.kr/B551011/KorService2/searchFestival2?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.DATA_GO_KR_KEY,
+            numOfRows: 100, pageNo,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json',
+            areaCode: API_CONFIG.TOUR_AREA_CODE,
+            eventStartDate: `${year}0101`,   // 올해 안에 열리는 것만
+            eventEndDate:   `${year}1231`,
+        });
+}
+
+/* 20260912 → "2026.09.12" */
+function formatEventDate(raw) {
+    const s = String(raw || '');
+    if (s.length !== 8) return '';
+    return `${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}`;
+}
+
+/* "축제 · 2026.09.12 ~ 09.14" 처럼 기간이 보이는 설명을 만든다 */
+function festivalLabel(it) {
+    const from = formatEventDate(it.eventstartdate);
+    const to   = formatEventDate(it.eventenddate);
+    if (!from) return '축제';
+    const shortTo = to && to.slice(0,4) === from.slice(0,4) ? to.slice(5) : to;
+    return shortTo ? `축제 · ${from} ~ ${shortTo}` : `축제 · ${from}`;
+}
+
+async function callFestivalApi(year = new Date().getFullYear()) {
+    if (!API_CONFIG.DATA_GO_KR_KEY) return null;
+
+    const first = await safeFetch(festivalUrl(year, 1));
+    if (!first) return null;
+    const total = parseInt(first?.response?.body?.totalCount, 10) || 0;
+    let items = extractItems(first);
+
+    const lastPage = Math.ceil(total / 100);
+    if (lastPage > 1) {
+        const rest = [];
+        for (let p = 2; p <= lastPage; p++) rest.push(safeFetch(festivalUrl(year, p)));
+        (await Promise.all(rest)).forEach(j => { if (j) items = items.concat(extractItems(j)); });
+    }
+
+    console.info(`[축제API] ${year}년 세종시 축제 ${total}건 수신`);
+    return items.map(it => ({
+        ...mapTourItem(it),
+        desc: festivalLabel(it),
+        eventStart: String(it.eventstartdate || ''),
+        eventEnd:   String(it.eventenddate   || ''),
+    })).filter(p => p.name);
+}
+
+/* 이름에 지난 연도가 박혀 있는 행사를 걸러낸다.
+   ("2025 세종미술주간"처럼 이름에 연도가 들어 있는 경우)
+   ⚠️ Array.filter에 그대로 넘기면 두 번째 인자로 '인덱스'가 들어와
+   연도 비교가 망가진다. 반드시 filter(p => isThisYearEvent(p)) 형태로 쓸 것. */
+function isThisYearEvent(place, year = new Date().getFullYear()) {
+    const m = String(place.name || '').match(/(19|20)\d{2}/);
+    if (!m) return true;              // 연도 표기가 없으면 판단 불가 — 남긴다
+    return parseInt(m[0], 10) >= year;
+}
+
+/* 카카오맵 검색 결과에서 "진짜 축제"만 남긴다.
+   "세종 축제"로 검색하면 축제 자체가 아닌 것들이 함께 나온다.
+     · 세종호수공원 축제섬, 국립세종수목원 축제마당 → 공원 시설물
+     · 조치원복숭아축제추진위원회               → 단체
+     · 톳나라 본점                              → 이름만 걸린 음식점       */
+function isFestivalPlace(place) {
+    const cat  = String(place.desc || '');
+    const name = String(place.name || '');
+    if (/음식점|카페|단체,협회|공공기관|공원시설물|숙박|학교/.test(cat)) return false;
+    if (/이벤트|페스티벌|축제|공연|행사/.test(cat)) return true;
+    return /축제|페스티벌|문화제/.test(name);
+}
+
 /* 웰니스 관광 API */
 /* ── 무장애 여행정보 (한국관광공사 KorWithService2) ──────────────────
    여로의 핵심인 "휠체어·유모차로 갈 수 있는 곳"을 실제 데이터로 확인한다.
@@ -354,14 +434,14 @@ function kakaoHeaders() {
 }
 
 /* 카카오맵 로컬 검색 — 카테고리 코드: FD6=음식점, HP8=병원, AT4=관광명소 */
-async function callKakaoCategory(code, size=15) {
+async function callKakaoCategory(code, size=15, page=1) {
     if (!API_CONFIG.KAKAO_REST_KEY) return null;
     const url = 'https://dapi.kakao.com/v2/local/search/category.json?' +
         new URLSearchParams({
             category_group_code: code,
             x: userLoc.lng, y: userLoc.lat,
             /* 카카오 로컬 API의 최대 반경은 20km (그 이상은 정책상 불가) */
-            radius: 20000, size: Math.min(size,15), sort:'distance',
+            radius: 20000, size: Math.min(size,15), page, sort:'distance',
         });
     const json = await safeFetch(url, {headers:kakaoHeaders()});
     if (!json) return null;

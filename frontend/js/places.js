@@ -6,7 +6,11 @@
    ③ 앱 시작 직후 prefetchPlaces()가 전 카테고리를 미리 받아둠 → 첫 클릭도 즉시
    ─────────────────────────────────────────────────────────────────*/
 const PLACES_CACHE_TTL = 10 * 60 * 1000;   // 10분
-const PLACES_CACHE_VER = 'v2';
+/* 목록을 어떻게 만드는지가 바뀌면 이 번호를 올린다.
+   올리지 않으면 예전에 저장해 둔 목록(최대 10분)이 그대로 보여서,
+   앱을 새로 깔아도 "그대로인데?" 하는 상황이 된다.
+   v3 — 관광공사 + 카카오맵 합치기(중복 제거) 적용 */
+const PLACES_CACHE_VER = 'v3';
 
 function loadPlacesFromStorage(category) {
     try {
@@ -81,6 +85,42 @@ function mergePlaceSources(...lists) {
     return merged;
 }
 
+/* ── 프랜차이즈 카페 걸러내기 ──────────────────────────────────────
+   여로는 "그 동네에만 있는 곳"을 보여주는 앱이라, 어디에나 있는
+   프랜차이즈 카페는 목록에서 뺀다. 판단 근거는 두 가지다.
+
+   ① 카카오 분류에 브랜드가 붙는다
+      개인 카페   → "음식점 > 카페"  /  "음식점 > 카페 > 테마카페"
+      프랜차이즈  → "음식점 > 카페 > 커피전문점 > 스타벅스"  ← 4단계에 브랜드
+   ② 이름이 "○○점"으로 끝난다 — 지점이 여러 개라는 뜻이다
+      (예: "텐퍼센트커피 세종시청점")
+
+   ①만으로는 카카오가 브랜드를 안 채운 경우를 놓치므로, 널리 알려진
+   브랜드 이름도 함께 본다.                                          */
+const FRANCHISE_CAFE_BRANDS = [
+    '스타벅스','투썸','이디야','메가커피','메가엠지씨','컴포즈','빽다방','파스쿠찌',
+    '할리스','커피빈','탐앤탐스','엔젤리너스','폴바셋','카페베네','매머드','더벤티',
+    '커피에반하다','드롭탑','블루보틀','공차','설빙','베스킨','던킨','뚜레쥬르',
+    '파리바게뜨','요거프레소','감성커피','더리터','하삼동','매드포갈릭',
+];
+
+function isFranchiseCafe(place) {
+    const cat  = String(place.desc || '');
+    const name = String(place.name || '');
+    if (!/카페|커피|디저트|베이커리/.test(cat)) return false;   // 카페가 아니면 대상 아님
+
+    /* ① 카카오 분류 4단계에 브랜드가 붙어 있으면 프랜차이즈 */
+    const depth = cat.split('>').length;
+    if (depth >= 4) return true;
+
+    /* ② 이름이 지점 표기로 끝나면 체인점 */
+    if (/[가-힣A-Za-z0-9]{2,10}점$/.test(name.trim())) return true;
+
+    /* ③ 알려진 브랜드 이름이 들어 있으면 프랜차이즈 */
+    const flat = name.replace(/\s/g, '');
+    return FRANCHISE_CAFE_BRANDS.some(b => flat.includes(b));
+}
+
 /* 화면에 이미 그려진 카드의 거리 라벨을 실도로 값으로 갱신 (재정렬은 하지 않음) */
 function updateVisibleDriveLabels(places) {
     places.forEach(p => {
@@ -146,18 +186,41 @@ async function getPlaces(category, options = {}) {
         else if (category === '먹거리') {
             /* 국문관광정보(음식점39) + 카카오맵(FD6 음식점, CE7 카페) 병렬 호출.
                같은 식당이 양쪽에 다 있는 경우가 많아 하나로 합친다. */
-            const [tourFood, kakaoFood, kakaoCafe] = await Promise.all([
+            /* 카페는 프랜차이즈를 빼고 나면 수가 확 줄어드니 두 페이지(최대 30곳)를
+               받아 두고 거른다. */
+            const [tourFood, kakaoFood, cafe1, cafe2] = await Promise.all([
                 callTourApi('39', 100),
                 callKakaoCategory('FD6', 15),
-                callKakaoCategory('CE7', 10),
+                callKakaoCategory('CE7', 15, 1),
+                callKakaoCategory('CE7', 15, 2),
             ]);
-            const combined = mergePlaceSources(tourFood||[], kakaoFood||[], kakaoCafe||[]);
+            const localCafes = [...(cafe1||[]), ...(cafe2||[])].filter(p => !isFranchiseCafe(p));
+            const combined = mergePlaceSources(tourFood||[], kakaoFood||[], localCafes);
             if (combined.length > 0) places = combined;
         }
         else if (category === '축제') {
-            /* 국문관광정보(축제15) */
-            const tourFest = await callTourApi('15', 100);
-            if (tourFest && tourFest.length > 0) places = tourFest;
+            /* 올해 열리는 축제만 보여준다.
+               ① 관광공사 축제 API — 행사 기간이 있어 올해 것만 고를 수 있다
+               ② 카카오맵 키워드 검색 — 관광공사에 아직 안 올라온 행사를 채운다
+                  (이름에 지난 연도가 박힌 것은 뺀다) */
+            const [fest, kwFest, kwFestival, kwCulture] = await Promise.all([
+                callFestivalApi(),
+                callKakaoKeyword('세종 축제', 10),
+                callKakaoKeyword('세종 페스티벌', 10),
+                callKakaoKeyword('세종 문화제', 10),
+            ]);
+            /* 축제가 아닌 것(공원 시설물·추진위원회 등)과 지난해 행사를 뺀다 */
+            const kakaoThisYear = [...(kwFest||[]), ...(kwFestival||[]), ...(kwCulture||[])]
+                .filter(p => isFestivalPlace(p) && isThisYearEvent(p));
+
+            /* 축제 API가 비면 예전 방식(축제15)으로라도 보여준다.
+               (관광공사에 올해 축제가 아직 등록되지 않은 시기가 있다) */
+            let base = fest;
+            if (!base || base.length === 0) {
+                base = ((await callTourApi('15', 100)) || []).filter(p => isThisYearEvent(p));
+            }
+            const combined = mergePlaceSources(base || [], kakaoThisYear);
+            if (combined.length > 0) places = combined;
         }
         else if (category === '의료기관') {
             /* 응급의료기관(E-Gen) + 병원정보(심평원) + 카카오맵(HP8) 병렬 호출 */
