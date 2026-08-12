@@ -18,8 +18,52 @@ function confirmRecommendation() {
     showToast('여행로그에 저장됐어요 ✓ 즐거운 여행 되세요!');
 }
 function retryRecommendation() {
-    if (_lastRecommendKind === 'weather') generateWeatherSchedule();
-    else generateRandomSchedule();
+    if (_lastRecommendKind === 'weather')      generateWeatherSchedule();
+    else if (_lastRecommendKind === 'product') generateTravelProduct();
+    else if (_lastRecommendKind === 'barrier') generateBarrierFreeSchedule();
+    else                                       generateRandomSchedule();
+}
+
+/* ── ♿ 무장애 코스 추천 ────────────────────────────────────────────
+   휠체어·유모차로 갈 수 있다고 등록된 곳만 골라 코스를 짠다.
+   여로가 5060 세대·유아 동반 가족을 위한 앱인 만큼 가장 중요한 추천이다. */
+async function generateBarrierFreeSchedule() {
+    const box=document.getElementById('schedule-timeline-box');
+    box.innerHTML=`<div style="text-align:center;padding:32px;color:var(--yeoro-muted);">♿ 무장애 코스를 짜는 중...</div>`;
+    changeScreen('schedule');
+    hideRecommendActions();
+
+    const [spots, food] = await Promise.all([
+        getPlaces('관광명소', { withDrive:false }),
+        getPlaces('먹거리',   { withDrive:false }),
+    ]);
+    const barrierFree = spots.filter(p => p.barrierFree);
+
+    if (!barrierFree.length) {
+        box.innerHTML = `<p class="text-center py-4 small m-0" style="color:var(--yeoro-muted);">
+            무장애 정보가 등록된 장소를 찾지 못했어요.</p>`;
+        return;
+    }
+
+    const pick = (pool, n) => {
+        const rest=[...pool], out=[];
+        while (rest.length && out.length < n)
+            out.push(rest.splice(Math.floor(Math.random()*rest.length), 1)[0]);
+        return out;
+    };
+    cart = [...pick(barrierFree, 3), ...pick(food, 1)].filter(Boolean);
+    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
+    document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+    await recalculateAndSortRoute();
+
+    const banner = document.getElementById('weather-banner');
+    if (banner) {
+        banner.innerHTML = `♿ <b>무장애 코스</b><br>
+            <span style="font-size:.9em;">휠체어·유모차로 갈 수 있다고 등록된 곳만 골랐어요.
+            자세한 시설은 관광명소 목록에서 확인할 수 있어요.</span>`;
+        banner.classList.remove('hidden');
+    }
+    showRecommendActions('barrier');
 }
 
 /* ── 일정·동선 ────────────────────────────────────────────────── */
@@ -48,13 +92,21 @@ async function generateRandomSchedule() {
     await recalculateAndSortRoute();
     showRecommendActions('random');   // [이대로 여행하기 / 다시 추천] 노출
 }
-async function recalculateAndSortRoute() {
+/* 맞춤형 여행상품처럼 '짜여진 순서'가 의미 있는 코스는 정렬하지 않고 그대로 보여준다
+   (관광지 → 식사 → 카페 → 관광지 순서가 흐트러지면 코스의 뜻이 사라진다) */
+async function recalculateAndSortRouteInOrder() {
+    return recalculateAndSortRoute({ keepOrder: true });
+}
+
+async function recalculateAndSortRoute(options = {}) {
     if(!cart.length) return;
     cart.forEach(item=>{item._dist=(item.lat&&item.lng)
         ?haversine(userLoc.lat,userLoc.lng,item.lat,item.lng):null;});
-    const sortKey = p => p._driveMin!=null ? p._driveMin
-                       : p._dist!=null     ? p._dist*3 : Infinity;
-    cart.sort((a,b)=>sortKey(a)-sortKey(b));
+    if (!options.keepOrder) {
+        const sortKey = p => p._driveMin!=null ? p._driveMin
+                           : p._dist!=null     ? p._dist*3 : Infinity;
+        cart.sort((a,b)=>sortKey(a)-sortKey(b));
+    }
 
     /* 즉시 렌더 — 실도로 값이 이미 있으면 바로, 없으면 직선거리로 먼저 보여준다 */
     const box=document.getElementById('schedule-timeline-box');

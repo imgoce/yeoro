@@ -108,6 +108,82 @@ async function callTourApi(contentTypeId, rows=100) {
 }
 
 /* 웰니스 관광 API */
+/* ── 무장애 여행정보 (한국관광공사 KorWithService2) ──────────────────
+   여로의 핵심인 "휠체어·유모차로 갈 수 있는 곳"을 실제 데이터로 확인한다.
+   ① 목록(areaBasedList2)으로 세종시 무장애 등록 장소를 받고
+   ② 각 장소의 상세(detailWithTour2)에서 시설 정보를 가져온다.
+      (경사로·출입구·장애인 화장실·엘리베이터·점자블록·수유실 등)
+   ────────────────────────────────────────────────────────────────*/
+const BARRIER_FREE_LABELS = {
+    wheelchair:   ['♿', '휠체어 대여'],
+    parking:      ['🅿️', '장애인 주차'],
+    route:        ['🛤️', '접근로'],
+    exit:         ['🚪', '출입구'],
+    elevator:     ['🛗', '엘리베이터'],
+    restroom:     ['🚻', '장애인 화장실'],
+    braileblock:  ['⠿', '점자블록'],
+    helpdog:      ['🦮', '안내견 동반'],
+    lactationroom:['🍼', '수유실'],
+    stroller:     ['🚼', '유모차 대여'],
+    babysparechair:['🧷', '기저귀 교환대'],
+    auditorium:   ['💺', '장애인 관람석'],
+    guidehuman:   ['🙋', '안내 도우미'],
+    ticketoffice: ['🎫', '매표소 편의'],
+    publictransport:['🚌', '대중교통 접근'],
+};
+
+/* 무장애 상세 1건 */
+async function fetchBarrierFreeDetail(contentId) {
+    const url = 'https://apis.data.go.kr/B551011/KorWithService2/detailWithTour2?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.DATA_GO_KR_KEY,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json', contentId,
+        });
+    const json = await safeFetch(url);
+    const items = json?.response?.body?.items;
+    if (!items || !items.item) return null;
+    const it = Array.isArray(items.item) ? items.item[0] : items.item;
+    /* 값이 채워진 항목만 남긴다 (빈 문자열은 '정보 없음') */
+    const facts = {};
+    Object.keys(BARRIER_FREE_LABELS).forEach(k => {
+        const v = (it[k] || '').trim();
+        if (v) facts[k] = v;
+    });
+    return Object.keys(facts).length ? facts : null;
+}
+
+/* 세종시 무장애 장소 전체 → { contentId: {시설정보} } */
+let _barrierFreeCache = null;
+async function loadBarrierFreeMap() {
+    if (_barrierFreeCache) return _barrierFreeCache;
+    if (!API_CONFIG.DATA_GO_KR_KEY) return {};
+    const url = 'https://apis.data.go.kr/B551011/KorWithService2/areaBasedList2?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.DATA_GO_KR_KEY,
+            numOfRows: 100, pageNo: 1,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json',
+            areaCode: API_CONFIG.TOUR_AREA_CODE,
+        });
+    const json = await safeFetch(url);
+    const list = extractItems(json);
+    if (!list.length) return {};
+
+    /* 상세는 장소마다 한 번씩 불러야 해서, 동시 호출 수를 제한한다 */
+    const map = {};
+    const queue = list.map(it => String(it.contentid));
+    let cursor = 0;
+    const worker = async () => {
+        while (cursor < queue.length) {
+            const id = queue[cursor++];
+            const facts = await fetchBarrierFreeDetail(id);
+            if (facts) map[id] = facts;
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(5, queue.length) }, worker));
+    _barrierFreeCache = map;
+    return map;
+}
+
 async function callWellnessApi(rows=10) {
     if (!API_CONFIG.DATA_GO_KR_KEY) return null;
     const url = 'https://apis.data.go.kr/B551011/wellnessTourInfo/wellnessList?' +
@@ -297,8 +373,44 @@ async function callKakaoCategory(code, size=15) {
         lng:   parseFloat(d.x)||null,
         desc:  d.category_name||'카카오맵 제공',
         tel:   d.phone||'',
+        placeUrl: d.place_url||'',   // 카카오맵 상세 페이지
         source:'kakao',
     })).filter(p=>p.name);
+}
+
+/* ── 장소 상세 정보 (카카오맵) ─────────────────────────────────────
+   카드의 [정보] 버튼에서 쓴다. 관광공사 데이터에는 영업정보·도로명주소가
+   없는 경우가 많아, 이름과 좌표로 카카오맵에서 같은 장소를 찾아 채워준다. */
+async function fetchPlaceInfo(place) {
+    /* 이미 카카오에서 온 장소면 가진 정보를 그대로 쓴다 */
+    if (place.source === 'kakao' && place.placeUrl) {
+        return { name:place.name, addr:place.addr, tel:place.tel,
+                 category:place.desc, placeUrl:place.placeUrl };
+    }
+    if (!API_CONFIG.KAKAO_REST_KEY) return null;
+
+    const params = { query: place.name, size: 5 };
+    if (place.lat && place.lng) {                 // 좌표가 있으면 근처에서 찾아 정확도를 높인다
+        params.x = place.lng; params.y = place.lat; params.radius = 5000;
+    }
+    const url = 'https://dapi.kakao.com/v2/local/search/keyword.json?' + new URLSearchParams(params);
+    const json = await safeFetch(url, { headers: kakaoHeaders() });
+    const docs = json?.documents || [];
+    if (!docs.length) return null;
+
+    /* 이름이 가장 비슷한 것을 고른다 */
+    const norm = s => String(s||'').replace(/\s|\(.*?\)/g, '');
+    const target = norm(place.name);
+    const hit = docs.find(d => norm(d.place_name) === target)
+             || docs.find(d => norm(d.place_name).includes(target) || target.includes(norm(d.place_name)))
+             || docs[0];
+    return {
+        name: hit.place_name,
+        addr: hit.road_address_name || hit.address_name || '',
+        tel:  hit.phone || '',
+        category: hit.category_name || '',
+        placeUrl: hit.place_url || '',
+    };
 }
 
 /* XML 응답에서 item 배열 추출 (E-Gen 응급의료 API는 XML만 반환) */

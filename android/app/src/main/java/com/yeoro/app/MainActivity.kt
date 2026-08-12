@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity() {
     private val externalMapHosts = setOf(
         "map.kakao.com",
         "m.map.kakao.com",
+        "place.map.kakao.com",   // 장소 상세 정보 페이지
     )
 
     private companion object {

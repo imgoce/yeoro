@@ -57,12 +57,13 @@ async function getPlaces(category, options = {}) {
         if (category === '관광명소') {
             /* 세종시로 분류된 볼거리를 전부 표시:
                관광지12 + 문화시설14 + 레포츠28 + 여행코스25 + 웰니스 */
-            const [tour, culture, leports, course, wellness] = await Promise.all([
+            const [tour, culture, leports, course, wellness, barrierFree] = await Promise.all([
                 callTourApi('12', 100),
                 callTourApi('14', 100),
                 callTourApi('28', 100),
                 callTourApi('25', 100),
                 callWellnessApi(8),
+                loadBarrierFreeMap(),      // 휠체어·경사로·엘리베이터 등 무장애 시설 정보
             ]);
             const combined = [...(tour||[]), ...(culture||[]), ...(leports||[]),
                               ...(course||[]), ...(wellness||[])];
@@ -71,6 +72,11 @@ async function getPlaces(category, options = {}) {
             const deduped = combined.filter(p=>{
                 if (seen.has(p.id)) return false;
                 seen.add(p.id); return true;
+            });
+            /* 무장애 정보가 등록된 장소에 시설 정보를 붙인다 (여로의 핵심 정보) */
+            deduped.forEach(p => {
+                const cid = String(p.id || '').replace(/^tour-/, '');
+                if (barrierFree && barrierFree[cid]) p.barrierFree = barrierFree[cid];
             });
             if (deduped.length > 0) places = deduped;
         }
@@ -189,6 +195,87 @@ async function loadUnifiedCategory(categoryKey) {
     renderPlaceCards(places, box);
 }
 
+/* ── 장소 정보 보기 ────────────────────────────────────────────────
+   카드의 [정보] 버튼 → 카카오맵에서 찾은 주소·전화·분류를 보여주고,
+   더 자세히 보고 싶으면 카카오맵 페이지로 넘어갈 수 있게 한다. */
+async function openPlaceInfo(item) {
+    const box = document.getElementById('place-info-body');
+    if (!box) return;
+    box.innerHTML = `
+        <div class="page-title" style="font-size:1.1em;margin-bottom:6px;">${esc(item.name)}</div>
+        <p class="small m-0" style="color:var(--yeoro-muted);">정보를 불러오는 중...</p>`;
+    new bootstrap.Modal(document.getElementById('placeInfoModal')).show();
+
+    const info = await fetchPlaceInfo(item);
+    const row = (icon, label, value) => value
+        ? `<div style="display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--yeoro-border);">
+               <span style="flex:none;">${icon}</span>
+               <div style="min-width:0;">
+                   <div style="font-size:.72em;color:var(--yeoro-muted);">${label}</div>
+                   <div style="font-size:.9em;font-weight:600;color:var(--yeoro-text);">${esc(value)}</div>
+               </div>
+           </div>` : '';
+
+    const addr = (info && info.addr) || item.addr || '';
+    const tel  = (info && info.tel)  || item.tel  || '';
+    const cat  = (info && info.category) || item.desc || '';
+    const bf   = item.barrierFree;
+
+    box.innerHTML = `
+        <div class="page-title" style="font-size:1.1em;margin-bottom:4px;">${esc(item.name)}</div>
+        <div style="font-size:.78em;color:var(--yeoro-muted);margin-bottom:12px;">${esc(item.category||'')}</div>
+
+        ${row('📍','주소', addr)}
+        ${row('📞','전화', tel)}
+        ${row('🏷️','분류', cat)}
+        ${item._driveMin!=null ? row('🚗','내 위치에서', `약 ${item._driveMin}분 (${item._driveKm}km)`) : ''}
+
+        ${bf ? `<div class="bf-box" style="margin-top:12px;">
+            <div class="bf-title">♿ 무장애 시설</div>
+            <div class="bf-detail" style="display:block;">${Object.keys(bf).map(k=>{
+                const l = BARRIER_FREE_LABELS[k];
+                return l ? `<div><b>${l[1]}</b> — ${esc(bf[k])}</div>` : '';
+            }).join('')}</div></div>` : ''}
+
+        ${!info ? `<p class="small mt-3 mb-0" style="color:var(--yeoro-muted);">
+            카카오맵에서 추가 정보를 찾지 못했어요.</p>` : ''}
+
+        <div style="display:flex;gap:8px;margin-top:16px;">
+            ${(info && info.placeUrl) ? `<button class="y-btn-secondary" style="flex:1;margin:0;"
+                onclick="openExternal('${esc(info.placeUrl)}')">🗺️ 카카오맵에서 보기</button>` : ''}
+            ${(item.lat&&item.lng) ? `<button class="y-btn-primary" style="flex:1;padding:13px;"
+                onclick="openKakaoRoute('${esc(item.name).replace(/'/g,'')}',${item.lat},${item.lng})">🚗 길찾기</button>` : ''}
+        </div>`;
+}
+
+/* 외부 페이지 열기 — 앱에서는 네이티브가 가로채 밖에서 연다 */
+function openExternal(url) {
+    if (window.YeoroNative) { location.href = url; return; }
+    const win = window.open(url, '_blank');
+    if (!win) location.href = url;
+}
+
+/* 무장애 시설 정보를 칩으로 그린다.
+   눌러서 자세한 설명(예: "경사로가 가파른 편…")을 볼 수 있게 한다. */
+function barrierFreeChips(item) {
+    const bf = item.barrierFree;
+    if (!bf) return '';
+    const chips = Object.keys(bf).map(k => {
+        const label = BARRIER_FREE_LABELS[k];
+        if (!label) return '';
+        return `<span class="bf-chip" title="${esc(bf[k])}">${label[0]} ${label[1]}</span>`;
+    }).join('');
+    if (!chips) return '';
+    return `<div class="bf-box">
+        <div class="bf-title">♿ 무장애 시설</div>
+        <div class="bf-chips">${chips}</div>
+        <div class="bf-detail">${Object.keys(bf).map(k=>{
+            const label = BARRIER_FREE_LABELS[k];
+            return label ? `<div><b>${label[1]}</b> — ${esc(bf[k])}</div>` : '';
+        }).join('')}</div>
+    </div>`;
+}
+
 /* 장소 카드 목록 렌더링 (카테고리 화면·검색 결과 공용) */
 function renderPlaceCards(places, box) {
     box.innerHTML = '';
@@ -204,13 +291,19 @@ function renderPlaceCards(places, box) {
             <div class="place-meta">${dist}세종시</div>
             <div class="place-desc">${esc(item.desc||'')}</div>
             ${item.tel?`<div style="font-size:.78em;color:var(--yeoro-muted);margin-bottom:6px;">📞 ${esc(item.tel)}</div>`:''}
-            <span class="place-tag">${esc(item.category)}</span>
+            ${barrierFreeChips(item)}
+            <button class="info-btn">ℹ️ 정보</button>
             ${(item.lat&&item.lng)?`<button class="route-btn">🚗 길찾기</button>`:''}
             <button class="add-btn" ${inCart?'disabled style="opacity:.5"':''}>
                 ${inCart?'담김':'추가'}</button>`;
         card.querySelector('.route-btn')?.addEventListener('click', ()=>{
             openKakaoRoute(item.name, item.lat, item.lng);
         });
+        /* 무장애 칸을 누르면 자세한 설명이 펼쳐진다 */
+        card.querySelector('.bf-box')?.addEventListener('click', e=>{
+            e.currentTarget.classList.toggle('open');
+        });
+        card.querySelector('.info-btn')?.addEventListener('click', ()=>openPlaceInfo(item));
         card.querySelector('.add-btn').addEventListener('click', e=>{
             if(inCart) return;
             pushToCart(item);
