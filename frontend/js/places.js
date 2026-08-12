@@ -24,6 +24,63 @@ function savePlacesToStorage(category, places) {
     } catch(e) { /* 저장공간 부족 등 — 캐시는 없어도 동작 */ }
 }
 
+/* ── 여러 출처(관광공사 + 카카오맵) 합치기 ────────────────────────
+   같은 장소가 두 API에 다 들어 있는 경우가 많다. 그대로 이어붙이면
+   목록에 같은 곳이 두 번 나오므로, 아래 기준으로 하나로 합친다.
+
+   같은 곳으로 보는 기준
+     ① 이름이 같다 (띄어쓰기·괄호·지점 표기를 뗀 뒤 비교)
+     ② 또는 서로 100m 안에 있으면서 한쪽 이름이 다른 쪽에 포함된다
+        (예: "고복자연공원" ↔ "고복자연공원 주차장")
+
+   합칠 때는 먼저 들어온 쪽(관광공사)을 남긴다. 무장애 정보·소개글이
+   공공데이터에만 있기 때문이다. 대신 그쪽에 없는 항목(전화번호,
+   도로명 주소, 카카오맵 링크)은 카카오 쪽 값으로 채워 넣는다.        */
+function normalizePlaceName(name) {
+    return String(name || '')
+        .replace(/\(.*?\)/g, '')            // 괄호 안 설명 제거: 연화사(세종) → 연화사
+        .replace(/\s+/g, '')                // 띄어쓰기 제거
+        .replace(/(본점|직영점|[가-힣A-Za-z0-9]{1,6}점)$/, '')  // 지점 표기 제거
+        .toLowerCase();
+}
+
+/* 두 좌표 사이 거리(m). 짧은 거리라 간단한 근사식으로 충분하다. */
+function roughDistanceMeters(a, b) {
+    if (!a.lat || !a.lng || !b.lat || !b.lng) return Infinity;
+    const dLat = (a.lat - b.lat) * 111000;
+    const dLng = (a.lng - b.lng) * 88000;   // 위도 36도 부근 보정값
+    return Math.sqrt(dLat*dLat + dLng*dLng);
+}
+
+function isSamePlace(a, b) {
+    const na = normalizePlaceName(a.name), nb = normalizePlaceName(b.name);
+    if (!na || !nb) return false;
+    if (na === nb) return true;
+    const near = roughDistanceMeters(a, b) <= 100;
+    return near && (na.includes(nb) || nb.includes(na));
+}
+
+/* 비어 있는 항목만 다른 출처의 값으로 채운다 (기존 값은 덮어쓰지 않는다) */
+function fillMissingFields(target, extra) {
+    ['addr', 'tel', 'placeUrl'].forEach(k => {
+        if (!target[k] && extra[k]) target[k] = extra[k];
+    });
+    if (!target.lat && extra.lat) { target.lat = extra.lat; target.lng = extra.lng; }
+    return target;
+}
+
+/* 출처 여러 개를 순서대로 합치면서 중복을 없앤다. 앞쪽 목록이 우선. */
+function mergePlaceSources(...lists) {
+    const merged = [];
+    lists.flat().forEach(p => {
+        if (!p || !p.name) return;
+        const dup = merged.find(m => isSamePlace(m, p));
+        if (dup) { fillMissingFields(dup, p); return; }
+        merged.push(p);
+    });
+    return merged;
+}
+
 /* 화면에 이미 그려진 카드의 거리 라벨을 실도로 값으로 갱신 (재정렬은 하지 않음) */
 function updateVisibleDriveLabels(places) {
     places.forEach(p => {
@@ -56,23 +113,29 @@ async function getPlaces(category, options = {}) {
     try {
         if (category === '관광명소') {
             /* 세종시로 분류된 볼거리를 전부 표시:
-               관광지12 + 문화시설14 + 레포츠28 + 여행코스25 + 웰니스 */
-            const [tour, culture, leports, course, wellness, barrierFree] = await Promise.all([
+               관광공사(관광지12 + 문화시설14 + 레포츠28 + 여행코스25 + 웰니스)
+               + 카카오맵(AT4 관광명소, CT1 문화시설)
+               관광공사에 없는 최신 장소는 카카오맵이 채워준다. */
+            const [tour, culture, leports, course, wellness,
+                   kakaoSpot, kakaoCulture, barrierFree] = await Promise.all([
                 callTourApi('12', 100),
                 callTourApi('14', 100),
                 callTourApi('28', 100),
                 callTourApi('25', 100),
                 callWellnessApi(8),
+                callKakaoCategory('AT4', 15),
+                callKakaoCategory('CT1', 10),
                 loadBarrierFreeMap(),      // 휠체어·경사로·엘리베이터 등 무장애 시설 정보
             ]);
-            const combined = [...(tour||[]), ...(culture||[]), ...(leports||[]),
-                              ...(course||[]), ...(wellness||[])];
-            /* contentid 기준 중복 제거 */
+            /* 관광공사끼리는 contentid가 같으면 같은 장소다 */
             const seen = new Set();
-            const deduped = combined.filter(p=>{
+            const tourAll = [...(tour||[]), ...(culture||[]), ...(leports||[]),
+                             ...(course||[]), ...(wellness||[])].filter(p=>{
                 if (seen.has(p.id)) return false;
                 seen.add(p.id); return true;
             });
+            /* 관광공사를 앞에 두고 카카오맵을 뒤에 붙이면서 같은 장소는 하나로 합친다 */
+            const deduped = mergePlaceSources(tourAll, kakaoSpot||[], kakaoCulture||[]);
             /* 무장애 정보가 등록된 장소에 시설 정보를 붙인다 (여로의 핵심 정보) */
             deduped.forEach(p => {
                 const cid = String(p.id || '').replace(/^tour-/, '');
@@ -81,12 +144,14 @@ async function getPlaces(category, options = {}) {
             if (deduped.length > 0) places = deduped;
         }
         else if (category === '먹거리') {
-            /* 국문관광정보(음식점39) + 카카오맵(FD6 음식점) 병렬 호출 */
-            const [tourFood, kakaoFood] = await Promise.all([
+            /* 국문관광정보(음식점39) + 카카오맵(FD6 음식점, CE7 카페) 병렬 호출.
+               같은 식당이 양쪽에 다 있는 경우가 많아 하나로 합친다. */
+            const [tourFood, kakaoFood, kakaoCafe] = await Promise.all([
                 callTourApi('39', 100),
-                callKakaoCategory('FD6', 10),
+                callKakaoCategory('FD6', 15),
+                callKakaoCategory('CE7', 10),
             ]);
-            const combined = [...(tourFood||[]), ...(kakaoFood||[])];
+            const combined = mergePlaceSources(tourFood||[], kakaoFood||[], kakaoCafe||[]);
             if (combined.length > 0) places = combined;
         }
         else if (category === '축제') {
@@ -102,14 +167,9 @@ async function getPlaces(category, options = {}) {
                 callKakaoCategory('HP8', 10),
                 callKakaoKeyword('세종 병원 응급', 5),
             ]);
-            /* 응급의료기관을 앞쪽에 우선 배치 */
-            const combined = [...(emergency||[]), ...(hospital||[]), ...(kakaoHosp||[]), ...(keyword||[])];
-            // 이름 기준 중복 제거
-            const seen = new Set();
-            const deduped = combined.filter(p=>{
-                if (seen.has(p.name)) return false;
-                seen.add(p.name); return true;
-            });
+            /* 응급의료기관을 앞쪽에 우선 배치하고, 같은 병원은 하나로 합친다.
+               (예: "세종충남대학교병원"과 "세종충남대병원"처럼 표기가 조금씩 다르다) */
+            const deduped = mergePlaceSources(emergency||[], hospital||[], kakaoHosp||[], keyword||[]);
             if (deduped.length > 0) places = deduped;
         }
     } catch(e) {
