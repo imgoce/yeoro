@@ -205,21 +205,35 @@ const BARRIER_FREE_LABELS = {
     helpdog:      ['🦮', '안내견 동반'],
     lactationroom:['🍼', '수유실'],
     stroller:     ['🚼', '유모차 대여'],
-    babysparechair:['🧷', '기저귀 교환대'],
+    babysparechair:['🪑', '유아용 의자'],
     auditorium:   ['💺', '장애인 관람석'],
     guidehuman:   ['🙋', '안내 도우미'],
     ticketoffice: ['🎫', '매표소 편의'],
     publictransport:['🚌', '대중교통 접근'],
+    /* 아래 다섯 가지도 실제로 값이 내려오는데 지금까지 화면에 안 나왔다.
+       "의자식 테이블 있음", "점자 핸드레일 설치", "가족 화장실·유아 놀이방 있음"
+       처럼 실제로 도움이 되는 안내라서 함께 보여준다. */
+    handicapetc:  ['🪑', '의자·테이블'],
+    blindhandicapetc:['👁️', '시각장애 편의'],
+    brailepromotion: ['📖', '점자 안내물'],
+    bigprint:     ['🔠', '큰 글씨 안내'],
+    infantsfamilyetc:['👨‍👩‍👧', '가족 편의'],
 };
 
-/* 무장애 상세 1건 */
-async function fetchBarrierFreeDetail(contentId) {
+/* 무장애 상세 1건.
+   공공데이터포털은 짧은 시간에 몰아서 부르면 429(요청 과다)를 돌려준다.
+   그래서 실패하면 잠시 쉬었다가 한 번 더 시도한다. */
+async function fetchBarrierFreeDetail(contentId, attempt = 0) {
     const url = 'https://apis.data.go.kr/B551011/KorWithService2/detailWithTour2?' +
         new URLSearchParams({
             serviceKey: API_CONFIG.DATA_GO_KR_KEY,
             MobileOS:'ETC', MobileApp:'Yero', _type:'json', contentId,
         });
     const json = await safeFetch(url);
+    if (!json && attempt < 2) {
+        await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+        return fetchBarrierFreeDetail(contentId, attempt + 1);
+    }
     const items = json?.response?.body?.items;
     if (!items || !items.item) return null;
     const it = Array.isArray(items.item) ? items.item[0] : items.item;
@@ -232,11 +246,34 @@ async function fetchBarrierFreeDetail(contentId) {
     return Object.keys(facts).length ? facts : null;
 }
 
-/* 세종시 무장애 장소 전체 → { contentId: {시설정보} } */
+/* 세종시 무장애 장소 전체 → { contentId: {시설정보} }
+   장소마다 상세를 한 번씩 불러야 해서 25번쯤 호출이 나간다. 자주 바뀌는
+   정보가 아니므로 하루 동안 저장해 두고 다시 쓴다 — 앱을 켤 때마다
+   같은 요청을 반복하면 공공데이터포털이 429(요청 과다)로 막는다. */
+const BARRIER_FREE_CACHE_KEY = 'yeoro_barrierfree_v1';
+const BARRIER_FREE_TTL = 24 * 60 * 60 * 1000;   // 하루
+
+function loadBarrierFreeFromStorage() {
+    try {
+        const raw = localStorage.getItem(BARRIER_FREE_CACHE_KEY);
+        if (!raw) return null;
+        const { ts, map } = JSON.parse(raw);
+        if (Date.now() - ts > BARRIER_FREE_TTL) return null;
+        return map;
+    } catch (e) { return null; }
+}
+function saveBarrierFreeToStorage(map) {
+    try {
+        localStorage.setItem(BARRIER_FREE_CACHE_KEY, JSON.stringify({ ts: Date.now(), map }));
+    } catch (e) { /* 저장공간 부족 — 캐시는 없어도 동작 */ }
+}
+
 let _barrierFreeCache = null;
 async function loadBarrierFreeMap() {
     if (_barrierFreeCache) return _barrierFreeCache;
-    if (!API_CONFIG.DATA_GO_KR_KEY) return {};
+    const stored = loadBarrierFreeFromStorage();
+    if (stored && Object.keys(stored).length) { _barrierFreeCache = stored; return stored; }
+    if (!API_CONFIG.DATA_GO_KR_KEY) return barrierFreeFallback();
     const url = 'https://apis.data.go.kr/B551011/KorWithService2/areaBasedList2?' +
         new URLSearchParams({
             serviceKey: API_CONFIG.DATA_GO_KR_KEY,
@@ -246,9 +283,11 @@ async function loadBarrierFreeMap() {
         });
     const json = await safeFetch(url);
     const list = extractItems(json);
-    if (!list.length) return {};
+    if (!list.length) return barrierFreeFallback();
 
-    /* 상세는 장소마다 한 번씩 불러야 해서, 동시 호출 수를 제한한다 */
+    /* 상세는 장소마다 한 번씩 불러야 한다.
+       동시에 3건씩, 사이에 150ms를 두고 천천히 부른다 —
+       한꺼번에 몰아 부르면 서버가 429로 막아 무장애 정보가 통째로 빈다. */
     const map = {};
     const queue = list.map(it => String(it.contentid));
     let cursor = 0;
@@ -257,11 +296,38 @@ async function loadBarrierFreeMap() {
             const id = queue[cursor++];
             const facts = await fetchBarrierFreeDetail(id);
             if (facts) map[id] = facts;
+            await new Promise(r => setTimeout(r, 150));
         }
     };
-    await Promise.all(Array.from({ length: Math.min(5, queue.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(3, queue.length) }, worker));
+
+    /* 상세 API가 호출 한도(429)에 걸리면 한 곳도 못 받아온다.
+       그럴 때는 앱에 넣어둔 자료로 대신 보여준다 — 무장애 정보는
+       여로의 핵심이라 비워 두면 안 되고, 자주 바뀌는 값도 아니다. */
+    if (!Object.keys(map).length) {
+        console.warn('[무장애] 상세 API를 받지 못해 내장 자료로 표시합니다');
+        return barrierFreeFallback();
+    }
     _barrierFreeCache = map;
+    saveBarrierFreeToStorage(map);
+    console.info(`[무장애] ${Object.keys(map).length}곳 시설정보 수신`);
     return map;
+}
+
+/* 내장 자료 (barrier-free-data.js). 파일이 없으면 빈 값으로 동작한다.
+   실시간 API는 contentid로, 내장 자료는 장소 이름으로 찾으므로
+   비교하기 좋게 이름을 다듬어 색인을 만들어 둔다. */
+let _barrierFreeFallbackIndex = null;
+function barrierFreeFallback() {
+    if (typeof BARRIER_FREE_SNAPSHOT === 'undefined') return {};
+    if (!_barrierFreeFallbackIndex) {
+        _barrierFreeFallbackIndex = {};
+        Object.keys(BARRIER_FREE_SNAPSHOT).forEach(name => {
+            _barrierFreeFallbackIndex[normalizePlaceName(name)] = BARRIER_FREE_SNAPSHOT[name];
+        });
+    }
+    _barrierFreeCache = _barrierFreeFallbackIndex;
+    return _barrierFreeFallbackIndex;
 }
 
 async function callWellnessApi(rows=10) {

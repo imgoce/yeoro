@@ -9,8 +9,9 @@ const PLACES_CACHE_TTL = 10 * 60 * 1000;   // 10분
 /* 목록을 어떻게 만드는지가 바뀌면 이 번호를 올린다.
    올리지 않으면 예전에 저장해 둔 목록(최대 10분)이 그대로 보여서,
    앱을 새로 깔아도 "그대로인데?" 하는 상황이 된다.
-   v3 — 관광공사 + 카카오맵 합치기(중복 제거) 적용 */
-const PLACES_CACHE_VER = 'v3';
+   v3 — 관광공사 + 카카오맵 합치기(중복 제거) 적용
+   v4 — 직접 고른 장소 목록(local-places.js) 추가 */
+const PLACES_CACHE_VER = 'v4';
 
 function loadPlacesFromStorage(category) {
     try {
@@ -41,11 +42,14 @@ function savePlacesToStorage(category, places) {
    공공데이터에만 있기 때문이다. 대신 그쪽에 없는 항목(전화번호,
    도로명 주소, 카카오맵 링크)은 카카오 쪽 값으로 채워 넣는다.        */
 function normalizePlaceName(name) {
-    return String(name || '')
+    const s = String(name || '')
         .replace(/\(.*?\)/g, '')            // 괄호 안 설명 제거: 연화사(세종) → 연화사
-        .replace(/\s+/g, '')                // 띄어쓰기 제거
-        .replace(/(본점|직영점|[가-힣A-Za-z0-9]{1,6}점)$/, '')  // 지점 표기 제거
-        .toLowerCase();
+        .trim()
+        /* 지점 표기는 "가게이름 + 띄어쓰기 + ○○점" 형태일 때만 뗀다.
+           띄어쓰기 없이 붙은 "안터반점"·"식원반점"은 가게 이름 자체다.
+           (예전에는 그것까지 떼어 이름이 통째로 사라졌다) */
+        .replace(/\s+(본점|직영점|\d+호점|[가-힣A-Za-z0-9]{1,6}점)$/, '');
+    return s.replace(/\s+/g, '').toLowerCase();
 }
 
 /* 두 좌표 사이 거리(m). 짧은 거리라 간단한 근사식으로 충분하다. */
@@ -113,12 +117,27 @@ function isFranchiseCafe(place) {
     const depth = cat.split('>').length;
     if (depth >= 4) return true;
 
-    /* ② 이름이 지점 표기로 끝나면 체인점 */
-    if (/[가-힣A-Za-z0-9]{2,10}점$/.test(name.trim())) return true;
+    /* ② 이름이 "○○커피 세종시청점"처럼 지점 표기로 끝나면 체인점.
+       띄어쓰기가 있을 때만 본다 — 붙여 쓴 이름은 상호 자체일 수 있다. */
+    if (/\s[가-힣A-Za-z0-9]{1,10}점$/.test(name.trim())) return true;
 
     /* ③ 알려진 브랜드 이름이 들어 있으면 프랜차이즈 */
     const flat = name.replace(/\s/g, '');
     return FRANCHISE_CAFE_BRANDS.some(b => flat.includes(b));
+}
+
+/* 무장애 시설 정보를 장소에 붙인다 (여로의 핵심 정보).
+   실시간 API로 받은 자료는 contentid로, 앱에 넣어둔 자료는 이름으로
+   찾게 되어 있어 두 가지를 모두 확인한다. */
+function attachBarrierFree(places, barrierFree) {
+    if (!barrierFree) return places;
+    places.forEach(p => {
+        const cid = String(p.id || '').replace(/^tour-/, '');
+        const byName = barrierFree[normalizePlaceName(p.name)];
+        if (barrierFree[cid])   p.barrierFree = barrierFree[cid];
+        else if (byName)        p.barrierFree = byName;
+    });
+    return places;
 }
 
 /* 화면에 이미 그려진 카드의 거리 라벨을 실도로 값으로 갱신 (재정렬은 하지 않음) */
@@ -174,13 +193,11 @@ async function getPlaces(category, options = {}) {
                 if (seen.has(p.id)) return false;
                 seen.add(p.id); return true;
             });
-            /* 관광공사를 앞에 두고 카카오맵을 뒤에 붙이면서 같은 장소는 하나로 합친다 */
-            const deduped = mergePlaceSources(tourAll, kakaoSpot||[], kakaoCulture||[]);
-            /* 무장애 정보가 등록된 장소에 시설 정보를 붙인다 (여로의 핵심 정보) */
-            deduped.forEach(p => {
-                const cid = String(p.id || '').replace(/^tour-/, '');
-                if (barrierFree && barrierFree[cid]) p.barrierFree = barrierFree[cid];
-            });
+            /* 관광공사 → 카카오맵 → 직접 고른 목록 순으로 붙이면서
+               같은 장소는 하나로 합친다 (앞쪽 출처가 우선) */
+            const deduped = mergePlaceSources(tourAll, kakaoSpot||[], kakaoCulture||[],
+                                              curatedPlaces('관광명소'));
+            attachBarrierFree(deduped, barrierFree);
             if (deduped.length > 0) places = deduped;
         }
         else if (category === '먹거리') {
@@ -188,14 +205,19 @@ async function getPlaces(category, options = {}) {
                같은 식당이 양쪽에 다 있는 경우가 많아 하나로 합친다. */
             /* 카페는 프랜차이즈를 빼고 나면 수가 확 줄어드니 두 페이지(최대 30곳)를
                받아 두고 거른다. */
-            const [tourFood, kakaoFood, cafe1, cafe2] = await Promise.all([
+            const [tourFood, kakaoFood, cafe1, cafe2, barrierFreeFood] = await Promise.all([
                 callTourApi('39', 100),
                 callKakaoCategory('FD6', 15),
                 callKakaoCategory('CE7', 15, 1),
                 callKakaoCategory('CE7', 15, 2),
+                loadBarrierFreeMap(),   // 식당·카페에도 무장애 등록된 곳이 많다
             ]);
             const localCafes = [...(cafe1||[]), ...(cafe2||[])].filter(p => !isFranchiseCafe(p));
-            const combined = mergePlaceSources(tourFood||[], kakaoFood||[], localCafes);
+            /* 직접 고른 조치원 음식점·개인 카페를 마지막에 붙인다.
+               (직접 고른 목록은 프랜차이즈 자동 제외 대상이 아니다 — 넣기로 고른 곳들이다) */
+            const combined = mergePlaceSources(tourFood||[], kakaoFood||[], localCafes,
+                                               curatedPlaces('음식점', '카페'));
+            attachBarrierFree(combined, barrierFreeFood);
             if (combined.length > 0) places = combined;
         }
         else if (category === '축제') {
