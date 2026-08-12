@@ -6,7 +6,12 @@
    ③ 앱 시작 직후 prefetchPlaces()가 전 카테고리를 미리 받아둠 → 첫 클릭도 즉시
    ─────────────────────────────────────────────────────────────────*/
 const PLACES_CACHE_TTL = 10 * 60 * 1000;   // 10분
-const PLACES_CACHE_VER = 'v2';
+/* 목록을 어떻게 만드는지가 바뀌면 이 번호를 올린다.
+   올리지 않으면 예전에 저장해 둔 목록(최대 10분)이 그대로 보여서,
+   앱을 새로 깔아도 "그대로인데?" 하는 상황이 된다.
+   v3 — 관광공사 + 카카오맵 합치기(중복 제거) 적용
+   v4 — 직접 고른 장소 목록(local-places.js) 추가 */
+const PLACES_CACHE_VER = 'v4';
 
 function loadPlacesFromStorage(category) {
     try {
@@ -22,6 +27,117 @@ function savePlacesToStorage(category, places) {
         localStorage.setItem(`yeoro_places_${PLACES_CACHE_VER}_${category}`,
             JSON.stringify({ ts: Date.now(), places }));
     } catch(e) { /* 저장공간 부족 등 — 캐시는 없어도 동작 */ }
+}
+
+/* ── 여러 출처(관광공사 + 카카오맵) 합치기 ────────────────────────
+   같은 장소가 두 API에 다 들어 있는 경우가 많다. 그대로 이어붙이면
+   목록에 같은 곳이 두 번 나오므로, 아래 기준으로 하나로 합친다.
+
+   같은 곳으로 보는 기준
+     ① 이름이 같다 (띄어쓰기·괄호·지점 표기를 뗀 뒤 비교)
+     ② 또는 서로 100m 안에 있으면서 한쪽 이름이 다른 쪽에 포함된다
+        (예: "고복자연공원" ↔ "고복자연공원 주차장")
+
+   합칠 때는 먼저 들어온 쪽(관광공사)을 남긴다. 무장애 정보·소개글이
+   공공데이터에만 있기 때문이다. 대신 그쪽에 없는 항목(전화번호,
+   도로명 주소, 카카오맵 링크)은 카카오 쪽 값으로 채워 넣는다.        */
+function normalizePlaceName(name) {
+    const s = String(name || '')
+        .replace(/\(.*?\)/g, '')            // 괄호 안 설명 제거: 연화사(세종) → 연화사
+        .trim()
+        /* 지점 표기는 "가게이름 + 띄어쓰기 + ○○점" 형태일 때만 뗀다.
+           띄어쓰기 없이 붙은 "안터반점"·"식원반점"은 가게 이름 자체다.
+           (예전에는 그것까지 떼어 이름이 통째로 사라졌다) */
+        .replace(/\s+(본점|직영점|\d+호점|[가-힣A-Za-z0-9]{1,6}점)$/, '');
+    return s.replace(/\s+/g, '').toLowerCase();
+}
+
+/* 두 좌표 사이 거리(m). 짧은 거리라 간단한 근사식으로 충분하다. */
+function roughDistanceMeters(a, b) {
+    if (!a.lat || !a.lng || !b.lat || !b.lng) return Infinity;
+    const dLat = (a.lat - b.lat) * 111000;
+    const dLng = (a.lng - b.lng) * 88000;   // 위도 36도 부근 보정값
+    return Math.sqrt(dLat*dLat + dLng*dLng);
+}
+
+function isSamePlace(a, b) {
+    const na = normalizePlaceName(a.name), nb = normalizePlaceName(b.name);
+    if (!na || !nb) return false;
+    if (na === nb) return true;
+    const near = roughDistanceMeters(a, b) <= 100;
+    return near && (na.includes(nb) || nb.includes(na));
+}
+
+/* 비어 있는 항목만 다른 출처의 값으로 채운다 (기존 값은 덮어쓰지 않는다) */
+function fillMissingFields(target, extra) {
+    ['addr', 'tel', 'placeUrl'].forEach(k => {
+        if (!target[k] && extra[k]) target[k] = extra[k];
+    });
+    if (!target.lat && extra.lat) { target.lat = extra.lat; target.lng = extra.lng; }
+    return target;
+}
+
+/* 출처 여러 개를 순서대로 합치면서 중복을 없앤다. 앞쪽 목록이 우선. */
+function mergePlaceSources(...lists) {
+    const merged = [];
+    lists.flat().forEach(p => {
+        if (!p || !p.name) return;
+        const dup = merged.find(m => isSamePlace(m, p));
+        if (dup) { fillMissingFields(dup, p); return; }
+        merged.push(p);
+    });
+    return merged;
+}
+
+/* ── 프랜차이즈 카페 걸러내기 ──────────────────────────────────────
+   여로는 "그 동네에만 있는 곳"을 보여주는 앱이라, 어디에나 있는
+   프랜차이즈 카페는 목록에서 뺀다. 판단 근거는 두 가지다.
+
+   ① 카카오 분류에 브랜드가 붙는다
+      개인 카페   → "음식점 > 카페"  /  "음식점 > 카페 > 테마카페"
+      프랜차이즈  → "음식점 > 카페 > 커피전문점 > 스타벅스"  ← 4단계에 브랜드
+   ② 이름이 "○○점"으로 끝난다 — 지점이 여러 개라는 뜻이다
+      (예: "텐퍼센트커피 세종시청점")
+
+   ①만으로는 카카오가 브랜드를 안 채운 경우를 놓치므로, 널리 알려진
+   브랜드 이름도 함께 본다.                                          */
+const FRANCHISE_CAFE_BRANDS = [
+    '스타벅스','투썸','이디야','메가커피','메가엠지씨','컴포즈','빽다방','파스쿠찌',
+    '할리스','커피빈','탐앤탐스','엔젤리너스','폴바셋','카페베네','매머드','더벤티',
+    '커피에반하다','드롭탑','블루보틀','공차','설빙','베스킨','던킨','뚜레쥬르',
+    '파리바게뜨','요거프레소','감성커피','더리터','하삼동','매드포갈릭',
+];
+
+function isFranchiseCafe(place) {
+    const cat  = String(place.desc || '');
+    const name = String(place.name || '');
+    if (!/카페|커피|디저트|베이커리/.test(cat)) return false;   // 카페가 아니면 대상 아님
+
+    /* ① 카카오 분류 4단계에 브랜드가 붙어 있으면 프랜차이즈 */
+    const depth = cat.split('>').length;
+    if (depth >= 4) return true;
+
+    /* ② 이름이 "○○커피 세종시청점"처럼 지점 표기로 끝나면 체인점.
+       띄어쓰기가 있을 때만 본다 — 붙여 쓴 이름은 상호 자체일 수 있다. */
+    if (/\s[가-힣A-Za-z0-9]{1,10}점$/.test(name.trim())) return true;
+
+    /* ③ 알려진 브랜드 이름이 들어 있으면 프랜차이즈 */
+    const flat = name.replace(/\s/g, '');
+    return FRANCHISE_CAFE_BRANDS.some(b => flat.includes(b));
+}
+
+/* 무장애 시설 정보를 장소에 붙인다 (여로의 핵심 정보).
+   실시간 API로 받은 자료는 contentid로, 앱에 넣어둔 자료는 이름으로
+   찾게 되어 있어 두 가지를 모두 확인한다. */
+function attachBarrierFree(places, barrierFree) {
+    if (!barrierFree) return places;
+    places.forEach(p => {
+        const cid = String(p.id || '').replace(/^tour-/, '');
+        const byName = barrierFree[normalizePlaceName(p.name)];
+        if (barrierFree[cid])   p.barrierFree = barrierFree[cid];
+        else if (byName)        p.barrierFree = byName;
+    });
+    return places;
 }
 
 /* 화면에 이미 그려진 카드의 거리 라벨을 실도로 값으로 갱신 (재정렬은 하지 않음) */
@@ -56,37 +172,77 @@ async function getPlaces(category, options = {}) {
     try {
         if (category === '관광명소') {
             /* 세종시로 분류된 볼거리를 전부 표시:
-               관광지12 + 문화시설14 + 레포츠28 + 여행코스25 + 웰니스 */
-            const [tour, culture, leports, course, wellness] = await Promise.all([
+               관광공사(관광지12 + 문화시설14 + 레포츠28 + 여행코스25 + 웰니스)
+               + 카카오맵(AT4 관광명소, CT1 문화시설)
+               관광공사에 없는 최신 장소는 카카오맵이 채워준다. */
+            const [tour, culture, leports, course, wellness,
+                   kakaoSpot, kakaoCulture, barrierFree] = await Promise.all([
                 callTourApi('12', 100),
                 callTourApi('14', 100),
                 callTourApi('28', 100),
                 callTourApi('25', 100),
                 callWellnessApi(8),
+                callKakaoCategory('AT4', 15),
+                callKakaoCategory('CT1', 10),
+                loadBarrierFreeMap(),      // 휠체어·경사로·엘리베이터 등 무장애 시설 정보
             ]);
-            const combined = [...(tour||[]), ...(culture||[]), ...(leports||[]),
-                              ...(course||[]), ...(wellness||[])];
-            /* contentid 기준 중복 제거 */
+            /* 관광공사끼리는 contentid가 같으면 같은 장소다 */
             const seen = new Set();
-            const deduped = combined.filter(p=>{
+            const tourAll = [...(tour||[]), ...(culture||[]), ...(leports||[]),
+                             ...(course||[]), ...(wellness||[])].filter(p=>{
                 if (seen.has(p.id)) return false;
                 seen.add(p.id); return true;
             });
+            /* 관광공사 → 카카오맵 → 직접 고른 목록 순으로 붙이면서
+               같은 장소는 하나로 합친다 (앞쪽 출처가 우선) */
+            const deduped = mergePlaceSources(tourAll, kakaoSpot||[], kakaoCulture||[],
+                                              curatedPlaces('관광명소'));
+            attachBarrierFree(deduped, barrierFree);
             if (deduped.length > 0) places = deduped;
         }
         else if (category === '먹거리') {
-            /* 국문관광정보(음식점39) + 카카오맵(FD6 음식점) 병렬 호출 */
-            const [tourFood, kakaoFood] = await Promise.all([
+            /* 국문관광정보(음식점39) + 카카오맵(FD6 음식점, CE7 카페) 병렬 호출.
+               같은 식당이 양쪽에 다 있는 경우가 많아 하나로 합친다. */
+            /* 카페는 프랜차이즈를 빼고 나면 수가 확 줄어드니 두 페이지(최대 30곳)를
+               받아 두고 거른다. */
+            const [tourFood, kakaoFood, cafe1, cafe2, barrierFreeFood] = await Promise.all([
                 callTourApi('39', 100),
-                callKakaoCategory('FD6', 10),
+                callKakaoCategory('FD6', 15),
+                callKakaoCategory('CE7', 15, 1),
+                callKakaoCategory('CE7', 15, 2),
+                loadBarrierFreeMap(),   // 식당·카페에도 무장애 등록된 곳이 많다
             ]);
-            const combined = [...(tourFood||[]), ...(kakaoFood||[])];
+            const localCafes = [...(cafe1||[]), ...(cafe2||[])].filter(p => !isFranchiseCafe(p));
+            /* 직접 고른 조치원 음식점·개인 카페를 마지막에 붙인다.
+               (직접 고른 목록은 프랜차이즈 자동 제외 대상이 아니다 — 넣기로 고른 곳들이다) */
+            const combined = mergePlaceSources(tourFood||[], kakaoFood||[], localCafes,
+                                               curatedPlaces('음식점', '카페'));
+            attachBarrierFree(combined, barrierFreeFood);
             if (combined.length > 0) places = combined;
         }
         else if (category === '축제') {
-            /* 국문관광정보(축제15) */
-            const tourFest = await callTourApi('15', 100);
-            if (tourFest && tourFest.length > 0) places = tourFest;
+            /* 올해 열리는 축제만 보여준다.
+               ① 관광공사 축제 API — 행사 기간이 있어 올해 것만 고를 수 있다
+               ② 카카오맵 키워드 검색 — 관광공사에 아직 안 올라온 행사를 채운다
+                  (이름에 지난 연도가 박힌 것은 뺀다) */
+            const [fest, kwFest, kwFestival, kwCulture] = await Promise.all([
+                callFestivalApi(),
+                callKakaoKeyword('세종 축제', 10),
+                callKakaoKeyword('세종 페스티벌', 10),
+                callKakaoKeyword('세종 문화제', 10),
+            ]);
+            /* 축제가 아닌 것(공원 시설물·추진위원회 등)과 지난해 행사를 뺀다 */
+            const kakaoThisYear = [...(kwFest||[]), ...(kwFestival||[]), ...(kwCulture||[])]
+                .filter(p => isFestivalPlace(p) && isThisYearEvent(p));
+
+            /* 축제 API가 비면 예전 방식(축제15)으로라도 보여준다.
+               (관광공사에 올해 축제가 아직 등록되지 않은 시기가 있다) */
+            let base = fest;
+            if (!base || base.length === 0) {
+                base = ((await callTourApi('15', 100)) || []).filter(p => isThisYearEvent(p));
+            }
+            const combined = mergePlaceSources(base || [], kakaoThisYear);
+            if (combined.length > 0) places = combined;
         }
         else if (category === '의료기관') {
             /* 응급의료기관(E-Gen) + 병원정보(심평원) + 카카오맵(HP8) 병렬 호출 */
@@ -96,14 +252,9 @@ async function getPlaces(category, options = {}) {
                 callKakaoCategory('HP8', 10),
                 callKakaoKeyword('세종 병원 응급', 5),
             ]);
-            /* 응급의료기관을 앞쪽에 우선 배치 */
-            const combined = [...(emergency||[]), ...(hospital||[]), ...(kakaoHosp||[]), ...(keyword||[])];
-            // 이름 기준 중복 제거
-            const seen = new Set();
-            const deduped = combined.filter(p=>{
-                if (seen.has(p.name)) return false;
-                seen.add(p.name); return true;
-            });
+            /* 응급의료기관을 앞쪽에 우선 배치하고, 같은 병원은 하나로 합친다.
+               (예: "세종충남대학교병원"과 "세종충남대병원"처럼 표기가 조금씩 다르다) */
+            const deduped = mergePlaceSources(emergency||[], hospital||[], kakaoHosp||[], keyword||[]);
             if (deduped.length > 0) places = deduped;
         }
     } catch(e) {
@@ -189,6 +340,93 @@ async function loadUnifiedCategory(categoryKey) {
     renderPlaceCards(places, box);
 }
 
+/* ── 장소 정보 보기 ────────────────────────────────────────────────
+   카드의 [정보] 버튼 → 카카오맵에서 찾은 주소·전화·분류를 보여주고,
+   더 자세히 보고 싶으면 카카오맵 페이지로 넘어갈 수 있게 한다. */
+async function openPlaceInfo(item) {
+    const box = document.getElementById('place-info-body');
+    if (!box) return;
+    box.innerHTML = `
+        <div class="page-title" style="font-size:1.1em;margin-bottom:6px;">${esc(item.name)}</div>
+        <p class="small m-0" style="color:var(--yeoro-muted);">정보를 불러오는 중...</p>`;
+    new bootstrap.Modal(document.getElementById('placeInfoModal')).show();
+
+    const info = await fetchPlaceInfo(item);
+    const row = (icon, label, value) => value
+        ? `<div style="display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--yeoro-border);">
+               <span style="flex:none;">${icon}</span>
+               <div style="min-width:0;">
+                   <div style="font-size:.72em;color:var(--yeoro-muted);">${label}</div>
+                   <div style="font-size:.9em;font-weight:600;color:var(--yeoro-text);">${esc(value)}</div>
+               </div>
+           </div>` : '';
+
+    const addr = (info && info.addr) || item.addr || '';
+    const tel  = (info && info.tel)  || item.tel  || '';
+    const cat  = (info && info.category) || item.desc || '';
+    const bf   = item.barrierFree;
+
+    box.innerHTML = `
+        <div class="page-title" style="font-size:1.1em;margin-bottom:4px;">${esc(item.name)}</div>
+        <div style="font-size:.78em;color:var(--yeoro-muted);margin-bottom:12px;">${esc(item.category||'')}</div>
+
+        ${row('📍','주소', addr)}
+        ${row('📞','전화', tel)}
+        ${row('🏷️','분류', cat)}
+        ${item._driveMin!=null ? row('🚗','내 위치에서', `약 ${item._driveMin}분 (${item._driveKm}km)`) : ''}
+
+        ${bf ? `<div class="bf-box" style="margin-top:12px;">
+            <div class="bf-title">♿ 무장애 시설</div>
+            <div class="bf-detail" style="display:block;">${Object.keys(bf).map(k=>{
+                const l = BARRIER_FREE_LABELS[k];
+                return l ? `<div><b>${l[1]}</b> — ${esc(bf[k])}</div>` : '';
+            }).join('')}</div></div>` : ''}
+
+        ${!info ? `<p class="small mt-3 mb-0" style="color:var(--yeoro-muted);">
+            카카오맵에서 추가 정보를 찾지 못했어요.</p>` : ''}
+
+        <div style="display:flex;gap:8px;margin-top:16px;">
+            ${(info && info.placeUrl) ? `<button class="y-btn-secondary" style="flex:1;margin:0;"
+                onclick="openExternal('${esc(info.placeUrl)}')">🗺️ 카카오맵에서 보기</button>` : ''}
+            ${(item.lat&&item.lng) ? `<button class="y-btn-primary" style="flex:1;padding:13px;"
+                onclick="openKakaoRoute('${esc(item.name).replace(/'/g,'')}',${item.lat},${item.lng})">🚗 길찾기</button>` : ''}
+        </div>`;
+}
+
+/* 외부 페이지 열기 — 앱에서는 네이티브가 가로채 밖에서 연다 */
+/* 카카오맵 등 외부 페이지 열기.
+   앱(WebView)에서는 네이티브에 맡겨 브라우저 탭으로만 띄운다 —
+   location.href로 넘기면 여로 화면 자체가 그 페이지로 바뀌어버릴 수 있다. */
+function openExternal(url) {
+    if (window.YeoroNative && typeof window.YeoroNative.openExternalUrl === 'function') {
+        window.YeoroNative.openExternalUrl(url);
+        return;
+    }
+    const win = window.open(url, '_blank');
+    if (!win) location.href = url;
+}
+
+/* 무장애 시설 정보를 칩으로 그린다.
+   눌러서 자세한 설명(예: "경사로가 가파른 편…")을 볼 수 있게 한다. */
+function barrierFreeChips(item) {
+    const bf = item.barrierFree;
+    if (!bf) return '';
+    const chips = Object.keys(bf).map(k => {
+        const label = BARRIER_FREE_LABELS[k];
+        if (!label) return '';
+        return `<span class="bf-chip" title="${esc(bf[k])}">${label[0]} ${label[1]}</span>`;
+    }).join('');
+    if (!chips) return '';
+    return `<div class="bf-box">
+        <div class="bf-title">♿ 무장애 시설</div>
+        <div class="bf-chips">${chips}</div>
+        <div class="bf-detail">${Object.keys(bf).map(k=>{
+            const label = BARRIER_FREE_LABELS[k];
+            return label ? `<div><b>${label[1]}</b> — ${esc(bf[k])}</div>` : '';
+        }).join('')}</div>
+    </div>`;
+}
+
 /* 장소 카드 목록 렌더링 (카테고리 화면·검색 결과 공용) */
 function renderPlaceCards(places, box) {
     box.innerHTML = '';
@@ -204,13 +442,19 @@ function renderPlaceCards(places, box) {
             <div class="place-meta">${dist}세종시</div>
             <div class="place-desc">${esc(item.desc||'')}</div>
             ${item.tel?`<div style="font-size:.78em;color:var(--yeoro-muted);margin-bottom:6px;">📞 ${esc(item.tel)}</div>`:''}
-            <span class="place-tag">${esc(item.category)}</span>
+            ${barrierFreeChips(item)}
+            <button class="info-btn">ℹ️ 정보</button>
             ${(item.lat&&item.lng)?`<button class="route-btn">🚗 길찾기</button>`:''}
             <button class="add-btn" ${inCart?'disabled style="opacity:.5"':''}>
                 ${inCart?'담김':'추가'}</button>`;
         card.querySelector('.route-btn')?.addEventListener('click', ()=>{
             openKakaoRoute(item.name, item.lat, item.lng);
         });
+        /* 무장애 칸을 누르면 자세한 설명이 펼쳐진다 */
+        card.querySelector('.bf-box')?.addEventListener('click', e=>{
+            e.currentTarget.classList.toggle('open');
+        });
+        card.querySelector('.info-btn')?.addEventListener('click', ()=>openPlaceInfo(item));
         card.querySelector('.add-btn').addEventListener('click', e=>{
             if(inCart) return;
             pushToCart(item);

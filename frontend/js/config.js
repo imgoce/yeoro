@@ -25,12 +25,19 @@ function resolveApiBaseUrl() {
     return window.location.origin;
 }
 
-/* 카카오 dapi의 KA 헤더에 넣을 origin — 카카오 콘솔 [플랫폼 > Web]에 등록된 도메인이어야 한다.
-   웹에서 접속했다면 그 주소를 그대로 쓰고, 앱(file://)이면 배포 주소를 쓴다. */
+/* 카카오 지도 검색(dapi)의 KA 헤더에 넣을 origin.
+   ⚠️ 반드시 카카오 개발자 콘솔 [내 애플리케이션 > 앱 설정 > 플랫폼 > Web]에
+   등록해 둔 주소여야 한다. 등록되지 않은 주소를 넣으면 카카오가
+   "domain mismatched" 401을 돌려주고 장소 검색·정보가 모두 비게 된다.
+   (배포 주소를 쓰던 때는 그 주소가 콘솔에 없어 앱에서 401이 났다) */
+const KAKAO_REGISTERED_ORIGIN = 'http://localhost:5500';
+
+/* 웹에서 접속했다면 지금 주소를 그대로 쓰고(그 주소도 콘솔에 등록돼 있어야 한다),
+   앱(file://)이면 등록해 둔 주소를 대신 쓴다. */
 function resolveKakaoWebOrigin() {
     const isWeb = /^https?:$/.test(window.location.protocol);
     if (isWeb) return window.location.origin;
-    return DEPLOY_API_BASE_URL || 'http://localhost:5500';
+    return KAKAO_REGISTERED_ORIGIN;
 }
 
 const API_CONFIG = {

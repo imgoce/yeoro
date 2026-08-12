@@ -55,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     private val externalMapHosts = setOf(
         "map.kakao.com",
         "m.map.kakao.com",
+        "place.map.kakao.com",   // 장소 상세 정보 페이지
     )
 
     private companion object {
@@ -167,6 +168,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun openInCustomTabs(url: String) {
         CustomTabsIntent.Builder().build().launchUrl(this, Uri.parse(url))
+    }
+
+    /** KakaoLoginBridge(JS) → 외부 페이지(카카오맵 등)를 브라우저 탭으로 연다. */
+    fun openExternalUrl(url: String) {
+        val uri = Uri.parse(url)
+        // kakaomap:// 같은 앱 스킴은 Custom Tabs가 열지 못하므로 앱으로 바로 넘긴다.
+        if (uri.scheme != "http" && uri.scheme != "https") {
+            try {
+                startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri))
+            } catch (e: Exception) {
+                Log.w("Yeoro", "외부 앱 스킴 열기 실패: $url", e)
+            }
+            return
+        }
+        openInCustomTabs(url)
     }
 
     /** KakaoLoginBridge(JS) → 여기로 진입. UI 스레드에서 호출된다. */

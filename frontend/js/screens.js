@@ -1,6 +1,6 @@
 /* ── 화면 전환 ────────────────────────────────────────────────── */
 function changeScreen(id) {
-    ['login','main','schedule','api-list','history'].forEach(s=>
+    ['login','main','schedule','api-list','history','product'].forEach(s=>
         document.getElementById('screen-'+s)?.classList.add('hidden'));
     document.getElementById('screen-'+id)?.classList.remove('hidden');
     document.querySelectorAll('.nav-item').forEach((t,i)=>t.classList.toggle('active',

@@ -107,7 +107,229 @@ async function callTourApi(contentTypeId, rows=100) {
     return items.map(mapTourItem).filter(p=>p.name);
 }
 
+/* ── 축제 (한국관광공사 searchFestival2) ─────────────────────────────
+   지금까지 쓰던 areaBasedList2(축제15)는 행사 기간을 주지 않아서
+   이미 끝난 축제까지 섞여 나왔다 ("2025 세종미술주간 갤러리 가는 날" 등).
+   축제 전용 API는 시작·종료일을 함께 주므로 올해 열리는 축제만 고를 수 있다.
+   ────────────────────────────────────────────────────────────────*/
+function festivalUrl(year, pageNo) {
+    return 'https://apis.data.go.kr/B551011/KorService2/searchFestival2?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.DATA_GO_KR_KEY,
+            numOfRows: 100, pageNo,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json',
+            areaCode: API_CONFIG.TOUR_AREA_CODE,
+            eventStartDate: `${year}0101`,   // 올해 안에 열리는 것만
+            eventEndDate:   `${year}1231`,
+        });
+}
+
+/* 20260912 → "2026.09.12" */
+function formatEventDate(raw) {
+    const s = String(raw || '');
+    if (s.length !== 8) return '';
+    return `${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}`;
+}
+
+/* "축제 · 2026.09.12 ~ 09.14" 처럼 기간이 보이는 설명을 만든다 */
+function festivalLabel(it) {
+    const from = formatEventDate(it.eventstartdate);
+    const to   = formatEventDate(it.eventenddate);
+    if (!from) return '축제';
+    const shortTo = to && to.slice(0,4) === from.slice(0,4) ? to.slice(5) : to;
+    return shortTo ? `축제 · ${from} ~ ${shortTo}` : `축제 · ${from}`;
+}
+
+async function callFestivalApi(year = new Date().getFullYear()) {
+    if (!API_CONFIG.DATA_GO_KR_KEY) return null;
+
+    const first = await safeFetch(festivalUrl(year, 1));
+    if (!first) return null;
+    const total = parseInt(first?.response?.body?.totalCount, 10) || 0;
+    let items = extractItems(first);
+
+    const lastPage = Math.ceil(total / 100);
+    if (lastPage > 1) {
+        const rest = [];
+        for (let p = 2; p <= lastPage; p++) rest.push(safeFetch(festivalUrl(year, p)));
+        (await Promise.all(rest)).forEach(j => { if (j) items = items.concat(extractItems(j)); });
+    }
+
+    console.info(`[축제API] ${year}년 세종시 축제 ${total}건 수신`);
+    return items.map(it => ({
+        ...mapTourItem(it),
+        desc: festivalLabel(it),
+        eventStart: String(it.eventstartdate || ''),
+        eventEnd:   String(it.eventenddate   || ''),
+    })).filter(p => p.name);
+}
+
+/* 이름에 지난 연도가 박혀 있는 행사를 걸러낸다.
+   ("2025 세종미술주간"처럼 이름에 연도가 들어 있는 경우)
+   ⚠️ Array.filter에 그대로 넘기면 두 번째 인자로 '인덱스'가 들어와
+   연도 비교가 망가진다. 반드시 filter(p => isThisYearEvent(p)) 형태로 쓸 것. */
+function isThisYearEvent(place, year = new Date().getFullYear()) {
+    const m = String(place.name || '').match(/(19|20)\d{2}/);
+    if (!m) return true;              // 연도 표기가 없으면 판단 불가 — 남긴다
+    return parseInt(m[0], 10) >= year;
+}
+
+/* 카카오맵 검색 결과에서 "진짜 축제"만 남긴다.
+   "세종 축제"로 검색하면 축제 자체가 아닌 것들이 함께 나온다.
+     · 세종호수공원 축제섬, 국립세종수목원 축제마당 → 공원 시설물
+     · 조치원복숭아축제추진위원회               → 단체
+     · 톳나라 본점                              → 이름만 걸린 음식점       */
+function isFestivalPlace(place) {
+    const cat  = String(place.desc || '');
+    const name = String(place.name || '');
+    if (/음식점|카페|단체,협회|공공기관|공원시설물|숙박|학교/.test(cat)) return false;
+    if (/이벤트|페스티벌|축제|공연|행사/.test(cat)) return true;
+    return /축제|페스티벌|문화제/.test(name);
+}
+
 /* 웰니스 관광 API */
+/* ── 무장애 여행정보 (한국관광공사 KorWithService2) ──────────────────
+   여로의 핵심인 "휠체어·유모차로 갈 수 있는 곳"을 실제 데이터로 확인한다.
+   ① 목록(areaBasedList2)으로 세종시 무장애 등록 장소를 받고
+   ② 각 장소의 상세(detailWithTour2)에서 시설 정보를 가져온다.
+      (경사로·출입구·장애인 화장실·엘리베이터·점자블록·수유실 등)
+   ────────────────────────────────────────────────────────────────*/
+const BARRIER_FREE_LABELS = {
+    wheelchair:   ['♿', '휠체어 대여'],
+    parking:      ['🅿️', '장애인 주차'],
+    route:        ['🛤️', '접근로'],
+    exit:         ['🚪', '출입구'],
+    elevator:     ['🛗', '엘리베이터'],
+    restroom:     ['🚻', '장애인 화장실'],
+    braileblock:  ['⠿', '점자블록'],
+    helpdog:      ['🦮', '안내견 동반'],
+    lactationroom:['🍼', '수유실'],
+    stroller:     ['🚼', '유모차 대여'],
+    babysparechair:['🪑', '유아용 의자'],
+    auditorium:   ['💺', '장애인 관람석'],
+    guidehuman:   ['🙋', '안내 도우미'],
+    ticketoffice: ['🎫', '매표소 편의'],
+    publictransport:['🚌', '대중교통 접근'],
+    /* 아래 다섯 가지도 실제로 값이 내려오는데 지금까지 화면에 안 나왔다.
+       "의자식 테이블 있음", "점자 핸드레일 설치", "가족 화장실·유아 놀이방 있음"
+       처럼 실제로 도움이 되는 안내라서 함께 보여준다. */
+    handicapetc:  ['🪑', '의자·테이블'],
+    blindhandicapetc:['👁️', '시각장애 편의'],
+    brailepromotion: ['📖', '점자 안내물'],
+    bigprint:     ['🔠', '큰 글씨 안내'],
+    infantsfamilyetc:['👨‍👩‍👧', '가족 편의'],
+};
+
+/* 무장애 상세 1건.
+   공공데이터포털은 짧은 시간에 몰아서 부르면 429(요청 과다)를 돌려준다.
+   그래서 실패하면 잠시 쉬었다가 한 번 더 시도한다. */
+async function fetchBarrierFreeDetail(contentId, attempt = 0) {
+    const url = 'https://apis.data.go.kr/B551011/KorWithService2/detailWithTour2?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.DATA_GO_KR_KEY,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json', contentId,
+        });
+    const json = await safeFetch(url);
+    if (!json && attempt < 2) {
+        await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+        return fetchBarrierFreeDetail(contentId, attempt + 1);
+    }
+    const items = json?.response?.body?.items;
+    if (!items || !items.item) return null;
+    const it = Array.isArray(items.item) ? items.item[0] : items.item;
+    /* 값이 채워진 항목만 남긴다 (빈 문자열은 '정보 없음') */
+    const facts = {};
+    Object.keys(BARRIER_FREE_LABELS).forEach(k => {
+        const v = (it[k] || '').trim();
+        if (v) facts[k] = v;
+    });
+    return Object.keys(facts).length ? facts : null;
+}
+
+/* 세종시 무장애 장소 전체 → { contentId: {시설정보} }
+   장소마다 상세를 한 번씩 불러야 해서 25번쯤 호출이 나간다. 자주 바뀌는
+   정보가 아니므로 하루 동안 저장해 두고 다시 쓴다 — 앱을 켤 때마다
+   같은 요청을 반복하면 공공데이터포털이 429(요청 과다)로 막는다. */
+const BARRIER_FREE_CACHE_KEY = 'yeoro_barrierfree_v1';
+const BARRIER_FREE_TTL = 24 * 60 * 60 * 1000;   // 하루
+
+function loadBarrierFreeFromStorage() {
+    try {
+        const raw = localStorage.getItem(BARRIER_FREE_CACHE_KEY);
+        if (!raw) return null;
+        const { ts, map } = JSON.parse(raw);
+        if (Date.now() - ts > BARRIER_FREE_TTL) return null;
+        return map;
+    } catch (e) { return null; }
+}
+function saveBarrierFreeToStorage(map) {
+    try {
+        localStorage.setItem(BARRIER_FREE_CACHE_KEY, JSON.stringify({ ts: Date.now(), map }));
+    } catch (e) { /* 저장공간 부족 — 캐시는 없어도 동작 */ }
+}
+
+let _barrierFreeCache = null;
+async function loadBarrierFreeMap() {
+    if (_barrierFreeCache) return _barrierFreeCache;
+    const stored = loadBarrierFreeFromStorage();
+    if (stored && Object.keys(stored).length) { _barrierFreeCache = stored; return stored; }
+    if (!API_CONFIG.DATA_GO_KR_KEY) return barrierFreeFallback();
+    const url = 'https://apis.data.go.kr/B551011/KorWithService2/areaBasedList2?' +
+        new URLSearchParams({
+            serviceKey: API_CONFIG.DATA_GO_KR_KEY,
+            numOfRows: 100, pageNo: 1,
+            MobileOS:'ETC', MobileApp:'Yero', _type:'json',
+            areaCode: API_CONFIG.TOUR_AREA_CODE,
+        });
+    const json = await safeFetch(url);
+    const list = extractItems(json);
+    if (!list.length) return barrierFreeFallback();
+
+    /* 상세는 장소마다 한 번씩 불러야 한다.
+       동시에 3건씩, 사이에 150ms를 두고 천천히 부른다 —
+       한꺼번에 몰아 부르면 서버가 429로 막아 무장애 정보가 통째로 빈다. */
+    const map = {};
+    const queue = list.map(it => String(it.contentid));
+    let cursor = 0;
+    const worker = async () => {
+        while (cursor < queue.length) {
+            const id = queue[cursor++];
+            const facts = await fetchBarrierFreeDetail(id);
+            if (facts) map[id] = facts;
+            await new Promise(r => setTimeout(r, 150));
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(3, queue.length) }, worker));
+
+    /* 상세 API가 호출 한도(429)에 걸리면 한 곳도 못 받아온다.
+       그럴 때는 앱에 넣어둔 자료로 대신 보여준다 — 무장애 정보는
+       여로의 핵심이라 비워 두면 안 되고, 자주 바뀌는 값도 아니다. */
+    if (!Object.keys(map).length) {
+        console.warn('[무장애] 상세 API를 받지 못해 내장 자료로 표시합니다');
+        return barrierFreeFallback();
+    }
+    _barrierFreeCache = map;
+    saveBarrierFreeToStorage(map);
+    console.info(`[무장애] ${Object.keys(map).length}곳 시설정보 수신`);
+    return map;
+}
+
+/* 내장 자료 (barrier-free-data.js). 파일이 없으면 빈 값으로 동작한다.
+   실시간 API는 contentid로, 내장 자료는 장소 이름으로 찾으므로
+   비교하기 좋게 이름을 다듬어 색인을 만들어 둔다. */
+let _barrierFreeFallbackIndex = null;
+function barrierFreeFallback() {
+    if (typeof BARRIER_FREE_SNAPSHOT === 'undefined') return {};
+    if (!_barrierFreeFallbackIndex) {
+        _barrierFreeFallbackIndex = {};
+        Object.keys(BARRIER_FREE_SNAPSHOT).forEach(name => {
+            _barrierFreeFallbackIndex[normalizePlaceName(name)] = BARRIER_FREE_SNAPSHOT[name];
+        });
+    }
+    _barrierFreeCache = _barrierFreeFallbackIndex;
+    return _barrierFreeFallbackIndex;
+}
+
 async function callWellnessApi(rows=10) {
     if (!API_CONFIG.DATA_GO_KR_KEY) return null;
     const url = 'https://apis.data.go.kr/B551011/wellnessTourInfo/wellnessList?' +
@@ -278,14 +500,14 @@ function kakaoHeaders() {
 }
 
 /* 카카오맵 로컬 검색 — 카테고리 코드: FD6=음식점, HP8=병원, AT4=관광명소 */
-async function callKakaoCategory(code, size=15) {
+async function callKakaoCategory(code, size=15, page=1) {
     if (!API_CONFIG.KAKAO_REST_KEY) return null;
     const url = 'https://dapi.kakao.com/v2/local/search/category.json?' +
         new URLSearchParams({
             category_group_code: code,
             x: userLoc.lng, y: userLoc.lat,
             /* 카카오 로컬 API의 최대 반경은 20km (그 이상은 정책상 불가) */
-            radius: 20000, size: Math.min(size,15), sort:'distance',
+            radius: 20000, size: Math.min(size,15), page, sort:'distance',
         });
     const json = await safeFetch(url, {headers:kakaoHeaders()});
     if (!json) return null;
@@ -297,8 +519,44 @@ async function callKakaoCategory(code, size=15) {
         lng:   parseFloat(d.x)||null,
         desc:  d.category_name||'카카오맵 제공',
         tel:   d.phone||'',
+        placeUrl: d.place_url||'',   // 카카오맵 상세 페이지
         source:'kakao',
     })).filter(p=>p.name);
+}
+
+/* ── 장소 상세 정보 (카카오맵) ─────────────────────────────────────
+   카드의 [정보] 버튼에서 쓴다. 관광공사 데이터에는 영업정보·도로명주소가
+   없는 경우가 많아, 이름과 좌표로 카카오맵에서 같은 장소를 찾아 채워준다. */
+async function fetchPlaceInfo(place) {
+    /* 이미 카카오에서 온 장소면 가진 정보를 그대로 쓴다 */
+    if (place.source === 'kakao' && place.placeUrl) {
+        return { name:place.name, addr:place.addr, tel:place.tel,
+                 category:place.desc, placeUrl:place.placeUrl };
+    }
+    if (!API_CONFIG.KAKAO_REST_KEY) return null;
+
+    const params = { query: place.name, size: 5 };
+    if (place.lat && place.lng) {                 // 좌표가 있으면 근처에서 찾아 정확도를 높인다
+        params.x = place.lng; params.y = place.lat; params.radius = 5000;
+    }
+    const url = 'https://dapi.kakao.com/v2/local/search/keyword.json?' + new URLSearchParams(params);
+    const json = await safeFetch(url, { headers: kakaoHeaders() });
+    const docs = json?.documents || [];
+    if (!docs.length) return null;
+
+    /* 이름이 가장 비슷한 것을 고른다 */
+    const norm = s => String(s||'').replace(/\s|\(.*?\)/g, '');
+    const target = norm(place.name);
+    const hit = docs.find(d => norm(d.place_name) === target)
+             || docs.find(d => norm(d.place_name).includes(target) || target.includes(norm(d.place_name)))
+             || docs[0];
+    return {
+        name: hit.place_name,
+        addr: hit.road_address_name || hit.address_name || '',
+        tel:  hit.phone || '',
+        category: hit.category_name || '',
+        placeUrl: hit.place_url || '',
+    };
 }
 
 /* XML 응답에서 item 배열 추출 (E-Gen 응급의료 API는 XML만 반환) */

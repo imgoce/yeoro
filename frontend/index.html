@@ -282,17 +282,17 @@
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
-                <div class="menu-row" onclick="generateWeatherSchedule()">
-                    <div class="menu-icon-box"><span class="material-icons icon-blue">wb_sunny</span></div>
-                    <div>
-                        <div class="menu-title">날씨 맞춤 코스</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
                 <div class="menu-row" onclick="loadUnifiedCategory('의료기관')">
                     <div class="menu-icon-box"><span class="material-icons icon-green">local_hospital</span></div>
                     <div>
                         <div class="menu-title">의료기관 정보</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" onclick="openTravelProduct()">
+                    <div class="menu-icon-box"><span class="material-icons icon-blue">card_travel</span></div>
+                    <div>
+                        <div class="menu-title">맞춤형 여행상품</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
@@ -301,12 +301,15 @@
 
         <!-- 일정 화면 -->
         <div id="screen-schedule" class="hidden">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="fw-bold" style="font-size:1.15em; color: var(--yeoro-navy);">오늘의 최적 일정</div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-blue); border:1px solid var(--yeoro-border);" onclick="generateWeatherSchedule()">🌤️ 날씨 맞춤</button>
-                    <button class="btn btn-sm fw-bold px-2 rounded-3" style="font-size:0.78em; background:var(--yeoro-mist); color:var(--yeoro-blue); border:1px solid var(--yeoro-border);" onclick="generateRandomSchedule()">🎲 랜덤 추천</button>
-                </div>
+            <div class="fw-bold mb-2" style="font-size:1.15em; color: var(--yeoro-navy);">오늘의 최적 일정</div>
+            <!-- 추천 방식 — 제목과 겹치지 않게 아래 한 줄로 나란히 둔다 -->
+            <div style="display:flex;gap:6px;margin-bottom:14px;">
+                <button class="sched-pick" onclick="generateBarrierFreeSchedule()"
+                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">♿ 무장애</button>
+                <button class="sched-pick" onclick="generateWeatherSchedule()"
+                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">🌤️ 날씨 맞춤</button>
+                <button class="sched-pick" onclick="generateRandomSchedule()"
+                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">🎲 랜덤</button>
             </div>
             <div id="weather-banner" class="y-card hidden" style="padding:12px 14px;font-size:.85em;line-height:1.5;margin-bottom:10px;"></div>
             <div id="recommend-actions" class="hidden" style="margin-bottom:12px;">
@@ -350,6 +353,35 @@
                 <button class="cat-tab" id="tab-의료기관" onclick="loadUnifiedCategory('의료기관')">의료기관</button>
             </div>
             <div id="dynamic-api-cards-injection-box"></div>
+        </div>
+
+        <!-- 맞춤형 여행상품 화면 -->
+        <div id="screen-product" class="hidden">
+            <div class="page-title">맞춤형 여행상품</div>
+            <div style="font-size:.86em;color:var(--yeoro-sub);margin:-14px 0 18px;line-height:1.5;">
+                좋아하는 곳을 고르면 그에 맞춰 코스를 짜드려요.
+            </div>
+
+            <!-- 여행 기간 -->
+            <div class="section-label mb-2">여행 기간</div>
+            <div style="display:flex;gap:8px;margin-bottom:20px;">
+                <button class="prod-trip" data-trip="day" onclick="setTripType('day')"
+                    style="flex:1;border:1.5px solid var(--yeoro-border);border-radius:14px;padding:14px 6px;font-size:.9em;font-weight:800;cursor:pointer;">
+                    ☀️ 당일치기<span style="display:block;font-size:.8em;font-weight:500;opacity:.8;margin-top:3px;">4곳 코스</span></button>
+                <button class="prod-trip" data-trip="overnight" onclick="setTripType('overnight')"
+                    style="flex:1;border:1.5px solid var(--yeoro-border);border-radius:14px;padding:14px 6px;font-size:.9em;font-weight:800;cursor:pointer;">
+                    🌙 1박 2일<span style="display:block;font-size:.8em;font-weight:500;opacity:.8;margin-top:3px;">6곳 코스</span></button>
+            </div>
+
+            <!-- 관광지 취향 -->
+            <div class="section-label mb-2">어떤 곳을 좋아하세요? <span style="font-weight:500;color:var(--yeoro-muted);">(여러 개 선택 가능)</span></div>
+            <div id="prod-spot-themes" class="y-card" style="padding:14px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:7px;"></div>
+
+            <!-- 음식 취향 -->
+            <div class="section-label mb-2">어떤 음식을 좋아하세요?</div>
+            <div id="prod-food-themes" class="y-card" style="padding:14px;margin-bottom:22px;display:flex;flex-wrap:wrap;gap:7px;"></div>
+
+            <button class="y-btn-primary" onclick="generateTravelProduct()">✨ 내 코스 만들기</button>
         </div>
 
         <!-- 여행 로그 화면 -->
@@ -456,6 +488,19 @@
     </div>
 </div>
 
+<!-- 장소 정보 모달 (카드의 [정보] 버튼) -->
+<div class="modal fade" id="placeInfoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <span class="material-icons" data-bs-dismiss="modal"
+                    style="position:absolute;top:14px;right:16px;cursor:pointer;color:var(--yeoro-muted);">close</span>
+                <div id="place-info-body"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 카트 모달 -->
 <div class="modal fade" id="omniCartModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog bottom-sheet">
@@ -523,6 +568,8 @@
 <script src="js/config.js"></script>
 <!-- 비커밋 로컬 키 파일(있으면 config.js의 빈 키를 덮어씀). 없으면 폴백으로 동작 -->
 <script src="js/config.local.js" onerror="void 0"></script>
+<script src="js/local-places.js"></script>
+<script src="js/barrier-free-data.js"></script>
 <script src="js/state.js"></script>
 <script src="js/prefs.js"></script>
 <script src="js/utils.js"></script>
@@ -536,6 +583,7 @@
 <script src="js/cart.js"></script>
 <script src="js/schedule.js"></script>
 <script src="js/weather.js"></script>
+<script src="js/product.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
