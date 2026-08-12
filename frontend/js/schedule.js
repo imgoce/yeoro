@@ -218,11 +218,8 @@ function kakaoRouteUrlForPlaces(places) {
 function openKakaoRoute(name, lat, lng) {
     if (!lat || !lng) { showToast('이 장소는 좌표 정보가 없어 길찾기를 열 수 없어요', 'error'); return; }
     const url = kakaoRouteUrl(name, lat, lng);
-    /* 안드로이드 앱(WebView): 현재 화면을 이동시키면 네이티브가 가로채 외부로 연다 */
-    if (window.YeoroNative) { location.href = url; return; }
-    /* 웹 브라우저: 새 탭으로 카카오맵 길찾기 열기 (팝업 차단 시 현재 탭) */
-    const win = window.open(url, '_blank');
-    if (!win) location.href = url;
+    /* 앱은 네이티브 브라우저 탭으로, 웹은 새 탭으로 (openExternal이 알아서 구분) */
+    openExternal(url);
 }
 
 function openKakaoRouteForPlaces(places) {
@@ -240,9 +237,7 @@ function openKakaoRouteForPlaces(places) {
 
     const url = kakaoRouteUrlForPlaces(routePlaces);
     if (!url) return;
-    if (window.YeoroNative) { location.href = url; return; }
-    const win = window.open(url, '_blank');
-    if (!win) location.href = url;
+    openExternal(url);
 }
 
 /* 앱 안 지도 미리보기(마커 + 직선) — 길찾기 본 기능은 openKakaoRoute가 담당 */

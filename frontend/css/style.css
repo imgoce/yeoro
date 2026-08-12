@@ -466,7 +466,10 @@ html[data-theme="dark"] .bf-detail, .theme-dark .bf-detail { color: #A9CFBA; }
 .modal.show .modal-dialog { transform: translateY(0); }
 /* 아래에서 올라오는 시트.
    좌우 margin을 auto로 둬야 앱(430px 폭) 한가운데에 맞춰진다.
-   왼쪽 0으로 두면 태블릿처럼 넓은 화면에서 앱 밖(왼쪽 끝)에 붙어버린다. */
+   왼쪽 0으로 두면 태블릿처럼 넓은 화면에서 앱 밖(왼쪽 끝)에 붙어버린다.
+   또한 모달을 flex로 만들어야 margin auto가 위/좌우 밀어내기로 동작한다.
+   (block인 상태에서는 margin-top:auto가 무시돼 시트가 화면 왼쪽 '위'에 붙었다) */
+.modal.show { display: flex !important; }
 .bottom-sheet {
     margin: auto auto 0 auto !important;
     max-width: 430px !important;

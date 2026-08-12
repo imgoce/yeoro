@@ -249,8 +249,14 @@ async function openPlaceInfo(item) {
 }
 
 /* 외부 페이지 열기 — 앱에서는 네이티브가 가로채 밖에서 연다 */
+/* 카카오맵 등 외부 페이지 열기.
+   앱(WebView)에서는 네이티브에 맡겨 브라우저 탭으로만 띄운다 —
+   location.href로 넘기면 여로 화면 자체가 그 페이지로 바뀌어버릴 수 있다. */
 function openExternal(url) {
-    if (window.YeoroNative) { location.href = url; return; }
+    if (window.YeoroNative && typeof window.YeoroNative.openExternalUrl === 'function') {
+        window.YeoroNative.openExternalUrl(url);
+        return;
+    }
     const win = window.open(url, '_blank');
     if (!win) location.href = url;
 }
