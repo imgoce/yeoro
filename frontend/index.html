@@ -153,7 +153,9 @@
             <img id="yeoro-logo" alt="여로 로고">
             <span class="logo-text">여로</span>
         </div>
-        <span class="header-action" id="user-profile-indicator" onclick="changeScreen('login')">시작하기</span>
+        <!-- 오른쪽 표시는 화면에 보이지 않는다. 로그인 상태를 담아두는 자리로만 쓴다
+             (다른 화면 코드가 이 값을 읽어 게스트/회원을 구분한다) -->
+        <span class="header-action" id="user-profile-indicator" style="display:none;">시작하기</span>
     </div>
 
     <!-- 콘텐츠 -->
@@ -248,54 +250,51 @@
 
         <!-- 메인 화면 -->
         <div id="screen-main" class="hidden">
-            <div class="hero-banner mb-4">
-                <div class="hero-badge">
-                    <span class="material-icons" style="font-size:0.9em;">gps_fixed</span>
-                    현위치 기반 안내
-                </div>
+            <!-- 히어로 배너 — 배경은 날씨에 따라 색이 바뀐다 (weather.js) -->
+            <div class="hero-banner" id="home-hero">
+                <div class="hero-badge" id="home-weather-line">☀️ 오늘 세종시</div>
                 <div class="hero-banner-text" id="main-welcome-msg">
-                    안전하고 편안한<br>세종 무장애 인프라 가이드
+                    행복도시 세종에서<br><span class="hero-accent">특별한 여행을</span> 시작하세요
                 </div>
-                <div id="home-weather-line" style="position:relative;z-index:1;margin-top:8px;font-size:.92em;font-weight:800;color:var(--yeoro-text);text-shadow:0 1px 2px rgba(255,255,255,.5);"></div>
+                <button class="hero-cta" onclick="loadUnifiedCategory('관광명소')">
+                    명소 둘러보기 <span class="material-icons">arrow_forward</span>
+                </button>
             </div>
 
-            <div class="section-label">무엇을 찾으시나요?</div>
-            <div class="y-card" style="padding: 6px 14px;">
-                <div class="menu-row" onclick="loadUnifiedCategory('관광명소')">
-                    <div class="menu-icon-box"><span class="material-icons icon-blue">landscape</span></div>
-                    <div>
-                        <div class="menu-title">관광명소</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
-                <div class="menu-row" onclick="loadUnifiedCategory('먹거리')">
-                    <div class="menu-icon-box"><span class="material-icons icon-amber">restaurant</span></div>
-                    <div>
-                        <div class="menu-title">음식점</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
-                <div class="menu-row" onclick="loadUnifiedCategory('축제')">
-                    <div class="menu-icon-box"><span class="material-icons icon-teal">festival</span></div>
-                    <div>
-                        <div class="menu-title">지역 축제</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
-                <div class="menu-row" onclick="loadUnifiedCategory('의료기관')">
-                    <div class="menu-icon-box"><span class="material-icons icon-green">local_hospital</span></div>
-                    <div>
-                        <div class="menu-title">의료기관 정보</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
-                <div class="menu-row" onclick="openTravelProduct()">
-                    <div class="menu-icon-box"><span class="material-icons icon-blue">card_travel</span></div>
-                    <div>
-                        <div class="menu-title">맞춤형 여행상품</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
+            <!-- 카테고리 바로가기 -->
+            <div class="quick-nav">
+                <button class="quick-item" onclick="loadUnifiedCategory('관광명소')">
+                    <span class="quick-icon qi-blue"><span class="material-icons">visibility</span></span>
+                    <span class="quick-label">관광지</span>
+                </button>
+                <button class="quick-item" onclick="loadUnifiedCategory('먹거리')">
+                    <span class="quick-icon qi-orange"><span class="material-icons">restaurant</span></span>
+                    <span class="quick-label">음식점</span>
+                </button>
+                <button class="quick-item" onclick="loadUnifiedCategory('축제')">
+                    <span class="quick-icon qi-purple"><span class="material-icons">celebration</span></span>
+                    <span class="quick-label">축제</span>
+                </button>
+                <button class="quick-item" onclick="loadUnifiedCategory('의료기관')">
+                    <span class="quick-icon qi-red"><span class="material-icons">add_circle</span></span>
+                    <span class="quick-label">병원</span>
+                </button>
+                <button class="quick-item" onclick="openTravelProduct()">
+                    <span class="quick-icon qi-green"><span class="material-icons">tune</span></span>
+                    <span class="quick-label">맞춤코스</span>
+                </button>
+            </div>
+
+            <!-- 세종 대표 명소 (가로 스크롤) -->
+            <div class="section-head">
+                <div class="section-title">세종 대표 명소</div>
+                <button class="section-more" onclick="loadUnifiedCategory('관광명소')">
+                    전체 <span class="material-icons">chevron_right</span>
+                </button>
+            </div>
+            <div class="spot-scroller" id="home-spot-scroller">
+                <div class="spot-skeleton"></div>
+                <div class="spot-skeleton"></div>
             </div>
         </div>
 
@@ -305,11 +304,11 @@
             <!-- 추천 방식 — 제목과 겹치지 않게 아래 한 줄로 나란히 둔다 -->
             <div style="display:flex;gap:6px;margin-bottom:14px;">
                 <button class="sched-pick" onclick="generateBarrierFreeSchedule()"
-                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">♿ 무장애</button>
+                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">♿ 무장애 코스</button>
                 <button class="sched-pick" onclick="generateWeatherSchedule()"
-                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">🌤️ 날씨 맞춤</button>
+                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">🌤️ 날씨맞춤 코스</button>
                 <button class="sched-pick" onclick="generateRandomSchedule()"
-                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">🎲 랜덤</button>
+                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">🎲 랜덤 코스</button>
             </div>
             <div id="weather-banner" class="y-card hidden" style="padding:12px 14px;font-size:.85em;line-height:1.5;margin-bottom:10px;"></div>
             <div id="recommend-actions" class="hidden" style="margin-bottom:12px;">
@@ -328,7 +327,7 @@
                 </div>
             </div>
             <div id="schedule-timeline-box" class="y-card">
-                <p class="text-center py-4 small m-0" style="color:var(--yeoro-muted);">장바구니에 장소를 담거나<br><strong style="color:var(--yeoro-sub);">'🎲 랜덤 추천'</strong> 버튼을 눌러보세요.</p>
+                <p class="text-center py-4 small m-0" style="color:var(--yeoro-muted);">장바구니에 장소를 담거나<br><strong style="color:var(--yeoro-sub);">'🎲 랜덤 코스'</strong> 버튼을 눌러보세요.</p>
             </div>
         </div>
 
@@ -367,11 +366,17 @@
             <div style="display:flex;gap:8px;margin-bottom:20px;">
                 <button class="prod-trip" data-trip="day" onclick="setTripType('day')"
                     style="flex:1;border:1.5px solid var(--yeoro-border);border-radius:14px;padding:14px 6px;font-size:.9em;font-weight:800;cursor:pointer;">
-                    ☀️ 당일치기<span style="display:block;font-size:.8em;font-weight:500;opacity:.8;margin-top:3px;">4곳 코스</span></button>
+                    ☀️ 당일치기<span style="display:block;font-size:.8em;font-weight:500;opacity:.8;margin-top:3px;">하루 동안</span></button>
                 <button class="prod-trip" data-trip="overnight" onclick="setTripType('overnight')"
                     style="flex:1;border:1.5px solid var(--yeoro-border);border-radius:14px;padding:14px 6px;font-size:.9em;font-weight:800;cursor:pointer;">
-                    🌙 1박 2일<span style="display:block;font-size:.8em;font-weight:500;opacity:.8;margin-top:3px;">6곳 코스</span></button>
+                    🌙 1박 2일<span style="display:block;font-size:.8em;font-weight:500;opacity:.8;margin-top:3px;">이틀 동안</span></button>
             </div>
+
+            <!-- 코스에 넣을 장소 수 — 사용자가 직접 고른다 -->
+            <div class="section-label mb-2">몇 곳을 둘러볼까요?</div>
+            <div id="prod-count" class="count-picker"></div>
+            <div id="prod-count-hint"
+                 style="font-size:.82em;color:var(--yeoro-muted);margin:8px 0 20px;line-height:1.5;"></div>
 
             <!-- 관광지 취향 -->
             <div class="section-label mb-2">어떤 곳을 좋아하세요? <span style="font-weight:500;color:var(--yeoro-muted);">(여러 개 선택 가능)</span></div>
@@ -433,7 +438,7 @@
 
     </div>
 
-    <!-- 플로팅 카트 -->
+    <!-- 플로팅 카트 — 담긴 개수를 하단바 위에 알려준다 -->
     <div class="floating-cart hidden" id="toss-omni-floating-cart" onclick="openOmniCartModal()">
         <div class="d-flex align-items-center gap-2">
             <span class="material-icons" style="font-size:1.25rem;">shopping_bag</span>
@@ -442,23 +447,31 @@
         <span class="cart-highlight">보기 ›</span>
     </div>
 
-    <!-- 바텀 내비 -->
+    <!-- 바텀 내비 — 장바구니는 화면이 아니라 담은 목록 창을 연다 -->
     <div class="app-bottom-nav">
         <div class="nav-item active" onclick="changeScreen('main')">
             <span class="material-icons">home</span>
             <span class="nav-label">홈</span>
         </div>
         <div class="nav-item" onclick="changeScreen('schedule')">
-            <span class="material-icons">near_me</span>
+            <span class="material-icons">calendar_today</span>
             <span class="nav-label">추천일정</span>
         </div>
+        <div class="nav-item" onclick="openOmniCartModal()">
+            <span class="nav-icon-wrap">
+                <span class="material-icons">shopping_bag</span>
+                <!-- 담은 곳이 없으면 숨어 있다가, 담을 때마다 숫자가 올라간다 -->
+                <span class="nav-badge hidden" id="cart-nav-badge">0</span>
+            </span>
+            <span class="nav-label">장바구니</span>
+        </div>
         <div class="nav-item" onclick="changeScreen('history')">
-            <span class="material-icons">history</span>
+            <span class="material-icons">explore</span>
             <span class="nav-label">여행로그</span>
         </div>
         <div class="nav-item" onclick="changeScreen('login')">
-            <span class="material-icons">face</span>
-            <span class="nav-label">내 정보</span>
+            <span class="material-icons">person_outline</span>
+            <span class="nav-label">MY</span>
         </div>
     </div>
 </div>

@@ -56,12 +56,14 @@ function weatherShortLabel(w) {
    badge:[배경, 글자], banner:배너 배경 그라데이션 */
 function weatherTheme(w) {
     const mode = weatherModeOf(w) || 'clear';
+    /* 배너 글자가 흰색이라 배경은 충분히 진해야 읽힌다.
+       날씨마다 색이 달라지는 것은 그대로 두고 톤만 깊게 잡았다. */
     const LIGHT = {
-        clear: { text: '#8A5A00', shadow: 'rgba(255,255,255,.55)', banner: 'linear-gradient(135deg,#A9D3FF 0%,#CFE6FF 45%,#FFE28A 100%)' },
-        rain:  { text: '#0B2E56', shadow: 'rgba(255,255,255,.45)', banner: 'linear-gradient(135deg,#8FB4DA 0%,#6D93BC 55%,#54789F 100%)' },
-        snow:  { text: '#2A3F7A', shadow: 'rgba(255,255,255,.55)', banner: 'linear-gradient(135deg,#C4D6F4 0%,#DCE8FB 50%,#AFC6EC 100%)' },
-        heat:  { text: '#8A2E06', shadow: 'rgba(255,255,255,.45)', banner: 'linear-gradient(135deg,#FFC48A 0%,#FFA267 55%,#FF7E52 100%)' },
-        cold:  { text: '#0F3E6E', shadow: 'rgba(255,255,255,.5)',  banner: 'linear-gradient(135deg,#A6C8EA 0%,#CADEF2 50%,#8FB4DC 100%)' },
+        clear: { text: '#FFFFFF', shadow: 'rgba(0,0,0,.28)', banner: 'linear-gradient(135deg,#2E6AE0 0%,#3F7CEA 48%,#639CF2 100%)' },
+        rain:  { text: '#FFFFFF', shadow: 'rgba(0,0,0,.32)', banner: 'linear-gradient(135deg,#3C5A79 0%,#2E4A67 55%,#243B52 100%)' },
+        snow:  { text: '#FFFFFF', shadow: 'rgba(0,0,0,.28)', banner: 'linear-gradient(135deg,#5C7CB6 0%,#7597CA 50%,#94B3DD 100%)' },
+        heat:  { text: '#FFFFFF', shadow: 'rgba(0,0,0,.28)', banner: 'linear-gradient(135deg,#E2683A 0%,#EE8B3C 55%,#F5A64B 100%)' },
+        cold:  { text: '#FFFFFF', shadow: 'rgba(0,0,0,.28)', banner: 'linear-gradient(135deg,#2F5C8F 0%,#3F71A6 50%,#5A8BBD 100%)' },
     };
     /* 어두운 모드 — 같은 날씨 느낌을 유지하되 어둡게, 글자는 밝게 */
     const DARK = {
@@ -86,13 +88,10 @@ function renderHomeWeatherWith(w) {
     const banner = document.querySelector('#screen-main .hero-banner');
     if (banner) banner.style.background = theme.banner;
 
-    /* 안내 문구 자리의 날씨 문구 갱신 — 색상도 날씨에 맞게 */
+    /* 배너 위쪽 뱃지에 날씨를 적는다.
+       뱃지는 반투명 흰 배경이라 어떤 날씨 색 위에서도 그대로 읽힌다. */
     const line = document.getElementById('home-weather-line');
-    if (line) {
-        line.textContent = weatherShortLabel(w);
-        line.style.color = theme.text;
-        line.style.textShadow = `0 1px 2px ${theme.shadow}`;
-    }
+    if (line) line.textContent = weatherShortLabel(w);
 }
 async function renderHomeWeather() {
     renderHomeWeatherWith(await getWeatherCached());
@@ -211,8 +210,7 @@ async function generateWeatherSchedule(forceKind) {
     banner.classList.remove('hidden');
 
     cart = course;
-    document.getElementById('omni-cart-counter-badge').textContent = cart.length;
-    document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+    syncCartBadge();
     await recalculateAndSortRoute();
 
     /* 눈길 모드: 각 일정 항목에도 주의 문구를 붙인다 */

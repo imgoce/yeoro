@@ -259,6 +259,256 @@ body {
     margin-bottom: 10px;
 }
 
+/* ── 홈 히어로 ─────────────────────────────────────────────────────
+   배너 안의 글자는 날씨에 따라 배경이 밝아지거나 어두워져도 읽혀야 해서
+   흰 글씨 + 옅은 그림자로 고정한다. (배경색은 weather.js가 바꾼다) */
+#home-hero { padding: 26px 22px 24px; }
+/* 배너 사진 — 날씨 색 위에 반투명으로 겹쳐 파란 톤을 유지한다.
+   사진을 다 받은 뒤에만 서서히 나타나 화면이 덜컥거리지 않는다. */
+#home-hero .hero-photo {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 60%;
+    opacity: 0;
+    transition: opacity .5s ease;
+}
+#home-hero .hero-photo.on { opacity: .5; }
+/* 사진이 밝아도 흰 글씨가 읽히도록 아래쪽을 살짝 어둡게 덮는다 */
+#home-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(10,30,70,.30) 0%, rgba(10,30,70,.05) 45%, rgba(10,30,70,.34) 100%);
+    pointer-events: none;
+}
+#home-hero .hero-banner-text {
+    color: #fff;
+    font-size: 1.32em;
+    font-weight: 800;
+    line-height: 1.45;
+    letter-spacing: -0.4px;
+    text-shadow: 0 1px 6px rgba(0,0,0,.28);
+}
+#home-hero .hero-accent { color: #FFD84D; }   /* "특별한 여행을" 강조 */
+/* 날씨 뱃지 — 아래 큰 문구와 같은 밝기로 보이게 한다.
+   흰 배경 위의 흰 글씨는 아무리 흰색이어도 흐릿해 보이므로,
+   알약 배경을 어둡게 깔아 글자가 또렷하게 살아나도록 했다. */
+#home-hero .hero-badge {
+    background: rgba(15,34,66,.34);
+    color: #FFFFFF;
+    font-size: .82em;
+    font-weight: 800;
+    padding: 7px 14px;
+    backdrop-filter: blur(2px);
+    text-shadow: 0 1px 6px rgba(0,0,0,.28);   /* 아래 문구와 동일 */
+}
+.hero-cta {
+    margin-top: 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    color: var(--yeoro-blue);
+    border: none;
+    border-radius: 999px;
+    padding: 12px 22px;
+    font-size: .92em;
+    font-weight: 800;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 4px 14px rgba(0,0,0,.14);
+    cursor: pointer;
+}
+.hero-cta .material-icons { font-size: 1.05rem; }
+.hero-cta:active { transform: scale(.97); }
+
+/* ── 장소 수 고르기 (맞춤형 여행상품) ── */
+.count-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.count-chip {
+    flex: 1 0 auto;
+    min-width: 56px;
+    background: var(--yeoro-white);
+    border: 1.5px solid var(--yeoro-border);
+    color: var(--yeoro-text);
+    border-radius: 12px;
+    padding: 11px 8px;
+    font-size: .9em;
+    font-weight: 800;
+    cursor: pointer;
+}
+.count-chip.on {
+    background: var(--yeoro-blue);
+    border-color: var(--yeoro-blue);
+    color: #fff;
+}
+
+/* ── 카테고리 바로가기 (아이콘 5개) ── */
+.quick-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 26px;
+}
+.quick-item {
+    background: var(--yeoro-white);
+    border: 1px solid var(--yeoro-border);
+    border-radius: 16px;
+    padding: 12px 2px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+}
+.quick-item:active { background: var(--yeoro-mist); }
+.quick-icon {
+    width: 34px; height: 34px;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+}
+.quick-icon .material-icons { font-size: 1.15rem; }
+.qi-blue   { background:#E8F0FE; color:#2F5FE0; }
+.qi-orange { background:#FFF1E3; color:#F08A24; }
+.qi-purple { background:#F1E9FE; color:#8B5CF6; }
+.qi-red    { background:#FEE9E9; color:#EF4444; }
+.qi-green  { background:#E4F7EE; color:#10B981; }
+.quick-label {
+    font-size: .74em;
+    font-weight: 700;
+    color: var(--yeoro-text);
+    white-space: nowrap;
+}
+
+/* ── 구역 제목 + 전체보기 ── */
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.section-title {
+    font-size: 1.12em;
+    font-weight: 800;
+    color: var(--yeoro-navy);
+    letter-spacing: -0.3px;
+}
+.section-more {
+    background: none;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    color: var(--yeoro-muted);
+    font-size: .82em;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px;
+}
+.section-more .material-icons { font-size: 1rem; }
+
+/* ── 대표 명소 가로 스크롤 ──────────────────────────────────────────
+   앱 좌우 여백(18px)을 넘어 화면 끝까지 흐르도록 음수 여백을 준다.
+   그래야 카드가 화면 밖으로 이어지는 느낌이 난다. */
+.spot-scroller {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin: 0 -18px;
+    padding: 2px 18px 4px;
+    -webkit-overflow-scrolling: touch;
+}
+.spot-scroller::-webkit-scrollbar { display: none; }
+.spot-card {
+    flex: 0 0 196px;
+    scroll-snap-align: start;
+    background: var(--yeoro-white);
+    border: 1px solid var(--yeoro-border);
+    border-radius: 18px;
+    overflow: hidden;
+    cursor: pointer;
+    text-align: left;
+    padding: 0;
+    font: inherit;
+}
+.spot-card:active { transform: scale(.985); }
+.spot-thumb {
+    position: relative;
+    height: 128px;
+    background: var(--yeoro-mist);
+    overflow: hidden;
+}
+.spot-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* 사진이 없는 장소는 첫 글자를 큼직하게 보여준다 */
+.spot-thumb-empty {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.1rem; font-weight: 800;
+    color: var(--yeoro-blue);
+    background: linear-gradient(135deg, #E8F0FE 0%, #D9E6FB 100%);
+}
+.spot-chip {
+    position: absolute;
+    left: 10px; bottom: 10px;
+    background: rgba(255,255,255,.94);
+    color: var(--yeoro-blue);
+    font-size: .68em;
+    font-weight: 800;
+    padding: 4px 9px;
+    border-radius: 8px;
+}
+.spot-chip.green { color: #0F9D6B; }
+/* 사진 오른쪽 위 하트 — 누르면 장바구니에 담긴다 */
+.spot-like {
+    position: absolute;
+    top: 9px; right: 9px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.92);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.16);
+}
+.spot-like .material-icons { font-size: 1.05rem; color: var(--yeoro-sub); }
+.spot-like.on .material-icons { color: #F0455F; }
+.spot-body { padding: 12px 13px 14px; }
+.spot-name {
+    font-size: .94em;
+    font-weight: 800;
+    color: var(--yeoro-text);
+    margin-bottom: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.spot-sub {
+    font-size: .76em;
+    color: var(--yeoro-muted);
+    margin-bottom: 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.spot-meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: .76em;
+    color: var(--yeoro-sub);
+    padding-top: 8px;
+    border-top: 1px solid var(--yeoro-border);
+}
+.spot-meta .material-icons { font-size: .95rem; color: var(--yeoro-muted); }
+.spot-meta.no-line { border-top: none; padding-top: 0; margin-bottom: 2px; }
+.spot-skeleton {
+    flex: 0 0 196px;
+    height: 216px;
+    border-radius: 18px;
+    background: linear-gradient(100deg, var(--yeoro-mist) 30%, #F4F7FC 50%, var(--yeoro-mist) 70%);
+    background-size: 220% 100%;
+    animation: spotShimmer 1.1s linear infinite;
+}
+@keyframes spotShimmer { from { background-position: 120% 0; } to { background-position: -20% 0; } }
+
 /* ── 메뉴 리스트 ── */
 .menu-row {
     display: flex;
@@ -443,6 +693,27 @@ html[data-theme="dark"] .bf-detail, .theme-dark .bf-detail { color: #A9CFBA; }
 .nav-item .material-icons { font-size: 1.55rem; display: block; margin-bottom: 2px; }
 .nav-label { font-size: 0.68rem; font-weight: 600; display: block; }
 
+/* 장바구니 아이콘 오른쪽 위 숫자.
+   아이콘을 감싸는 칸을 기준으로 붙여야 다른 탭 위치가 밀리지 않는다. */
+.nav-icon-wrap { position: relative; display: inline-block; }
+.nav-icon-wrap .material-icons { display: block; }
+.nav-badge {
+    position: absolute;
+    top: -3px;
+    right: -9px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: #F0455F;
+    color: #fff;
+    font-size: .62rem;
+    font-weight: 800;
+    line-height: 17px;
+    text-align: center;
+    box-shadow: 0 0 0 2px var(--yeoro-white);   /* 아이콘과 겹쳐도 또렷하게 */
+}
+
 /* ── 플로팅 카트 ── */
 .floating-cart {
     position: absolute;
@@ -458,6 +729,17 @@ html[data-theme="dark"] .bf-detail, .theme-dark .bf-detail { color: #A9CFBA; }
     box-shadow: 0 6px 20px rgba(47,95,224,0.25);
     z-index: 99;
     cursor: pointer;
+    /* 담을 때 잠깐 올라왔다가 스르르 사라진다.
+       평소에는 자리를 비워 목록을 가리지 않는다. */
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity .25s ease, transform .25s ease;
+    pointer-events: none;
+}
+.floating-cart.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;   /* 떠 있는 동안에는 눌러서 장바구니를 열 수 있다 */
 }
 .cart-highlight { color: var(--yeoro-sky); font-weight: 700; font-size: 0.85em; }
 

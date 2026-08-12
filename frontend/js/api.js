@@ -64,7 +64,9 @@ function mapTourItem(it) {
         ...sejongCoord(it.mapy, it.mapx),
         desc:  tourCatLabel(it),
         tel:   it.tel||'',
-        image: it.firstimage||it.firstimage2||'',
+        /* 관광공사 사진 주소는 http로 오는데, 안드로이드 앱은 보안 정책상
+           http 이미지를 막아 사진이 안 보인다. https로 바꿔서 넘긴다. */
+        image: String(it.firstimage||it.firstimage2||'').replace(/^http:\/\//, 'https://'),
         source:'tourapi',
     };
 }
@@ -230,8 +232,8 @@ async function fetchBarrierFreeDetail(contentId, attempt = 0) {
             MobileOS:'ETC', MobileApp:'Yero', _type:'json', contentId,
         });
     const json = await safeFetch(url);
-    if (!json && attempt < 2) {
-        await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+    if (!json && attempt < 1) {          // 한 번만 더 시도 (뒤에서 도는 작업이라 서두르지 않는다)
+        await new Promise(r => setTimeout(r, 500));
         return fetchBarrierFreeDetail(contentId, attempt + 1);
     }
     const items = json?.response?.body?.items;
@@ -269,11 +271,33 @@ function saveBarrierFreeToStorage(map) {
 }
 
 let _barrierFreeCache = null;
+
+/* 목록 화면에서 부르는 창구.
+   ⚠️ 절대 오래 걸리면 안 된다. 상세 조회는 25번이나 나가고 한도(429)에
+   걸리면 재시도까지 겹쳐 20초 넘게 걸린다. 예전에는 이걸 기다리느라
+   관광명소 목록이 통째로 늦게 떴다.
+   그래서 화면에는 이미 가지고 있는 자료(저장분 → 내장 자료)를 바로 주고,
+   실제 API는 뒤에서 받아 다음 번을 위해 저장만 해둔다. */
 async function loadBarrierFreeMap() {
     if (_barrierFreeCache) return _barrierFreeCache;
     const stored = loadBarrierFreeFromStorage();
     if (stored && Object.keys(stored).length) { _barrierFreeCache = stored; return stored; }
-    if (!API_CONFIG.DATA_GO_KR_KEY) return barrierFreeFallback();
+
+    refreshBarrierFreeInBackground();   // 기다리지 않는다
+    return barrierFreeFallback();
+}
+
+/* 실제 API로 최신 자료를 받아 저장해 둔다 (화면을 기다리게 하지 않음) */
+let _barrierFreeRefreshing = false;
+async function refreshBarrierFreeInBackground() {
+    if (_barrierFreeRefreshing || !API_CONFIG.DATA_GO_KR_KEY) return;
+    _barrierFreeRefreshing = true;
+    try { await fetchBarrierFreeMapFromApi(); }
+    catch (e) { /* 실패해도 내장 자료로 이미 보여주고 있다 */ }
+    _barrierFreeRefreshing = false;
+}
+
+async function fetchBarrierFreeMapFromApi() {
     const url = 'https://apis.data.go.kr/B551011/KorWithService2/areaBasedList2?' +
         new URLSearchParams({
             serviceKey: API_CONFIG.DATA_GO_KR_KEY,
@@ -283,34 +307,33 @@ async function loadBarrierFreeMap() {
         });
     const json = await safeFetch(url);
     const list = extractItems(json);
-    if (!list.length) return barrierFreeFallback();
+    if (!list.length) return null;
 
     /* 상세는 장소마다 한 번씩 불러야 한다.
        동시에 3건씩, 사이에 150ms를 두고 천천히 부른다 —
-       한꺼번에 몰아 부르면 서버가 429로 막아 무장애 정보가 통째로 빈다. */
+       한꺼번에 몰아 부르면 서버가 429로 막아 한 곳도 못 받는다.
+       앞의 다섯 번이 내리 실패하면 한도에 걸린 것으로 보고 그만둔다. */
     const map = {};
     const queue = list.map(it => String(it.contentid));
-    let cursor = 0;
+    let cursor = 0, failStreak = 0;
     const worker = async () => {
-        while (cursor < queue.length) {
+        while (cursor < queue.length && failStreak < 5) {
             const id = queue[cursor++];
             const facts = await fetchBarrierFreeDetail(id);
-            if (facts) map[id] = facts;
+            if (facts) { map[id] = facts; failStreak = 0; }
+            else failStreak++;
             await new Promise(r => setTimeout(r, 150));
         }
     };
     await Promise.all(Array.from({ length: Math.min(3, queue.length) }, worker));
 
-    /* 상세 API가 호출 한도(429)에 걸리면 한 곳도 못 받아온다.
-       그럴 때는 앱에 넣어둔 자료로 대신 보여준다 — 무장애 정보는
-       여로의 핵심이라 비워 두면 안 되고, 자주 바뀌는 값도 아니다. */
     if (!Object.keys(map).length) {
-        console.warn('[무장애] 상세 API를 받지 못해 내장 자료로 표시합니다');
-        return barrierFreeFallback();
+        console.warn('[무장애] 상세 API를 받지 못했습니다 (내장 자료로 표시 중)');
+        return null;
     }
     _barrierFreeCache = map;
     saveBarrierFreeToStorage(map);
-    console.info(`[무장애] ${Object.keys(map).length}곳 시설정보 수신`);
+    console.info(`[무장애] ${Object.keys(map).length}곳 시설정보 수신 (다음 실행부터 반영)`);
     return map;
 }
 

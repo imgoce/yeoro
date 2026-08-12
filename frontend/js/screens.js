@@ -3,9 +3,12 @@ function changeScreen(id) {
     ['login','main','schedule','api-list','history','product'].forEach(s=>
         document.getElementById('screen-'+s)?.classList.add('hidden'));
     document.getElementById('screen-'+id)?.classList.remove('hidden');
+    /* 하단바 순서: 홈 · 추천일정 · 장바구니 · 여행로그 · MY
+       장바구니(2번)는 화면이 아니라 창을 여는 버튼이라 선택 표시가 없다. */
     document.querySelectorAll('.nav-item').forEach((t,i)=>t.classList.toggle('active',
-        (id==='main'&&i===0)||(id==='schedule'&&i===1)||(id==='history'&&i===2)||(id==='login'&&i===3)));
+        (id==='main'&&i===0)||(id==='schedule'&&i===1)||(id==='history'&&i===3)||(id==='login'&&i===4)));
     if (id==='history') renderTravelLog();
+    if (id==='main')    renderHomeSpots();   // 홈 "세종 대표 명소" 채우기
     if (id==='login') {
         renderProfile();          // 내 정보 탭 진입 시 프로필 갱신
         refreshPrefButtons();     // 화면 설정 버튼에 현재 선택 표시

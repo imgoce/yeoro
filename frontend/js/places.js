@@ -314,6 +314,132 @@ function prefetchPlaces() {
     ['관광명소','먹거리','축제','의료기관'].forEach(c => {
         getPlaces(c, { withDrive: false }).catch(()=>{});
     });
+    /* 관광명소가 도착하면 홈의 "세종 대표 명소"를 채운다 */
+    getPlaces('관광명소', { withDrive: false })
+        .then(() => renderHomeSpots())
+        .catch(()=>{});
+}
+
+/* ── 홈 "세종 대표 명소" 가로 스크롤 ────────────────────────────────
+   관광명소 목록에서 사진이 있는 곳을 앞에 두고 가까운 순으로 보여준다.
+   사진은 관광공사가 주는 것만 쓰고, 없으면 첫 글자를 크게 띄운다.     */
+const HOME_SPOT_COUNT = 10;
+
+/* 카드 왼쪽 아래 분류 칩 — 분류 문자열에서 알아보기 쉬운 말만 뽑는다 */
+function spotChipLabel(item) {
+    const d = String(item.desc || '');
+    if (/수목원|식물원|자연|생태|숲|산|저수지|호수/.test(d + item.name)) return ['자연·생태', 'green'];
+    if (/공원|산책|도보/.test(d + item.name))                          return ['공원·산책', ''];
+    if (/박물관|미술관|전시|문화시설|공연/.test(d))                     return ['문화·전시', ''];
+    if (/사찰|절|향교|유적|역사/.test(d))                              return ['역사·유적', ''];
+    if (/체험|레포츠|캠핑/.test(d))                                    return ['체험·레포츠', ''];
+    return ['가볼 만한 곳', ''];
+}
+
+/* 홈 배너에 깔 사진 — 세종을 한눈에 보여주는 곳부터 찾는다.
+   따로 받아오지 않고, 목록에 이미 들어 있는 관광공사 사진을 그대로 쓴다. */
+const HERO_PHOTO_PREFER = ['세종호수공원', '밀마루전망대', '국립세종수목원', '금강수변공원', '세종중앙공원'];
+
+function setHeroPhoto(list) {
+    const hero = document.getElementById('home-hero');
+    if (!hero || !list || !list.length) return;
+
+    let pick = null;
+    for (const want of HERO_PHOTO_PREFER) {
+        pick = list.find(p => p.image && normalizePlaceName(p.name) === normalizePlaceName(want));
+        if (pick) break;
+    }
+    if (!pick) pick = list.find(p => p.image);
+    if (!pick) return;
+
+    let photo = hero.querySelector('.hero-photo');
+    if (!photo) {
+        photo = document.createElement('div');
+        photo.className = 'hero-photo';
+        hero.prepend(photo);                       // 글자보다 뒤에 깔린다
+    }
+    /* 사진을 미리 받아본 뒤 성공했을 때만 깔아 준다 —
+       실패하면 지금처럼 날씨 색 배경만 남아 화면이 깨지지 않는다. */
+    const img = new Image();
+    img.onload = () => {
+        photo.style.backgroundImage = `url("${pick.image}")`;
+        photo.classList.add('on');
+    };
+    img.src = pick.image;
+}
+
+/* 같은 시각에 여러 번 불려도 한 번만 그리도록 하는 표시 */
+let _homeSpotsBusy = false;
+
+async function renderHomeSpots() {
+    const box = document.getElementById('home-spot-scroller');
+    if (!box || _homeSpotsBusy) return;
+    _homeSpotsBusy = true;
+    let list = [];
+    try { list = await getPlaces('관광명소', { withDrive: false }) || []; } catch (e) { list = []; }
+    _homeSpotsBusy = false;
+
+    /* 아직 자료가 안 왔으면 뼈대를 그대로 두고 잠시 뒤 다시 시도한다.
+       (앱을 켜자마자 부르면 API가 아직 응답 전이라 빈 목록이 온다) */
+    if (!list.length) {
+        if (!box.dataset.retried) {
+            box.dataset.retried = '1';
+            setTimeout(renderHomeSpots, 1500);
+        }
+        return;
+    }
+    delete box.dataset.retried;
+
+    /* 사진이 있는 곳을 먼저 — 홈은 눈으로 훑는 화면이라 사진이 중요하다 */
+    const picked = [...list]
+        .sort((a, b) => (b.image ? 1 : 0) - (a.image ? 1 : 0))
+        .slice(0, HOME_SPOT_COUNT);
+
+    setHeroPhoto(list);
+
+    box.innerHTML = picked.map(item => {
+        const [chip, chipCls] = spotChipLabel(item);
+        const thumb = item.image
+            ? `<img src="${esc(item.image)}" alt="" loading="lazy"
+                    onerror="this.parentNode.innerHTML='<div class=&quot;spot-thumb-empty&quot;>${esc(item.name.charAt(0))}</div>'">`
+            : `<div class="spot-thumb-empty">${esc(item.name.charAt(0))}</div>`;
+        /* 주소는 한 줄에 들어가게 짧게 — "세종특별자치시 연서면 …" → "세종시 연서면" */
+        const where = (item.addr || '세종시')
+            .replace('세종특별자치시', '세종시')
+            .split(' ').slice(0, 2).join(' ');
+        return `
+            <button class="spot-card" data-pid="${esc(item.id)}">
+                <div class="spot-thumb">
+                    ${thumb}
+                    <span class="spot-chip ${chipCls}">${chip}</span>
+                    <span class="spot-like" role="button" title="장바구니에 담기">
+                        <span class="material-icons">favorite_border</span>
+                    </span>
+                </div>
+                <div class="spot-body">
+                    <div class="spot-name">${esc(item.name)}</div>
+                    <div class="spot-sub">${esc(item.desc || '세종시 관광지')}</div>
+                    <div class="spot-meta">
+                        <span class="material-icons">place</span>
+                        <span>${esc(where)}</span>
+                    </div>
+                </div>
+            </button>`;
+    }).join('');
+
+    /* 카드를 누르면 정보 창, 하트를 누르면 장바구니에 담는다 */
+    box.querySelectorAll('.spot-card').forEach(card => {
+        const item = picked.find(p => String(p.id) === card.dataset.pid);
+        if (!item) return;
+        card.addEventListener('click', () => openPlaceInfo(item));
+        card.querySelector('.spot-like')?.addEventListener('click', e => {
+            e.stopPropagation();                    // 카드의 정보 창은 열지 않는다
+            pushToCart(item);
+            const icon = e.currentTarget.querySelector('.material-icons');
+            icon.textContent = 'favorite';
+            e.currentTarget.classList.add('on');
+        });
+    });
 }
 
 /* ── 카드 렌더링 ──────────────────────────────────────────────── */

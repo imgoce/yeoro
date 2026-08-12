@@ -321,9 +321,8 @@ function setFont(s){
 }
 function finalizeAuth() {
     document.getElementById('user-profile-indicator').textContent=userSession.nickname;
-    document.getElementById('main-welcome-msg').innerHTML=
-        `반갑습니다, ${esc(userSession.nickname)}님`;
-    /* 안내 문구 대신 날씨 문구를 표시 (home-weather-line은 환영 문구와 별개 요소) */
+    /* 히어로 문구는 고정 문구를 그대로 둔다.
+       인사말은 예전 디자인의 흔적이라 새 배너에서는 쓰지 않는다. */
     if (typeof renderHomeWeather === 'function') renderHomeWeather();
     renderProfile();
     changeScreen('main');
