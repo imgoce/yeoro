@@ -39,20 +39,48 @@ function tourCatLabel(it) {
     return TOUR_CAT_LABELS[code] || '한국관광공사 제공';
 }
 
-/* 세종시 대략 경계 — 관광공사 데이터에 좌표가 잘못 등록된 항목이 섞여 있어
-   (예: 축제 하나가 수천 km 밖으로 찍힘) 범위를 벗어난 좌표는 버린다.
-   좌표가 null이면 거리 표시가 생략되고 길찾기도 막힌다. */
-const SEJONG_BOUNDS = { minLat: 36.3, maxLat: 36.8, minLng: 126.95, maxLng: 127.55 };
+/* 세종시를 감싸는 사각형 —
+   북쪽 소정면(36.72) · 남쪽 금남면(36.40) · 서쪽 장군면(127.08) · 동쪽 부강면(127.38)에
+   여유를 조금 둔 값이다. 두 곳에 쓴다.
+     ① 관광공사 데이터에 좌표가 잘못 등록된 항목 걸러내기
+        (예: 축제 하나가 수천 km 밖으로 찍힘 — 좌표가 null이면 거리 표시·길찾기가 빠진다)
+     ② 카카오 로컬 검색을 세종시 영역으로 제한하기 (rect 파라미터) */
+const SEJONG_BOUNDS = { minLat: 36.40, maxLat: 36.76, minLng: 127.05, maxLng: 127.42 };
+const SEJONG_RECT = [SEJONG_BOUNDS.minLng, SEJONG_BOUNDS.minLat,
+                     SEJONG_BOUNDS.maxLng, SEJONG_BOUNDS.maxLat].join(',');
+
+function inSejongBox(lat, lng) {
+    return lat >= SEJONG_BOUNDS.minLat && lat <= SEJONG_BOUNDS.maxLat
+        && lng >= SEJONG_BOUNDS.minLng && lng <= SEJONG_BOUNDS.maxLng;
+}
+
 function sejongCoord(mapy, mapx) {
     const lat = parseFloat(mapy), lng = parseFloat(mapx);
     if (!lat || !lng) return { lat: null, lng: null };
-    const inside = lat >= SEJONG_BOUNDS.minLat && lat <= SEJONG_BOUNDS.maxLat
-                && lng >= SEJONG_BOUNDS.minLng && lng <= SEJONG_BOUNDS.maxLng;
-    if (!inside) {
+    if (!inSejongBox(lat, lng)) {
         console.warn(`[좌표오류] 세종 범위 밖 좌표라 무시합니다: ${lat},${lng}`);
         return { lat: null, lng: null };
     }
     return { lat, lng };
+}
+
+/* 주소가 세종시인지 — 관광공사·카카오·심평원 모두 주소 맨 앞에 시도명을 준다.
+   판단할 주소가 없으면 null을 돌려 좌표로 판단하게 넘긴다.
+   \b(단어 경계)는 한글에서 동작하지 않으므로 공백/끝으로 직접 끊는다. */
+function isSejongAddress(addr) {
+    const s = String(addr || '').trim();
+    if (!s) return null;
+    return /^세종(특별자치시|시)?(\s|$)/.test(s);
+}
+
+/* 이 장소가 세종시 안에 있는가 — 주소로 먼저 보고, 주소가 없으면 좌표로 본다.
+   세종시 밖은 보여주지 않기로 했으므로 둘 다 없어 확인이 안 되면 뺀다. */
+function isInSejong(place) {
+    const byAddr = isSejongAddress(place && place.addr);
+    if (byAddr !== null) return byAddr;
+    if (place && place.lat && place.lng) return inSejongBox(place.lat, place.lng);
+    console.warn(`[세종 범위] 주소·좌표가 없어 확인 불가라 제외: ${place && place.name}`);
+    return false;
 }
 
 /* 관광공사 item 1건 → 여로 표준 장소 객체로 변환 */
@@ -64,7 +92,9 @@ function mapTourItem(it) {
         ...sejongCoord(it.mapy, it.mapx),
         desc:  tourCatLabel(it),
         tel:   it.tel||'',
-        image: it.firstimage||it.firstimage2||'',
+        /* 관광공사 사진 주소는 http로 오는데, 안드로이드 앱은 보안 정책상
+           http 이미지를 막아 사진이 안 보인다. https로 바꿔서 넘긴다. */
+        image: String(it.firstimage||it.firstimage2||'').replace(/^http:\/\//, 'https://'),
         source:'tourapi',
     };
 }
@@ -230,8 +260,8 @@ async function fetchBarrierFreeDetail(contentId, attempt = 0) {
             MobileOS:'ETC', MobileApp:'Yero', _type:'json', contentId,
         });
     const json = await safeFetch(url);
-    if (!json && attempt < 2) {
-        await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+    if (!json && attempt < 1) {          // 한 번만 더 시도 (뒤에서 도는 작업이라 서두르지 않는다)
+        await new Promise(r => setTimeout(r, 500));
         return fetchBarrierFreeDetail(contentId, attempt + 1);
     }
     const items = json?.response?.body?.items;
@@ -269,11 +299,33 @@ function saveBarrierFreeToStorage(map) {
 }
 
 let _barrierFreeCache = null;
+
+/* 목록 화면에서 부르는 창구.
+   ⚠️ 절대 오래 걸리면 안 된다. 상세 조회는 25번이나 나가고 한도(429)에
+   걸리면 재시도까지 겹쳐 20초 넘게 걸린다. 예전에는 이걸 기다리느라
+   관광명소 목록이 통째로 늦게 떴다.
+   그래서 화면에는 이미 가지고 있는 자료(저장분 → 내장 자료)를 바로 주고,
+   실제 API는 뒤에서 받아 다음 번을 위해 저장만 해둔다. */
 async function loadBarrierFreeMap() {
     if (_barrierFreeCache) return _barrierFreeCache;
     const stored = loadBarrierFreeFromStorage();
     if (stored && Object.keys(stored).length) { _barrierFreeCache = stored; return stored; }
-    if (!API_CONFIG.DATA_GO_KR_KEY) return barrierFreeFallback();
+
+    refreshBarrierFreeInBackground();   // 기다리지 않는다
+    return barrierFreeFallback();
+}
+
+/* 실제 API로 최신 자료를 받아 저장해 둔다 (화면을 기다리게 하지 않음) */
+let _barrierFreeRefreshing = false;
+async function refreshBarrierFreeInBackground() {
+    if (_barrierFreeRefreshing || !API_CONFIG.DATA_GO_KR_KEY) return;
+    _barrierFreeRefreshing = true;
+    try { await fetchBarrierFreeMapFromApi(); }
+    catch (e) { /* 실패해도 내장 자료로 이미 보여주고 있다 */ }
+    _barrierFreeRefreshing = false;
+}
+
+async function fetchBarrierFreeMapFromApi() {
     const url = 'https://apis.data.go.kr/B551011/KorWithService2/areaBasedList2?' +
         new URLSearchParams({
             serviceKey: API_CONFIG.DATA_GO_KR_KEY,
@@ -283,34 +335,33 @@ async function loadBarrierFreeMap() {
         });
     const json = await safeFetch(url);
     const list = extractItems(json);
-    if (!list.length) return barrierFreeFallback();
+    if (!list.length) return null;
 
     /* 상세는 장소마다 한 번씩 불러야 한다.
        동시에 3건씩, 사이에 150ms를 두고 천천히 부른다 —
-       한꺼번에 몰아 부르면 서버가 429로 막아 무장애 정보가 통째로 빈다. */
+       한꺼번에 몰아 부르면 서버가 429로 막아 한 곳도 못 받는다.
+       앞의 다섯 번이 내리 실패하면 한도에 걸린 것으로 보고 그만둔다. */
     const map = {};
     const queue = list.map(it => String(it.contentid));
-    let cursor = 0;
+    let cursor = 0, failStreak = 0;
     const worker = async () => {
-        while (cursor < queue.length) {
+        while (cursor < queue.length && failStreak < 5) {
             const id = queue[cursor++];
             const facts = await fetchBarrierFreeDetail(id);
-            if (facts) map[id] = facts;
+            if (facts) { map[id] = facts; failStreak = 0; }
+            else failStreak++;
             await new Promise(r => setTimeout(r, 150));
         }
     };
     await Promise.all(Array.from({ length: Math.min(3, queue.length) }, worker));
 
-    /* 상세 API가 호출 한도(429)에 걸리면 한 곳도 못 받아온다.
-       그럴 때는 앱에 넣어둔 자료로 대신 보여준다 — 무장애 정보는
-       여로의 핵심이라 비워 두면 안 되고, 자주 바뀌는 값도 아니다. */
     if (!Object.keys(map).length) {
-        console.warn('[무장애] 상세 API를 받지 못해 내장 자료로 표시합니다');
-        return barrierFreeFallback();
+        console.warn('[무장애] 상세 API를 받지 못했습니다 (내장 자료로 표시 중)');
+        return null;
     }
     _barrierFreeCache = map;
     saveBarrierFreeToStorage(map);
-    console.info(`[무장애] ${Object.keys(map).length}곳 시설정보 수신`);
+    console.info(`[무장애] ${Object.keys(map).length}곳 시설정보 수신 (다음 실행부터 반영)`);
     return map;
 }
 
@@ -502,16 +553,19 @@ function kakaoHeaders() {
 /* 카카오맵 로컬 검색 — 카테고리 코드: FD6=음식점, HP8=병원, AT4=관광명소 */
 async function callKakaoCategory(code, size=15, page=1) {
     if (!API_CONFIG.KAKAO_REST_KEY) return null;
+    /* 내 위치 반경으로 찾으면 세종 경계 밖(공주·청주·대전)이 섞여 들어온다.
+       세종시를 감싸는 사각형(rect)으로 찾고, 주소로 한 번 더 거른다.
+       가까운 순 정렬은 places.js가 좌표로 다시 하므로 여기서 필요 없다. */
     const url = 'https://dapi.kakao.com/v2/local/search/category.json?' +
         new URLSearchParams({
             category_group_code: code,
-            x: userLoc.lng, y: userLoc.lat,
-            /* 카카오 로컬 API의 최대 반경은 20km (그 이상은 정책상 불가) */
-            radius: 20000, size: Math.min(size,15), page, sort:'distance',
+            rect: SEJONG_RECT,
+            size: Math.min(size,15), page,
         });
     const json = await safeFetch(url, {headers:kakaoHeaders()});
     if (!json) return null;
-    return (json.documents||[]).map(d=>({
+    return (json.documents||[]).filter(d=>isSejongAddress(d.address_name) !== false)
+                               .map(d=>({
         id:    'kakao-'+d.id,
         name:  d.place_name||'',
         addr:  d.road_address_name||d.address_name||'',
@@ -629,12 +683,14 @@ async function callHospitalInfoApi(rows=15) {
 /* 카카오 키워드 검색 */
 async function callKakaoKeyword(keyword, size=10) {
     if (!API_CONFIG.KAKAO_REST_KEY) return null;
+    /* 키워드 검색도 세종시 영역(rect)으로 제한한다 —
+       "세종 축제"로 찾아도 서울 세종문화회관 같은 곳이 딸려오기 때문이다. */
     const url = 'https://dapi.kakao.com/v2/local/search/keyword.json?' +
-        new URLSearchParams({query:keyword, x:userLoc.lng, y:userLoc.lat,
-            radius:20000, size:Math.min(size,15)});
+        new URLSearchParams({query:keyword, rect:SEJONG_RECT, size:Math.min(size,15)});
     const json = await safeFetch(url, {headers:kakaoHeaders()});
     if (!json) return null;
-    return (json.documents||[]).map(d=>({
+    return (json.documents||[]).filter(d=>isSejongAddress(d.address_name) !== false)
+                               .map(d=>({
         id:'kakao-kw-'+d.id, name:d.place_name||'',
         addr:d.road_address_name||d.address_name||'',
         lat:parseFloat(d.y)||null, lng:parseFloat(d.x)||null,

@@ -27,31 +27,87 @@
             <div class="onboard-header-title">세종시 무장애 여행,<br>여로가 도와드릴게요</div>
             <div class="onboard-header-sub">여로의 핵심 기능을 한눈에 살펴보세요</div>
         </div>
-        <div class="onboard-grid">
-            <div class="onboard-card">
-                <div class="onboard-card-illust"><span class="material-icons">accessible_forward</span></div>
-                <div class="onboard-card-title">무장애 동선<br>큐레이션</div>
-                <div class="onboard-card-desc">휠체어·유모차도 걱정 없는<br>평탄한 동선만 골라드려요</div>
+        <!-- 실제로 앱에서 할 수 있는 일을 한 줄씩 -->
+        <div class="onboard-list">
+            <div class="onboard-row">
+                <div class="onboard-row-icon"><span class="material-icons">accessible_forward</span></div>
+                <div>
+                    <div class="onboard-row-title">무장애 시설을 미리 확인</div>
+                    <div class="onboard-row-desc">휠체어 접근로·엘리베이터·장애인 화장실을 장소 카드에서 바로 봐요</div>
+                </div>
             </div>
-            <div class="onboard-card">
-                <div class="onboard-card-illust"><span class="material-icons">explore</span></div>
-                <div class="onboard-card-title">통합 정보<br>실시간 검색</div>
-                <div class="onboard-card-desc">관광·맛집·축제·의료기관을<br>한 번에 모아드려요</div>
+            <div class="onboard-row">
+                <div class="onboard-row-icon"><span class="material-icons">search</span></div>
+                <div>
+                    <div class="onboard-row-title">세종의 갈 곳을 한 번에</div>
+                    <div class="onboard-row-desc">관광지·음식점·축제·의료기관을 겹치는 곳 없이 모아드려요</div>
+                </div>
             </div>
-            <div class="onboard-card">
-                <div class="onboard-card-illust"><span class="material-icons">route</span></div>
-                <div class="onboard-card-title">내 위치 기반<br>동선 추천</div>
-                <div class="onboard-card-desc">담아둔 장소를 가까운 순서로<br>자동 정렬해드려요</div>
+            <div class="onboard-row">
+                <div class="onboard-row-icon"><span class="material-icons">auto_awesome</span></div>
+                <div>
+                    <div class="onboard-row-title">코스를 대신 짜드려요</div>
+                    <div class="onboard-row-desc">무장애·날씨맞춤·랜덤 코스, 그리고 취향과 장소 수를 고르는 맞춤 코스</div>
+                </div>
             </div>
-            <div class="onboard-card">
-                <div class="onboard-card-illust"><span class="material-icons">history_edu</span></div>
-                <div class="onboard-card-title">나만의<br>여행로그</div>
-                <div class="onboard-card-desc">게스트로 둘러봐도<br>기록은 저장돼요</div>
+            <div class="onboard-row">
+                <div class="onboard-row-icon"><span class="material-icons">near_me</span></div>
+                <div>
+                    <div class="onboard-row-title">길찾기와 여행로그</div>
+                    <div class="onboard-row-desc">내 위치에서 몇 분인지 보고, 카카오맵으로 바로 길찾기까지</div>
+                </div>
             </div>
         </div>
         <div class="onboard-bottom">
             <button class="y-btn-primary" onclick="finishOnboarding()">시작하기</button>
         </div>
+    </div>
+
+    <!-- ══════════════ 서버 준비 대기 ══════════════
+         서버가 한동안 요청이 없으면 잠들어 있어서 첫 로그인이 늦어진다.
+         약관 동의 화면 전에 미리 깨워 두고, 그동안 이 화면을 보여준다. -->
+    <div class="wake-screen hidden" id="wake-screen">
+        <img id="wake-logo" alt="여로 로고">
+        <div class="wake-spinner"></div>
+        <div class="wake-title">잠시만 기다려 주세요</div>
+        <div class="wake-sub" id="wake-sub">여로를 준비하고 있어요</div>
+    </div>
+
+    <!-- ══════════════ 약관 동의 (로그인 전 필수) ══════════════
+         두 가지 모두 동의해야 로그인 화면으로 넘어간다.
+         한 번 동의하면 다시 묻지 않는다 (localStorage에 기록). -->
+    <div class="agree-screen hidden" id="agree-screen">
+        <div class="agree-head">
+            <img id="agree-logo" alt="여로 로고">
+            <div class="agree-title">여로 이용을 위해<br>아래 내용에 동의해 주세요</div>
+        </div>
+
+        <div class="agree-box">
+            <label class="agree-item">
+                <input type="checkbox" id="agree-privacy" onchange="refreshAgreeState()">
+                <span class="agree-check"><span class="material-icons">check</span></span>
+                <span class="agree-label">개인정보처리방침 <b>(필수)</b></span>
+                <button class="agree-more" onclick="event.preventDefault();openPolicy('privacy')">상세보기</button>
+            </label>
+            <label class="agree-item">
+                <input type="checkbox" id="agree-terms" onchange="refreshAgreeState()">
+                <span class="agree-check"><span class="material-icons">check</span></span>
+                <span class="agree-label">이용약관 <b>(필수)</b></span>
+                <button class="agree-more" onclick="event.preventDefault();openPolicy('terms')">상세보기</button>
+            </label>
+
+            <div class="agree-divider"></div>
+
+            <label class="agree-item agree-all">
+                <input type="checkbox" id="agree-all" onchange="toggleAgreeAll(this.checked)">
+                <span class="agree-check"><span class="material-icons">check</span></span>
+                <span class="agree-label">모두 동의합니다</span>
+            </label>
+        </div>
+
+        <div class="agree-note">두 항목 모두 동의하셔야 여로를 이용할 수 있어요.</div>
+
+        <button class="y-btn-primary" id="agree-submit" disabled onclick="acceptAgreements()">동의하고 시작하기</button>
     </div>
 
     <!-- ══════════════ 시작 로그인 페이지 (독립 전체화면) ══════════════ -->
@@ -63,74 +119,66 @@
             <div class="auth-brand-tagline">세종시 무장애 여행 큐레이션</div>
         </div>
 
-        <div class="y-card mb-3">
-            <div class="section-label mb-3">여행 모드 선택</div>
-            <div class="y-radio-group">
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="loginTargetRadio" id="radio5060" value="5060" checked>
-                    <label class="form-check-label fw-semibold" for="radio5060" style="font-size:0.9em;">🚶 5060 액티브 시니어 산책 모드</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="loginTargetRadio" id="radioFamily" value="family">
-                    <label class="form-check-label fw-semibold" for="radioFamily" style="font-size:0.9em;">👪 영유아 동반 부모 코스 모드</label>
-                </div>
-            </div>
+        <!-- 여행 모드 — 카드 없이 두 칸짜리 알약으로 (선택한 쪽만 흰색으로 찬다) -->
+        <div class="auth-mode" role="radiogroup" aria-label="여행 모드 선택">
+            <input class="visually-hidden" type="radio" name="loginTargetRadio" id="radio5060" value="5060" checked>
+            <label class="auth-mode-opt on" for="radio5060" onclick="setTravelMode('5060')">🚶 5060 산책</label>
+            <input class="visually-hidden" type="radio" name="loginTargetRadio" id="radioFamily" value="family">
+            <label class="auth-mode-opt" for="radioFamily" onclick="setTravelMode('family')">👪 영유아 동반</label>
         </div>
 
-        <!-- 카카오 로그인 -->
-        <button class="kakao-btn mb-2" onclick="startKakaoOAuth()">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 1.5C5.03 1.5 1 4.66 1 8.55c0 2.5 1.66 4.7 4.17 5.96-.18.67-.67 2.48-.77 2.87-.12.48.18.47.38.34.16-.1 2.5-1.7 3.52-2.39.55.08 1.12.12 1.7.12 4.97 0 9-3.16 9-7.05S14.97 1.5 10 1.5z" fill="#181600"/></svg>
-            카카오로 3초 만에 시작하기
-        </button>
+        <!-- 아래쪽에 붙는 시작 버튼들 -->
+        <div class="auth-actions">
+            <button class="kakao-btn" onclick="startKakaoOAuth()">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 1.5C5.03 1.5 1 4.66 1 8.55c0 2.5 1.66 4.7 4.17 5.96-.18.67-.67 2.48-.77 2.87-.12.48.18.47.38.34.16-.1 2.5-1.7 3.52-2.39.55.08 1.12.12 1.7.12 4.97 0 9-3.16 9-7.05S14.97 1.5 10 1.5z" fill="#181600"/></svg>
+                카카오로 3초 만에 시작하기
+            </button>
 
-        <!-- 10초 로그인 (아이디/비밀번호 회원가입 폼으로 바로 이동) -->
-        <button class="y-btn-primary mb-2" onclick="focusEmailRegisterForm()">
-            <span class="material-icons" style="font-size:1.05em;vertical-align:-2px;margin-right:4px;">bolt</span>
-            10초 로그인으로 시작하기
-        </button>
+            <!-- 10초 로그인 (아이디/비밀번호 회원가입 폼으로 바로 이동) -->
+            <button class="auth-btn-light" onclick="focusEmailRegisterForm()">
+                <span class="material-icons" style="font-size:1.05em;vertical-align:-2px;margin-right:4px;">bolt</span>
+                10초 로그인으로 시작하기
+            </button>
 
-        <button class="y-btn-secondary mb-3" onclick="browseAsGuest()">게스트로 둘러보기</button>
+            <!-- 둘러보기는 버튼 대신 글자 링크로 — 화면이 한결 가벼워진다 -->
+            <button class="auth-link" onclick="browseAsGuest()">게스트로 둘러보기</button>
+        </div>
     </div>
 
     <!-- ══════════════ 위치 정보 허용 (회원가입/로그인/게스트 공통 — 글자 크기 설정 후, 메인 진입 전 필수)
          안드로이드 네이티브 권한 창과 같은 모양: 정확한/대략적인 위치 선택 + 허용 방식 3버튼 ══════════════ -->
-    <div class="auth-screen hidden" id="location-permission-screen" style="justify-content:flex-end;padding:0;">
-        <div style="background:#fff;border-radius:28px 28px 0 0;padding:30px 26px 26px;box-shadow:0 -8px 30px rgba(0,0,0,.18);">
-            <div style="text-align:center;margin-bottom:14px;">
-                <span class="material-icons" style="font-size:2.6rem;color:var(--yeoro-blue);">location_on</span>
-            </div>
-            <div style="text-align:center;font-weight:700;font-size:1.02em;line-height:1.5;margin-bottom:20px;">
-                <b>여로</b>에서 이 기기의 위치 정보에 액세스하도록<br>허용하시겠습니까?
+    <div class="perm-screen hidden" id="location-permission-screen">
+        <div class="perm-body">
+            <div class="perm-brand">
+                <img id="perm-logo" alt="여로 로고">
+                <span>여로</span>
             </div>
 
-            <!-- 정확한 위치 / 대략적인 위치 선택 -->
-            <div style="display:flex;gap:18px;justify-content:center;margin-bottom:22px;">
-                <div id="loc-precise-opt" onclick="setLocationPrecision(true)" style="text-align:center;cursor:pointer;">
-                    <div style="width:104px;height:104px;border-radius:50%;border:3px solid var(--yeoro-blue);
-                                display:flex;align-items:center;justify-content:center;background:var(--yeoro-mist);margin:0 auto 8px;">
-                        <span class="material-icons" style="font-size:3rem;color:var(--yeoro-blue);">place</span>
-                    </div>
-                    <div id="loc-precise-label" style="font-weight:800;font-size:.9em;">정확한 위치</div>
-                </div>
-                <div id="loc-approx-opt" onclick="setLocationPrecision(false)" style="text-align:center;cursor:pointer;">
-                    <div style="width:104px;height:104px;border-radius:50%;border:3px solid transparent;
-                                display:flex;align-items:center;justify-content:center;background:var(--yeoro-mist);margin:0 auto 8px;">
-                        <span class="material-icons" style="font-size:3rem;color:var(--yeoro-muted);">map</span>
-                    </div>
-                    <div id="loc-approx-label" style="font-weight:500;font-size:.9em;color:var(--yeoro-muted);">대략적인 위치</div>
+            <div class="perm-headline">
+                안전하고 편리한 서비스 이용을 위해<br>
+                아래 접근권한의 허용이 필요합니다.
+            </div>
+
+            <div class="perm-item">
+                <div class="perm-item-icon"><span class="material-icons">location_on</span></div>
+                <div>
+                    <div class="perm-item-title">위치 <span>(필수)</span></div>
+                    <div class="perm-item-desc">가까운 관광지·음식점·병원을 찾고, 길찾기 출발지를 잡는 데 사용해요.</div>
                 </div>
             </div>
 
-            <div class="text-danger small text-center mb-3 hidden" id="location-permission-error"
-                 style="background:var(--yeoro-mist);border-radius:10px;padding:10px 14px;"></div>
+            <div class="perm-note">
+                · 위치를 허용하지 않아도 앱은 쓸 수 있지만, 가까운 순 정렬과 소요시간 안내는 제공되지 않아요.
+            </div>
 
-            <!-- 허용 방식 3버튼 (네이티브 다이얼로그와 동일한 구성) -->
-            <button class="y-btn-primary mb-2" id="location-permission-btn"
-                    onclick="handleLocationPermissionRequest(true)">앱 사용 중에만 허용</button>
-            <button class="y-btn-secondary mb-2" id="location-permission-once-btn"
-                    onclick="handleLocationPermissionRequest(false)">이번만 허용</button>
-            <button class="btn w-100 fw-bold" style="color:var(--yeoro-muted);font-size:.95em;"
-                    onclick="denyLocationPermission()">허용 안함</button>
+            <div class="text-danger small text-center hidden" id="location-permission-error"
+                 style="background:var(--yeoro-mist);border-radius:10px;padding:10px 14px;margin-top:16px;"></div>
+        </div>
+
+        <div class="perm-actions">
+            <button class="perm-confirm" id="location-permission-btn"
+                    onclick="handleLocationPermissionRequest(true)">확인</button>
+            <button class="perm-skip" onclick="denyLocationPermission()">허용하지 않고 둘러보기</button>
         </div>
     </div>
 
@@ -153,7 +201,9 @@
             <img id="yeoro-logo" alt="여로 로고">
             <span class="logo-text">여로</span>
         </div>
-        <span class="header-action" id="user-profile-indicator" onclick="changeScreen('login')">시작하기</span>
+        <!-- 오른쪽 표시는 화면에 보이지 않는다. 로그인 상태를 담아두는 자리로만 쓴다
+             (다른 화면 코드가 이 값을 읽어 게스트/회원을 구분한다) -->
+        <span class="header-action" id="user-profile-indicator" style="display:none;">시작하기</span>
     </div>
 
     <!-- 콘텐츠 -->
@@ -171,6 +221,37 @@
                 <div>
                     <div id="profile-nickname" style="font-weight:800;font-size:1.05em;color:var(--yeoro-navy);">게스트</div>
                     <div id="profile-authtype" style="font-size:0.78em;color:var(--yeoro-muted);margin-top:2px;">로그인이 필요해요</div>
+                </div>
+            </div>
+
+            <!-- 현재 여행 모드 -->
+            <!-- 계정 액션 -->
+            <div class="section-label mb-2">계정</div>
+            <div class="y-card" style="padding:6px 14px;">
+                <div class="menu-row" id="profile-login-row" onclick="goToAuthScreen()">
+                    <div class="menu-icon-box"><span class="material-icons icon-green">login</span></div>
+                    <div>
+                        <div class="menu-title" id="profile-login-title">로그인 / 회원가입</div>
+                        <div class="menu-sub" id="profile-login-sub">카카오·이메일로 기록을 안전하게 보관하세요</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" id="profile-logout-row" onclick="handleLogout()" style="display:none;">
+                    <div class="menu-icon-box"><span class="material-icons icon-amber">logout</span></div>
+                    <div>
+                        <div class="menu-title">로그아웃</div>
+                        <div class="menu-sub">로그인 화면으로 돌아갑니다</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <!-- 회원탈퇴 — 로그인한 회원에게만 보인다 (게스트는 지울 계정이 없다) -->
+                <div class="menu-row" id="profile-withdraw-row" onclick="openWithdrawConfirm()" style="display:none;">
+                    <div class="menu-icon-box"><span class="material-icons" style="color:#E14B5A;">person_remove</span></div>
+                    <div>
+                        <div class="menu-title" style="color:#E14B5A;">회원탈퇴</div>
+                        <div class="menu-sub">계정과 기록이 모두 지워집니다</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
             </div>
 
@@ -224,78 +305,105 @@
                 </div>
             </div>
 
-            <!-- 계정 액션 -->
-            <div class="section-label mb-2">계정</div>
+            <!-- 약관 및 정책 -->
+            <div class="section-label mb-2 mt-4">약관 및 정책</div>
             <div class="y-card" style="padding:6px 14px;">
-                <div class="menu-row" id="profile-login-row" onclick="goToAuthScreen()">
-                    <div class="menu-icon-box"><span class="material-icons icon-green">login</span></div>
+                <div class="menu-row" onclick="openPolicy('privacy')">
+                    <div class="menu-icon-box"><span class="material-icons icon-blue">privacy_tip</span></div>
                     <div>
-                        <div class="menu-title" id="profile-login-title">로그인 / 회원가입</div>
-                        <div class="menu-sub" id="profile-login-sub">카카오·이메일로 기록을 안전하게 보관하세요</div>
+                        <div class="menu-title">개인정보처리방침</div>
+                        <div class="menu-sub">어떤 정보를 모으고 어떻게 쓰는지</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
-                <div class="menu-row" id="profile-logout-row" onclick="handleLogout()" style="display:none;">
-                    <div class="menu-icon-box"><span class="material-icons icon-amber">logout</span></div>
+                <div class="menu-row" onclick="openPolicy('terms')">
+                    <div class="menu-icon-box"><span class="material-icons icon-teal">description</span></div>
                     <div>
-                        <div class="menu-title">로그아웃</div>
-                        <div class="menu-sub">로그인 화면으로 돌아갑니다</div>
+                        <div class="menu-title">이용약관</div>
+                        <div class="menu-sub">서비스 이용에 관한 약속</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+            </div>
+
+            <!-- 데이터 출처 — 공공데이터·지도 제공처를 밝힌다 -->
+            <div class="section-label mb-2 mt-4">데이터 출처</div>
+            <div class="y-card src-card">
+                <div class="src-row">
+                    <div class="src-name">관광지 · 음식점 · 축제 · 무장애 시설 정보 · 사진</div>
+                    <div class="src-owner">출처: ⓒ한국관광공사</div>
+                </div>
+                <div class="src-row">
+                    <div class="src-name">날씨 (초단기실황)</div>
+                    <div class="src-owner">출처: ⓒ기상청</div>
+                </div>
+                <div class="src-row">
+                    <div class="src-name">장소 검색 · 길찾기 · 소요시간</div>
+                    <div class="src-owner">출처: ⓒ카카오</div>
+                </div>
+                <div class="src-row">
+                    <div class="src-name">응급의료기관 정보</div>
+                    <div class="src-owner">출처: ⓒ국립중앙의료원</div>
+                </div>
+                <div class="src-row">
+                    <div class="src-name">병원 정보</div>
+                    <div class="src-owner">출처: ⓒ건강보험심사평가원</div>
+                </div>
+                <div class="src-note">
+                    본 앱은 위 기관이 공공데이터포털을 통해 개방한 자료를 이용해 만들었습니다.
+                    무장애 시설 안내는 등록된 원문을 그대로 표시하며, 실제와 다를 수 있으니
+                    방문 전 해당 시설에 확인해 주세요.
                 </div>
             </div>
         </div>
 
         <!-- 메인 화면 -->
         <div id="screen-main" class="hidden">
-            <div class="hero-banner mb-4">
-                <div class="hero-badge">
-                    <span class="material-icons" style="font-size:0.9em;">gps_fixed</span>
-                    현위치 기반 안내
-                </div>
+            <!-- 히어로 배너 — 배경은 날씨에 따라 색이 바뀐다 (weather.js) -->
+            <div class="hero-banner" id="home-hero">
+                <div class="hero-badge" id="home-weather-line">☀️ 오늘 세종시</div>
                 <div class="hero-banner-text" id="main-welcome-msg">
-                    안전하고 편안한<br>세종 무장애 인프라 가이드
+                    행복도시 세종에서<br><span class="hero-accent">특별한 여행을</span> 시작하세요
                 </div>
-                <div id="home-weather-line" style="position:relative;z-index:1;margin-top:8px;font-size:.92em;font-weight:800;color:var(--yeoro-text);text-shadow:0 1px 2px rgba(255,255,255,.5);"></div>
+                <button class="hero-cta" onclick="loadUnifiedCategory('관광명소')">
+                    명소 둘러보기 <span class="material-icons">arrow_forward</span>
+                </button>
             </div>
 
-            <div class="section-label">무엇을 찾으시나요?</div>
-            <div class="y-card" style="padding: 6px 14px;">
-                <div class="menu-row" onclick="loadUnifiedCategory('관광명소')">
-                    <div class="menu-icon-box"><span class="material-icons icon-blue">landscape</span></div>
-                    <div>
-                        <div class="menu-title">관광명소</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
-                <div class="menu-row" onclick="loadUnifiedCategory('먹거리')">
-                    <div class="menu-icon-box"><span class="material-icons icon-amber">restaurant</span></div>
-                    <div>
-                        <div class="menu-title">음식점</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
-                <div class="menu-row" onclick="loadUnifiedCategory('축제')">
-                    <div class="menu-icon-box"><span class="material-icons icon-teal">festival</span></div>
-                    <div>
-                        <div class="menu-title">지역 축제</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
-                <div class="menu-row" onclick="loadUnifiedCategory('의료기관')">
-                    <div class="menu-icon-box"><span class="material-icons icon-green">local_hospital</span></div>
-                    <div>
-                        <div class="menu-title">의료기관 정보</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
-                <div class="menu-row" onclick="openTravelProduct()">
-                    <div class="menu-icon-box"><span class="material-icons icon-blue">card_travel</span></div>
-                    <div>
-                        <div class="menu-title">맞춤형 여행상품</div>
-                    </div>
-                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
-                </div>
+            <!-- 카테고리 바로가기 -->
+            <div class="quick-nav">
+                <button class="quick-item" onclick="loadUnifiedCategory('관광명소')">
+                    <span class="quick-icon qi-blue"><span class="material-icons">visibility</span></span>
+                    <span class="quick-label">관광지</span>
+                </button>
+                <button class="quick-item" onclick="loadUnifiedCategory('먹거리')">
+                    <span class="quick-icon qi-orange"><span class="material-icons">restaurant</span></span>
+                    <span class="quick-label">음식점</span>
+                </button>
+                <button class="quick-item" onclick="loadUnifiedCategory('축제')">
+                    <span class="quick-icon qi-purple"><span class="material-icons">celebration</span></span>
+                    <span class="quick-label">축제</span>
+                </button>
+                <button class="quick-item" onclick="loadUnifiedCategory('의료기관')">
+                    <span class="quick-icon qi-red"><span class="material-icons">add_circle</span></span>
+                    <span class="quick-label">병원</span>
+                </button>
+                <button class="quick-item" onclick="openTravelProduct()">
+                    <span class="quick-icon qi-green"><span class="material-icons">tune</span></span>
+                    <span class="quick-label">맞춤코스</span>
+                </button>
+            </div>
+
+            <!-- 세종 대표 명소 (가로 스크롤) -->
+            <div class="section-head">
+                <div class="section-title">세종 대표 명소</div>
+                <button class="section-more" onclick="loadUnifiedCategory('관광명소')">
+                    전체 <span class="material-icons">chevron_right</span>
+                </button>
+            </div>
+            <div class="spot-scroller" id="home-spot-scroller">
+                <div class="spot-skeleton"></div>
+                <div class="spot-skeleton"></div>
             </div>
         </div>
 
@@ -305,11 +413,11 @@
             <!-- 추천 방식 — 제목과 겹치지 않게 아래 한 줄로 나란히 둔다 -->
             <div style="display:flex;gap:6px;margin-bottom:14px;">
                 <button class="sched-pick" onclick="generateBarrierFreeSchedule()"
-                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">♿ 무장애</button>
+                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">♿ 무장애 코스</button>
                 <button class="sched-pick" onclick="generateWeatherSchedule()"
-                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">🌤️ 날씨 맞춤</button>
+                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">🌤️ 날씨맞춤 코스</button>
                 <button class="sched-pick" onclick="generateRandomSchedule()"
-                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">🎲 랜덤</button>
+                    style="flex:1;border:1px solid var(--yeoro-border);border-radius:12px;padding:10px 4px;font-size:.8em;font-weight:700;background:var(--yeoro-mist);color:var(--yeoro-blue);cursor:pointer;">🎲 랜덤 코스</button>
             </div>
             <div id="weather-banner" class="y-card hidden" style="padding:12px 14px;font-size:.85em;line-height:1.5;margin-bottom:10px;"></div>
             <div id="recommend-actions" class="hidden" style="margin-bottom:12px;">
@@ -328,7 +436,7 @@
                 </div>
             </div>
             <div id="schedule-timeline-box" class="y-card">
-                <p class="text-center py-4 small m-0" style="color:var(--yeoro-muted);">장바구니에 장소를 담거나<br><strong style="color:var(--yeoro-sub);">'🎲 랜덤 추천'</strong> 버튼을 눌러보세요.</p>
+                <p class="text-center py-4 small m-0" style="color:var(--yeoro-muted);">장바구니에 장소를 담거나<br><strong style="color:var(--yeoro-sub);">'🎲 랜덤 코스'</strong> 버튼을 눌러보세요.</p>
             </div>
         </div>
 
@@ -367,11 +475,17 @@
             <div style="display:flex;gap:8px;margin-bottom:20px;">
                 <button class="prod-trip" data-trip="day" onclick="setTripType('day')"
                     style="flex:1;border:1.5px solid var(--yeoro-border);border-radius:14px;padding:14px 6px;font-size:.9em;font-weight:800;cursor:pointer;">
-                    ☀️ 당일치기<span style="display:block;font-size:.8em;font-weight:500;opacity:.8;margin-top:3px;">4곳 코스</span></button>
+                    ☀️ 당일치기<span style="display:block;font-size:.8em;font-weight:500;opacity:.8;margin-top:3px;">하루 동안</span></button>
                 <button class="prod-trip" data-trip="overnight" onclick="setTripType('overnight')"
                     style="flex:1;border:1.5px solid var(--yeoro-border);border-radius:14px;padding:14px 6px;font-size:.9em;font-weight:800;cursor:pointer;">
-                    🌙 1박 2일<span style="display:block;font-size:.8em;font-weight:500;opacity:.8;margin-top:3px;">6곳 코스</span></button>
+                    🌙 1박 2일<span style="display:block;font-size:.8em;font-weight:500;opacity:.8;margin-top:3px;">이틀 동안</span></button>
             </div>
+
+            <!-- 코스에 넣을 장소 수 — 사용자가 직접 고른다 -->
+            <div class="section-label mb-2">몇 곳을 둘러볼까요?</div>
+            <div id="prod-count" class="count-picker"></div>
+            <div id="prod-count-hint"
+                 style="font-size:.82em;color:var(--yeoro-muted);margin:8px 0 20px;line-height:1.5;"></div>
 
             <!-- 관광지 취향 -->
             <div class="section-label mb-2">어떤 곳을 좋아하세요? <span style="font-weight:500;color:var(--yeoro-muted);">(여러 개 선택 가능)</span></div>
@@ -433,7 +547,7 @@
 
     </div>
 
-    <!-- 플로팅 카트 -->
+    <!-- 플로팅 카트 — 담긴 개수를 하단바 위에 알려준다 -->
     <div class="floating-cart hidden" id="toss-omni-floating-cart" onclick="openOmniCartModal()">
         <div class="d-flex align-items-center gap-2">
             <span class="material-icons" style="font-size:1.25rem;">shopping_bag</span>
@@ -442,23 +556,31 @@
         <span class="cart-highlight">보기 ›</span>
     </div>
 
-    <!-- 바텀 내비 -->
+    <!-- 바텀 내비 — 장바구니는 화면이 아니라 담은 목록 창을 연다 -->
     <div class="app-bottom-nav">
         <div class="nav-item active" onclick="changeScreen('main')">
             <span class="material-icons">home</span>
             <span class="nav-label">홈</span>
         </div>
         <div class="nav-item" onclick="changeScreen('schedule')">
-            <span class="material-icons">near_me</span>
+            <span class="material-icons">calendar_today</span>
             <span class="nav-label">추천일정</span>
         </div>
+        <div class="nav-item" onclick="openOmniCartModal()">
+            <span class="nav-icon-wrap">
+                <span class="material-icons">shopping_bag</span>
+                <!-- 담은 곳이 없으면 숨어 있다가, 담을 때마다 숫자가 올라간다 -->
+                <span class="nav-badge hidden" id="cart-nav-badge">0</span>
+            </span>
+            <span class="nav-label">장바구니</span>
+        </div>
         <div class="nav-item" onclick="changeScreen('history')">
-            <span class="material-icons">history</span>
+            <span class="material-icons">explore</span>
             <span class="nav-label">여행로그</span>
         </div>
         <div class="nav-item" onclick="changeScreen('login')">
-            <span class="material-icons">face</span>
-            <span class="nav-label">내 정보</span>
+            <span class="material-icons">person_outline</span>
+            <span class="nav-label">MY</span>
         </div>
     </div>
 </div>
@@ -483,6 +605,46 @@
                        oninput="onFontSliderInput(this.value)">
 
                 <button class="y-btn-primary mt-4" onclick="confirmFontSizeAndGoHome()">이 크기로 시작하기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 개인정보처리방침 — 화면을 벗어나지 않고 앱 안에서 읽는다 -->
+<div class="modal fade" id="policyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4" style="max-height:78vh;overflow-y:auto;">
+                <span class="material-icons" data-bs-dismiss="modal"
+                    style="position:absolute;top:14px;right:16px;cursor:pointer;color:var(--yeoro-muted);">close</span>
+                <div id="policy-body" class="policy-body">불러오는 중...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 회원탈퇴 확인 — 되돌릴 수 없는 일이라 한 번 더 묻는다 -->
+<div class="modal fade" id="withdrawModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <div class="page-title" style="font-size:1.2em;margin-bottom:10px;">회원탈퇴</div>
+                <div style="font-size:.9em;line-height:1.65;color:var(--yeoro-sub);margin-bottom:16px;">
+                    <b id="withdraw-who">회원</b>님의 계정을 지웁니다.<br>
+                    아래 내용이 <b style="color:#E14B5A;">모두 삭제되며 되돌릴 수 없습니다.</b>
+                </div>
+                <div class="y-card" style="padding:14px 16px;margin-bottom:16px;font-size:.86em;line-height:1.8;">
+                    · 계정 정보 (아이디·닉네임)<br>
+                    · 여행로그에 저장한 기록<br>
+                    · 장바구니에 담아둔 장소<br>
+                    <span id="withdraw-kakao-note" style="display:none;">· 카카오 계정 연결 해제</span>
+                </div>
+                <div style="font-size:.82em;color:var(--yeoro-muted);margin-bottom:18px;line-height:1.6;">
+                    탈퇴 후에도 같은 계정으로 다시 가입할 수 있습니다.
+                </div>
+                <button class="y-btn-primary" id="withdraw-confirm-btn"
+                        style="background:#E14B5A;" onclick="confirmWithdraw()">탈퇴하기</button>
+                <button class="y-btn-secondary mt-2" data-bs-dismiss="modal">그만두기</button>
             </div>
         </div>
     </div>
@@ -568,6 +730,7 @@
 <script src="js/config.js"></script>
 <!-- 비커밋 로컬 키 파일(있으면 config.js의 빈 키를 덮어씀). 없으면 폴백으로 동작 -->
 <script src="js/config.local.js" onerror="void 0"></script>
+<script src="js/policy-data.js"></script>
 <script src="js/local-places.js"></script>
 <script src="js/barrier-free-data.js"></script>
 <script src="js/state.js"></script>

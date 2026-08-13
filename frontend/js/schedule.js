@@ -52,8 +52,7 @@ async function generateBarrierFreeSchedule() {
         return out;
     };
     cart = [...pick(barrierFree, 3), ...pick(food, 1)].filter(Boolean);
-    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
-    document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+    syncCartBadge();
     await recalculateAndSortRoute();
 
     const banner = document.getElementById('weather-banner');
@@ -87,8 +86,7 @@ async function generateRandomSchedule() {
         return out;
     };
     cart.push(...pick(spots, 2), ...pick(food, 1));
-    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
-    document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+    syncCartBadge();
     await recalculateAndSortRoute();
     showRecommendActions('random');   // [이대로 여행하기 / 다시 추천] 노출
 }

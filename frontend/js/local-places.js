@@ -27,10 +27,8 @@ const CURATED_PLACES = [
       lat:36.5972222, lng:127.2903919, desc:'음식점 > 한식 > 육류,고기 > 갈비', tel:'044-866-2299', placeUrl:'http://place.map.kakao.com/16625777', source:'local' },
     { id:'local-9', cat:'음식점', name:'돈스', addr:'세종특별자치시 조치원읍 돌마루7길 6',
       lat:36.6073508, lng:127.2934332, desc:'음식점 > 일식 > 돈까스,우동', tel:'044-868-5866', placeUrl:'http://place.map.kakao.com/11088372', source:'local' },
-    { id:'local-10', cat:'음식점', name:'굴이야기 반석본점', addr:'대전 유성구 반석로74번길 1',
-      lat:36.3906042, lng:127.3066707, desc:'음식점 > 한식 > 해물,생선 > 굴,전복', tel:'042-826-9989', placeUrl:'http://place.map.kakao.com/1832879060', source:'local' },
-    { id:'local-11', cat:'음식점', name:'무봉리토종순대국 노은점', addr:'대전 유성구 노은서로112번길 88',
-      lat:36.3720189, lng:127.3171606, desc:'음식점 > 한식 > 순대 > 무봉리토종순대국', tel:'042-477-1259', placeUrl:'http://place.map.kakao.com/1708828935', source:'local' },
+    /* local-10 굴이야기 반석본점 · local-11 무봉리토종순대국 노은점 —
+       둘 다 대전 유성구라 세종시 밖이어서 뺐다. */
     { id:'local-12', cat:'음식점', name:'황바우숯불갈비', addr:'세종특별자치시 조치원읍 큰말2길 1',
       lat:36.5953448, lng:127.2890304, desc:'음식점 > 한식 > 육류,고기 > 갈비', tel:'044-864-6692', placeUrl:'http://place.map.kakao.com/1906724549', source:'local' },
     { id:'local-13', cat:'음식점', name:'기똥찬구이집', addr:'세종특별자치시 조치원읍 이화로 32',

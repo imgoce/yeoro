@@ -30,12 +30,65 @@ const FOOD_THEMES = [
 let _tripType = 'day';                 // 'day'(당일치기) | 'overnight'(1박 2일)
 let _spotPicks = new Set();            // 고른 관광지 취향
 let _foodPicks = new Set();            // 고른 음식 취향
+let _courseCount = 4;                  // 코스에 넣을 장소 수 (사용자가 고른다)
+
+/* 고를 수 있는 장소 수 — 기간에 따라 알맞은 범위를 보여준다 */
+const COUNT_RANGE = { day: [3,4,5,6], overnight: [5,6,7,8,9,10] };
 
 /* ── 화면 열기 ─────────────────────────────────────────────────── */
 function openTravelProduct() {
     renderThemeChips();
     setTripType(_tripType);
     changeScreen('product');
+}
+
+/* ── 장소 수 고르기 ────────────────────────────────────────────── */
+function renderCountPicker() {
+    const box = document.getElementById('prod-count');
+    if (!box) return;
+    const range = COUNT_RANGE[_tripType];
+
+    /* 기간을 바꾸면 그 기간에 맞는 수로 자동 조정 */
+    if (!range.includes(_courseCount)) {
+        _courseCount = _tripType === 'overnight' ? 6 : 4;
+    }
+
+    box.innerHTML = range.map(n => `
+        <button class="count-chip ${n === _courseCount ? 'on' : ''}" data-n="${n}">${n}곳</button>
+    `).join('');
+    box.querySelectorAll('.count-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            _courseCount = parseInt(btn.dataset.n, 10);
+            renderCountPicker();
+        });
+    });
+
+    /* 어떤 순서로 짜이는지 미리 알려준다 */
+    const hint = document.getElementById('prod-count-hint');
+    if (hint) {
+        const names = { spot:'관광지', meal:'음식점', cafe:'카페' };
+        hint.textContent = buildCoursePlan(_courseCount, _tripType).map(s => names[s]).join(' → ');
+    }
+}
+
+/* 고른 장소 수에 맞춰 코스 순서를 만든다.
+   하루를 보내는 흐름을 따른다 — 관광지로 시작해 식사와 카페를 사이에 끼운다.
+     3곳  : 관광지 → 음식점 → 관광지
+     4곳  : 관광지 → 음식점 → 카페 → 관광지
+     6곳  : 관광지 → 음식점 → 카페 → 관광지 → 관광지 → 카페
+   1박 2일은 중간에 식사가 한 번 더 들어간다(둘째 날 점심). */
+function buildCoursePlan(count, tripType) {
+    /* 하루를 보내는 기본 흐름. 필요한 개수만큼 앞에서 잘라 쓴다.
+       관광지로 시작 → 식사 → 카페에서 쉬고 → 관광지 두 곳 → 다시 식사… */
+    const FLOW = ['spot','meal','cafe','spot','spot','meal','cafe','spot','spot','meal','cafe','spot'];
+    const plan = FLOW.slice(0, Math.max(1, Math.min(count, FLOW.length)));
+
+    /* 1박 2일인데 식사가 한 번뿐이면 마지막을 식사로 바꿔 균형을 맞춘다
+       (둘째 날 점심이 없는 코스가 되지 않도록) */
+    if (tripType === 'overnight' && plan.filter(s => s === 'meal').length < 2 && plan.length >= 5) {
+        plan[plan.length - 1] = 'meal';
+    }
+    return plan;
 }
 
 function themeChipHtml(t, picked) {
@@ -76,6 +129,7 @@ function setTripType(kind) {
         btn.style.color       = on ? '#fff' : 'var(--yeoro-text)';
         btn.style.borderColor = on ? 'var(--yeoro-blue)' : 'var(--yeoro-border)';
     });
+    renderCountPicker();       // 기간에 맞는 장소 수 선택지로 갱신
 }
 
 /* ── 코스 만들기 ───────────────────────────────────────────────── */
@@ -119,10 +173,8 @@ async function generateTravelProduct() {
         new Set([..._foodPicks].filter(k => k !== 'cafe'))
     );
 
-    /* 코스 순서 — 하루 동선에 맞춘 배치 */
-    const plan = _tripType === 'overnight'
-        ? ['spot','meal','cafe','spot','spot','cafe']
-        : ['spot','meal','cafe','spot'];
+    /* 코스 순서 — 고른 장소 수에 맞춰 하루 동선대로 배치 */
+    const plan = buildCoursePlan(_courseCount, _tripType);
 
     const used = new Set();
     const course = [];
@@ -138,8 +190,7 @@ async function generateTravelProduct() {
     }
 
     cart = course;
-    document.getElementById('omni-cart-counter-badge').textContent = cart.length;
-    document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+    syncCartBadge();
     await recalculateAndSortRouteInOrder();   // 취향 코스는 짠 순서를 그대로 유지한다
 
     /* 어떤 상품인지 안내 배너 */
@@ -149,7 +200,7 @@ async function generateTravelProduct() {
         const picked = [...SPOT_THEMES, ...FOOD_THEMES]
             .filter(t => _spotPicks.has(t.key) || _foodPicks.has(t.key))
             .map(t => t.label).join(' · ');
-        banner.innerHTML = `✨ <b>${tripName} 맞춤 코스</b>` +
+        banner.innerHTML = `✨ <b>${tripName} 맞춤 코스 · ${course.length}곳</b>` +
             (picked ? `<br><span style="font-size:.9em;">고른 취향: ${picked}</span>` : '');
         banner.classList.remove('hidden');
     }

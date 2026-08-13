@@ -1,16 +1,58 @@
 /* ── 장바구니 ─────────────────────────────────────────────────── */
+
+/* 담긴 개수를 하단바 장바구니 아이콘의 숫자에 반영한다.
+   담은 곳이 없으면 숫자를 숨긴다 (0이 떠 있으면 지저분해 보인다).
+   장바구니 개수가 바뀌는 곳에서는 이 함수만 부르면 된다. */
+function syncCartBadge() {
+    const count = cart.length;
+
+    const barNum = document.getElementById('omni-cart-counter-badge');
+    if (barNum) barNum.textContent = count;
+
+    const badge = document.getElementById('cart-nav-badge');
+    if (badge) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.classList.toggle('hidden', count === 0);
+    }
+    /* 다 비웠으면 안내 바도 즉시 내린다 */
+    if (count === 0) hideCartBar();
+}
+
+/* "N개의 장소가 담겼어요" 안내 바를 잠깐 띄웠다가 스스로 사라지게 한다.
+   계속 떠 있으면 목록의 아래쪽 카드를 가려서, 담은 직후에만 잠깐 보여준다. */
+const CART_BAR_MS = 2200;
+let _cartBarTimer = null;
+
+function flashCartBar() {
+    const bar = document.getElementById('toss-omni-floating-cart');
+    if (!bar || !cart.length) return;
+    bar.classList.remove('hidden');
+    /* 숨김(display:none)에서 막 꺼낸 요소는 위치 계산이 끝나야 전환 효과가 먹는다.
+       아래 한 줄이 브라우저에 "지금 한 번 계산해라"라고 시키는 역할이다. */
+    void bar.offsetWidth;
+    bar.classList.add('show');
+
+    clearTimeout(_cartBarTimer);
+    _cartBarTimer = setTimeout(hideCartBar, CART_BAR_MS);
+}
+
+function hideCartBar() {
+    const bar = document.getElementById('toss-omni-floating-cart');
+    if (!bar) return;
+    clearTimeout(_cartBarTimer);
+    bar.classList.remove('show');
+    setTimeout(() => bar.classList.add('hidden'), 260);   // 사라지는 동안 기다렸다가 자리 비움
+}
+
 function pushToCart(item) {
     if (cart.some(c=>c.id===item.id)) return;
     cart.push(item);
-    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
-    document.getElementById('toss-omni-floating-cart').classList.remove('hidden');
+    syncCartBadge();
+    flashCartBar();      // 담았다는 것을 잠깐 알려준다
 }
 function removeCartItem(i) {
     cart.splice(i,1);
-    document.getElementById('omni-cart-counter-badge').textContent=cart.length;
-    if(cart.length===0){
-        document.getElementById('toss-omni-floating-cart').classList.add('hidden');
-    }
+    syncCartBadge();
     /* 모달을 다시 열지 않고 목록만 새로 그린다 (검색 중이던 내용이 사라지지 않도록) */
     renderCartList();
     renderCartAddResults();
