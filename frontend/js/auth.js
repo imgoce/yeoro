@@ -35,6 +35,11 @@ function startKakaoOAuth() {
    세션을 이메일 로그인과 동일한 형태로 구성한다.
    게스트는 실제 신원이 없는 임시 계정이라는 걸 UI에서 계속 구분해야 하므로
    loggedIn은 이메일/카카오만 true, 게스트는 그대로 false로 둔다. */
+/* 카카오 access token — 회원탈퇴 때 "카카오 연결 끊기"에 필요하다.
+   저장소에 두지 않고 앱이 켜져 있는 동안만 들고 있는다
+   (토큰을 기기에 남기지 않기 위해서다). */
+let kakaoAccessToken = null;
+
 async function finishBackendLogin(token, group, authType) {
     const profile = await fetchMyProfile(token);
     localStorage.setItem('yeoro_jwt', token);
@@ -43,7 +48,15 @@ async function finishBackendLogin(token, group, authType) {
         nickname: profile.nickname, userId: profile.id, authType,
     };
     localStorage.setItem('yeoro_last_user', JSON.stringify(userSession));
-    await syncTravelLogFromServer();
+
+    /* 여행로그 동기화는 기다리지 않는다.
+       처음 들어가는 화면은 홈이라 로그가 아직 없어도 되고,
+       여기서 서버 응답을 기다리면 로그인 직후 화면이 버벅인다.
+       (여행로그 탭을 열 때 renderTravelLog가 최신 내용을 다시 그린다) */
+    syncTravelLogFromServer()
+        .then(() => { if (typeof renderTravelLog === 'function') renderTravelLog(); })
+        .catch(() => {});
+
     afterAuth();
 }
 
@@ -69,6 +82,7 @@ async function onNativeKakaoLoginResult(success, message) {
         });
         if (!res.ok) throw new Error('카카오 로그인 검증에 실패했어요');
         const { access_token } = await res.json();
+        kakaoAccessToken = payload.accessToken;   // 탈퇴 시 카카오 연결 끊기에 쓴다
         await finishBackendLogin(access_token, group, 'kakao');
     } catch (e) {
         showToast(e.message || '카카오 로그인 중 오류가 발생했어요', 'error');
@@ -93,6 +107,8 @@ async function handleKakaoCallback() {
         });
         if (!res.ok) throw new Error('카카오 로그인 검증에 실패했어요');
         const { access_token } = await res.json();
+        /* 웹 경로는 서버가 code를 대신 교환하므로 화면에서는 카카오 토큰을 알 수 없다.
+           탈퇴할 때 필요하면 그때 카카오 로그인을 한 번 더 받는다. */
         await finishBackendLogin(access_token, group, 'kakao');
     } catch (e) {
         showToast(e.message || '카카오 로그인 중 오류가 발생했어요', 'error');
@@ -198,7 +214,8 @@ async function loginWithEmail(email, password) {
 }
 
 async function fetchMyProfile(token) {
-    const res = await fetch(`${API_CONFIG.API_BASE_URL}/users/me`, {
+    /* 이 조회를 기다리는 동안 로그인 화면이 멈춰 보이므로 시간을 제한한다 */
+    const res = await fetchWithTimeout(`${API_CONFIG.API_BASE_URL}/users/me`, {
         headers: { 'Authorization': 'Bearer ' + token },
     });
     if (!res.ok) throw new Error('내 정보를 불러오지 못했어요');
@@ -210,7 +227,38 @@ async function fetchMyProfile(token) {
    백엔드에 익명 계정을 만들어 JWT를 발급받는다 (/auth/guest). 같은
    기기에서 재방문 시에는 저장해둔 토큰을 재사용해 계정이 계속 늘어나지
    않도록 한다. 새 기기/재설치 시에는 새 게스트 계정이 만들어진다. */
+/* 서버가 늦게 답해도 화면이 멈춰 있지 않도록, 기다리는 시간을 정해 둔다.
+   게스트는 서버 계정이 없어도 둘러볼 수 있어 오래 기다릴 이유가 없다. */
+const GUEST_WAIT_MS = 2500;
+
+function fetchWithTimeout(url, options = {}, ms = GUEST_WAIT_MS) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { ...options, signal: ctrl.signal })
+        .finally(() => clearTimeout(timer));
+}
+
+/* 로그인 버튼들을 한 번만 눌리게 하고, 누른 티가 나게 한다.
+   (예전에는 눌러도 아무 변화가 없어 여러 번 누르게 됐다) */
+let _authBusy = false;
+function setAuthBusy(on, label) {
+    _authBusy = on;
+    const link = document.querySelector('.auth-link');
+    document.querySelectorAll('.auth-actions button').forEach(b => { b.disabled = on; });
+    if (link) link.textContent = on ? (label || '들어가는 중...') : '게스트로 둘러보기';
+}
+
 async function browseAsGuest() {
+    if (_authBusy) return;                   // 연속으로 눌러도 한 번만 처리
+    setAuthBusy(true);
+    try {
+        await runGuestLogin();
+    } finally {
+        setAuthBusy(false);
+    }
+}
+
+async function runGuestLogin() {
     const group=document.querySelector('input[name="loginTargetRadio"]:checked')?.value||'5060';
     const cachedToken = localStorage.getItem('yeoro_jwt');
     const cachedSession = JSON.parse(localStorage.getItem('yeoro_last_user') || 'null');
@@ -225,7 +273,7 @@ async function browseAsGuest() {
     }
 
     try {
-        const res = await fetch(`${API_CONFIG.API_BASE_URL}/auth/guest`, { method: 'POST' });
+        const res = await fetchWithTimeout(`${API_CONFIG.API_BASE_URL}/auth/guest`, { method: 'POST' });
         if (!res.ok) throw new Error('backend guest failed');
         const { access_token } = await res.json();
         await finishBackendLogin(access_token, group, 'guest');

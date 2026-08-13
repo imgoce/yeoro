@@ -22,6 +22,17 @@ function loadPlacesFromStorage(category) {
         return places;
     } catch(e) { return null; }
 }
+/* 내 위치가 바뀌면 받아둔 목록의 거리·정렬이 맞지 않으므로 캐시를 비운다.
+   (기본 좌표로 먼저 보여주고, 실제 위치가 도착하면 다시 계산하기 위한 것) */
+function invalidatePlacesCache() {
+    apiCache = {};
+    try {
+        Object.keys(localStorage)
+            .filter(k => k.startsWith(`yeoro_places_${PLACES_CACHE_VER}_`))
+            .forEach(k => localStorage.removeItem(k));
+    } catch (e) { /* 저장소를 못 읽어도 메모리 캐시는 비웠다 */ }
+}
+
 function savePlacesToStorage(category, places) {
     try {
         localStorage.setItem(`yeoro_places_${PLACES_CACHE_VER}_${category}`,

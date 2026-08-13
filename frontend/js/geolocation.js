@@ -17,13 +17,13 @@ const locationPrecise = true;
 
 function requestLocationThenEnter() {
     document.getElementById('location-permission-error').classList.add('hidden');
-    /* "앱 사용 중에만 허용"을 선택했던 사용자는 다음부터 게이트 없이 바로 위치를 잡는다 */
+    /* 한 번 허용했던 사용자는 안내 화면 없이 바로 홈으로 들어간다.
+       예전에는 여기서 GPS가 잡힐 때까지(최대 20초) 기다리느라
+       로그인 후 화면이 멈춘 것처럼 보였다. 이제는 먼저 들어가고
+       위치는 뒤에서 받아 거리 표시만 갱신한다. */
     if (localStorage.getItem('yeoro_loc_pref') === 'while-using' && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            p => { saveUserLocation(p); finalizeAuth(); },
-            () => { document.getElementById('location-permission-screen').classList.remove('hidden'); },
-            { timeout: 20000, enableHighAccuracy: locationPrecise }
-        );
+        finalizeAuth();
+        refreshLocationInBackground();
         return;
     }
     document.getElementById('location-permission-screen').classList.remove('hidden');
@@ -35,6 +35,25 @@ function saveUserLocation(p) {
     document.getElementById('location-permission-screen').classList.add('hidden');
 }
 
+/* 위치를 뒤에서 받아 목록의 거리·소요시간만 갱신한다.
+   홈에 들어가기 전에 GPS를 기다리면 몇 초씩 멈춰 있는 것처럼 보이므로,
+   화면은 먼저 띄우고 위치는 도착하는 대로 반영한다. */
+function refreshLocationInBackground() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+        p => {
+            const before = `${userLoc.lat},${userLoc.lng}`;
+            saveUserLocation(p);
+            if (before === `${userLoc.lat},${userLoc.lng}`) return;   // 그대로면 다시 그릴 것 없음
+            /* 받아둔 목록은 기본 좌표 기준이라 거리를 다시 계산해야 한다 */
+            if (typeof invalidatePlacesCache === 'function') invalidatePlacesCache();
+            if (typeof renderHomeSpots === 'function') renderHomeSpots();
+        },
+        () => {},                       // 실패해도 기본 좌표로 그대로 쓴다
+        { timeout: 15000, enableHighAccuracy: locationPrecise }
+    );
+}
+
 /* persist=true → "앱 사용 중에만 허용" (선택 기억), false → "이번만 허용" */
 function handleLocationPermissionRequest(persist) {
     const btn = document.getElementById('location-permission-btn');
@@ -42,30 +61,16 @@ function handleLocationPermissionRequest(persist) {
         showLocationPermissionError('이 기기/브라우저는 위치 정보를 지원하지 않아요. 설정에서 위치 서비스를 켜주세요.');
         return;
     }
-    btn.disabled = true;
-    btn.textContent = '위치 확인 중...';
-    navigator.geolocation.getCurrentPosition(
-        p => {
-            if (persist) localStorage.setItem('yeoro_loc_pref', 'while-using');
-            else localStorage.removeItem('yeoro_loc_pref');
-            saveUserLocation(p);
-            btn.disabled = false;
-            btn.textContent = '확인';
-            finalizeAuth();
-        },
-        (err) => {
-            btn.disabled = false;
-            btn.textContent = '확인';
-            // 권한을 막 허용한 직후 첫 요청은 기기의 위치 서비스가 준비되는 데 시간이 걸려
-            // 타임아웃(code 3)이 나기도 한다. 이 경우는 권한 문제가 아니므로 안내 문구를 다르게 준다.
-            const message = err.code === err.TIMEOUT
-                ? '위치를 확인하는 데 시간이 걸리고 있어요. 잠시 후 다시 시도해주세요.'
-                : '위치 정보 허용이 필요해요. 브라우저·기기 설정에서 여로의 위치 권한을 허용한 뒤 다시 시도해주세요.';
-            showLocationPermissionError(message);
-        },
-        /* 정확한 위치 = GPS 고정밀, 대략적인 위치 = 저전력(네트워크 기반) */
-        { timeout: 20000, enableHighAccuracy: locationPrecise }
-    );
+    if (persist) localStorage.setItem('yeoro_loc_pref', 'while-using');
+    else localStorage.removeItem('yeoro_loc_pref');
+
+    /* 안내 화면은 바로 내리고 홈으로 들어간다.
+       기기 권한 창과 GPS 측정은 뒤에서 진행되고, 위치가 도착하면
+       refreshLocationInBackground가 거리 표시만 갱신한다.
+       (예전에는 GPS가 잡힐 때까지 이 화면에 멈춰 있었다) */
+    document.getElementById('location-permission-screen').classList.add('hidden');
+    finalizeAuth();
+    refreshLocationInBackground();
 }
 
 /* "허용 안함" — 세종시청 기준 기본 좌표로 진행 (길찾기 출발지는 직접 입력해야 함) */

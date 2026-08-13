@@ -323,6 +323,157 @@ body {
 .hero-cta .material-icons { font-size: 1.05rem; }
 .hero-cta:active { transform: scale(.97); }
 
+/* ── 서버 준비 대기 화면 ──────────────────────────────────────── */
+.wake-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 170;                 /* 동의 화면(160)보다 위 */
+    background: linear-gradient(160deg, var(--yeoro-blue) 0%, var(--yeoro-sky) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 26px;
+}
+.wake-screen img {
+    width: 62px; height: 62px;
+    border-radius: 16px;
+    object-fit: cover;
+    margin-bottom: 26px;
+}
+.wake-spinner {
+    width: 30px; height: 30px;
+    border: 3px solid rgba(255,255,255,.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: wakeSpin .8s linear infinite;
+    margin-bottom: 18px;
+}
+@keyframes wakeSpin { to { transform: rotate(360deg); } }
+.wake-title {
+    font-size: 1.02em; font-weight: 800; color: #fff;
+    text-shadow: 0 1px 6px rgba(8,28,66,.25);
+}
+.wake-sub {
+    font-size: .84em; color: rgba(255,255,255,.9); font-weight: 500;
+    text-align: center; line-height: 1.6;
+}
+
+/* ── 약관 동의 화면 (로그인 전) ────────────────────────────────── */
+.agree-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 160;                 /* 로그인 화면(150)보다 위 */
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 34px 26px;
+    overflow-y: auto;
+}
+.agree-head { text-align: center; margin-bottom: 30px; }
+.agree-head img { width: 60px; height: 60px; border-radius: 16px; object-fit: cover; }
+.agree-title {
+    margin-top: 16px;
+    font-size: 1.12em;
+    font-weight: 800;
+    line-height: 1.55;
+    color: var(--yeoro-navy);
+    letter-spacing: -0.4px;
+}
+.agree-box {
+    border: 1.5px solid var(--yeoro-border);
+    border-radius: 16px;
+    padding: 6px 16px;
+    margin-bottom: 14px;
+}
+.agree-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 15px 0;
+    cursor: pointer;
+    margin: 0;
+}
+.agree-item input { position: absolute; opacity: 0; width: 0; height: 0; }
+/* 네모 체크 상자 — 고르면 파랗게 찬다 */
+.agree-check {
+    width: 24px; height: 24px;
+    flex: 0 0 24px;
+    border: 2px solid var(--yeoro-border);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff;
+    transition: background .12s, border-color .12s;
+}
+.agree-check .material-icons { font-size: 17px; color: #fff; }
+.agree-item input:checked + .agree-check {
+    background: var(--yeoro-blue);
+    border-color: var(--yeoro-blue);
+}
+.agree-label { flex: 1; font-size: .92em; font-weight: 600; color: var(--yeoro-text); }
+.agree-label b { font-weight: 700; color: var(--yeoro-blue); }
+.agree-more {
+    background: none; border: none;
+    font-size: .82em; font-weight: 600;
+    color: var(--yeoro-muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    padding: 6px 2px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.agree-divider { height: 1px; background: var(--yeoro-border); }
+.agree-all .agree-label { font-weight: 800; }
+.agree-note {
+    font-size: .8em;
+    color: var(--yeoro-muted);
+    line-height: 1.6;
+    margin-bottom: 18px;
+    padding-left: 2px;
+}
+#agree-submit:disabled { background: var(--yeoro-border); color: var(--yeoro-muted); }
+
+/* ── 개인정보처리방침 본문 (창 안에서 읽기 좋게) ── */
+.policy-body h1 { font-size: 1.15em; font-weight: 800; margin: 0 0 14px; color: var(--yeoro-navy); }
+.policy-body h2 { font-size: .95em; font-weight: 800; margin: 20px 0 8px; color: var(--yeoro-text); }
+.policy-body p,
+.policy-body li { font-size: .84em; line-height: 1.75; color: var(--yeoro-sub); }
+.policy-body ul { padding-left: 18px; margin: 6px 0; }
+.policy-body table { width: 100%; border-collapse: collapse; font-size: .8em; margin: 8px 0; }
+.policy-body th, .policy-body td {
+    border: 1px solid var(--yeoro-border); padding: 7px 9px; text-align: left; color: var(--yeoro-sub);
+}
+.policy-body th { background: var(--yeoro-mist); font-weight: 700; color: var(--yeoro-text); }
+
+/* ── 데이터 출처 (내 정보) ── */
+.src-card { padding: 6px 16px 16px; }
+.src-row {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--yeoro-border);
+}
+.src-row:last-of-type { border-bottom: none; }
+.src-name {
+    font-size: .84em;
+    color: var(--yeoro-sub);
+    line-height: 1.5;
+    margin-bottom: 3px;
+}
+.src-owner {
+    font-size: .9em;
+    font-weight: 700;
+    color: var(--yeoro-text);
+}
+.src-note {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--yeoro-border);
+    font-size: .76em;
+    line-height: 1.65;
+    color: var(--yeoro-muted);
+}
+
 /* ── 장소 수 고르기 (맞춤형 여행상품) ── */
 .count-picker {
     display: flex;

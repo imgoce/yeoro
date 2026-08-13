@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('auth-logo').src  = LOGO_SRC;
     document.getElementById('splash-logo').src = LOGO_SRC;
     document.getElementById('perm-logo').src  = LOGO_SRC;   // 위치 안내 화면
+    document.getElementById('agree-logo').src = LOGO_SRC;   // 약관 동의 화면
+    document.getElementById('wake-logo').src  = LOGO_SRC;   // 서버 준비 화면
     setTravelMode('5060');                                  // 여행 모드 기본 선택 표시
     document.getElementById('onboard-screen').classList.add('hidden');
 
@@ -20,12 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     /* 뒤 배경으로 메인을 깔아둠 (로그인/온보딩이 그 위에 오버레이로 뜸) */
     changeScreen('main');
 
-    /* 앱을 켤 때는 항상 로그인 화면부터 시작한다.
-       (이전에는 저장된 세션을 복원해 바로 메인으로 들어갔는데,
-        누가 쓰는지 매번 확인할 수 있도록 자동 로그인을 하지 않는다)
-       지난 로그인 정보는 지워서 '내 정보'에도 남지 않게 한다. */
-    localStorage.removeItem('yeoro_last_user');
-    localStorage.removeItem('yeoro_jwt');
+    /* 지난 로그인 기록이 있으면 자동으로 이어서 들어간다 (아래 restoreSession).
+       로그아웃하거나 탈퇴하면 기록이 지워져 다시 로그인 화면부터 시작한다. */
     userSession = { loggedIn:false, targetGroup:'5060', nickname:'게스트', userId:null, authType:null };
     renderProfile();
 
@@ -34,7 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasKakaoCode = new URLSearchParams(window.location.search).get('code');
     handleKakaoCallback();
 
-    if (!hasKakaoCode) goToAuthScreen();   // 그 외에는 항상 로그인 화면부터
+    /* 서버를 먼저 깨우고 → 약관 동의 → 로그인 순으로 진행한다.
+       (동의한 적이 있으면 동의 화면은 건너뛴다) */
+    if (!hasKakaoCode) wakeServerThenStart();
 
     /* 날씨: 즉시 표시 + 5분마다(그리고 앱 복귀 시) 실시간 갱신 */
     startWeatherWatch();

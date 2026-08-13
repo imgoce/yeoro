@@ -63,6 +63,53 @@
         </div>
     </div>
 
+    <!-- ══════════════ 서버 준비 대기 ══════════════
+         서버가 한동안 요청이 없으면 잠들어 있어서 첫 로그인이 늦어진다.
+         약관 동의 화면 전에 미리 깨워 두고, 그동안 이 화면을 보여준다. -->
+    <div class="wake-screen hidden" id="wake-screen">
+        <img id="wake-logo" alt="여로 로고">
+        <div class="wake-spinner"></div>
+        <div class="wake-title">잠시만 기다려 주세요</div>
+        <div class="wake-sub" id="wake-sub">여로를 준비하고 있어요</div>
+    </div>
+
+    <!-- ══════════════ 약관 동의 (로그인 전 필수) ══════════════
+         두 가지 모두 동의해야 로그인 화면으로 넘어간다.
+         한 번 동의하면 다시 묻지 않는다 (localStorage에 기록). -->
+    <div class="agree-screen hidden" id="agree-screen">
+        <div class="agree-head">
+            <img id="agree-logo" alt="여로 로고">
+            <div class="agree-title">여로 이용을 위해<br>아래 내용에 동의해 주세요</div>
+        </div>
+
+        <div class="agree-box">
+            <label class="agree-item">
+                <input type="checkbox" id="agree-privacy" onchange="refreshAgreeState()">
+                <span class="agree-check"><span class="material-icons">check</span></span>
+                <span class="agree-label">개인정보처리방침 <b>(필수)</b></span>
+                <button class="agree-more" onclick="event.preventDefault();openPolicy('privacy')">상세보기</button>
+            </label>
+            <label class="agree-item">
+                <input type="checkbox" id="agree-terms" onchange="refreshAgreeState()">
+                <span class="agree-check"><span class="material-icons">check</span></span>
+                <span class="agree-label">이용약관 <b>(필수)</b></span>
+                <button class="agree-more" onclick="event.preventDefault();openPolicy('terms')">상세보기</button>
+            </label>
+
+            <div class="agree-divider"></div>
+
+            <label class="agree-item agree-all">
+                <input type="checkbox" id="agree-all" onchange="toggleAgreeAll(this.checked)">
+                <span class="agree-check"><span class="material-icons">check</span></span>
+                <span class="agree-label">모두 동의합니다</span>
+            </label>
+        </div>
+
+        <div class="agree-note">두 항목 모두 동의하셔야 여로를 이용할 수 있어요.</div>
+
+        <button class="y-btn-primary" id="agree-submit" disabled onclick="acceptAgreements()">동의하고 시작하기</button>
+    </div>
+
     <!-- ══════════════ 시작 로그인 페이지 (독립 전체화면) ══════════════ -->
     <div class="auth-screen" id="auth-screen">
         <div class="auth-brand">
@@ -178,6 +225,37 @@
             </div>
 
             <!-- 현재 여행 모드 -->
+            <!-- 계정 액션 -->
+            <div class="section-label mb-2">계정</div>
+            <div class="y-card" style="padding:6px 14px;">
+                <div class="menu-row" id="profile-login-row" onclick="goToAuthScreen()">
+                    <div class="menu-icon-box"><span class="material-icons icon-green">login</span></div>
+                    <div>
+                        <div class="menu-title" id="profile-login-title">로그인 / 회원가입</div>
+                        <div class="menu-sub" id="profile-login-sub">카카오·이메일로 기록을 안전하게 보관하세요</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <div class="menu-row" id="profile-logout-row" onclick="handleLogout()" style="display:none;">
+                    <div class="menu-icon-box"><span class="material-icons icon-amber">logout</span></div>
+                    <div>
+                        <div class="menu-title">로그아웃</div>
+                        <div class="menu-sub">로그인 화면으로 돌아갑니다</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+                <!-- 회원탈퇴 — 로그인한 회원에게만 보인다 (게스트는 지울 계정이 없다) -->
+                <div class="menu-row" id="profile-withdraw-row" onclick="openWithdrawConfirm()" style="display:none;">
+                    <div class="menu-icon-box"><span class="material-icons" style="color:#E14B5A;">person_remove</span></div>
+                    <div>
+                        <div class="menu-title" style="color:#E14B5A;">회원탈퇴</div>
+                        <div class="menu-sub">계정과 기록이 모두 지워집니다</div>
+                    </div>
+                    <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+            </div>
+
+            <!-- 현재 여행 모드 -->
             <div class="section-label mb-2">현재 여행 모드</div>
             <div class="y-card mb-3" style="padding:6px 14px;">
                 <div class="menu-row" style="cursor:default;">
@@ -227,24 +305,54 @@
                 </div>
             </div>
 
-            <!-- 계정 액션 -->
-            <div class="section-label mb-2">계정</div>
+            <!-- 약관 및 정책 -->
+            <div class="section-label mb-2 mt-4">약관 및 정책</div>
             <div class="y-card" style="padding:6px 14px;">
-                <div class="menu-row" id="profile-login-row" onclick="goToAuthScreen()">
-                    <div class="menu-icon-box"><span class="material-icons icon-green">login</span></div>
+                <div class="menu-row" onclick="openPolicy('privacy')">
+                    <div class="menu-icon-box"><span class="material-icons icon-blue">privacy_tip</span></div>
                     <div>
-                        <div class="menu-title" id="profile-login-title">로그인 / 회원가입</div>
-                        <div class="menu-sub" id="profile-login-sub">카카오·이메일로 기록을 안전하게 보관하세요</div>
+                        <div class="menu-title">개인정보처리방침</div>
+                        <div class="menu-sub">어떤 정보를 모으고 어떻게 쓰는지</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
                 </div>
-                <div class="menu-row" id="profile-logout-row" onclick="handleLogout()" style="display:none;">
-                    <div class="menu-icon-box"><span class="material-icons icon-amber">logout</span></div>
+                <div class="menu-row" onclick="openPolicy('terms')">
+                    <div class="menu-icon-box"><span class="material-icons icon-teal">description</span></div>
                     <div>
-                        <div class="menu-title">로그아웃</div>
-                        <div class="menu-sub">로그인 화면으로 돌아갑니다</div>
+                        <div class="menu-title">이용약관</div>
+                        <div class="menu-sub">서비스 이용에 관한 약속</div>
                     </div>
                     <span class="material-icons menu-arrow" style="font-size:1.1rem;">chevron_right</span>
+                </div>
+            </div>
+
+            <!-- 데이터 출처 — 공공데이터·지도 제공처를 밝힌다 -->
+            <div class="section-label mb-2 mt-4">데이터 출처</div>
+            <div class="y-card src-card">
+                <div class="src-row">
+                    <div class="src-name">관광지 · 음식점 · 축제 · 무장애 시설 정보 · 사진</div>
+                    <div class="src-owner">출처: ⓒ한국관광공사</div>
+                </div>
+                <div class="src-row">
+                    <div class="src-name">날씨 (초단기실황)</div>
+                    <div class="src-owner">출처: ⓒ기상청</div>
+                </div>
+                <div class="src-row">
+                    <div class="src-name">장소 검색 · 길찾기 · 소요시간</div>
+                    <div class="src-owner">출처: ⓒ카카오</div>
+                </div>
+                <div class="src-row">
+                    <div class="src-name">응급의료기관 정보</div>
+                    <div class="src-owner">출처: ⓒ국립중앙의료원</div>
+                </div>
+                <div class="src-row">
+                    <div class="src-name">병원 정보</div>
+                    <div class="src-owner">출처: ⓒ건강보험심사평가원</div>
+                </div>
+                <div class="src-note">
+                    본 앱은 위 기관이 공공데이터포털을 통해 개방한 자료를 이용해 만들었습니다.
+                    무장애 시설 안내는 등록된 원문을 그대로 표시하며, 실제와 다를 수 있으니
+                    방문 전 해당 시설에 확인해 주세요.
                 </div>
             </div>
         </div>
@@ -502,6 +610,46 @@
     </div>
 </div>
 
+<!-- 개인정보처리방침 — 화면을 벗어나지 않고 앱 안에서 읽는다 -->
+<div class="modal fade" id="policyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4" style="max-height:78vh;overflow-y:auto;">
+                <span class="material-icons" data-bs-dismiss="modal"
+                    style="position:absolute;top:14px;right:16px;cursor:pointer;color:var(--yeoro-muted);">close</span>
+                <div id="policy-body" class="policy-body">불러오는 중...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 회원탈퇴 확인 — 되돌릴 수 없는 일이라 한 번 더 묻는다 -->
+<div class="modal fade" id="withdrawModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog bottom-sheet">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <div class="page-title" style="font-size:1.2em;margin-bottom:10px;">회원탈퇴</div>
+                <div style="font-size:.9em;line-height:1.65;color:var(--yeoro-sub);margin-bottom:16px;">
+                    <b id="withdraw-who">회원</b>님의 계정을 지웁니다.<br>
+                    아래 내용이 <b style="color:#E14B5A;">모두 삭제되며 되돌릴 수 없습니다.</b>
+                </div>
+                <div class="y-card" style="padding:14px 16px;margin-bottom:16px;font-size:.86em;line-height:1.8;">
+                    · 계정 정보 (아이디·닉네임)<br>
+                    · 여행로그에 저장한 기록<br>
+                    · 장바구니에 담아둔 장소<br>
+                    <span id="withdraw-kakao-note" style="display:none;">· 카카오 계정 연결 해제</span>
+                </div>
+                <div style="font-size:.82em;color:var(--yeoro-muted);margin-bottom:18px;line-height:1.6;">
+                    탈퇴 후에도 같은 계정으로 다시 가입할 수 있습니다.
+                </div>
+                <button class="y-btn-primary" id="withdraw-confirm-btn"
+                        style="background:#E14B5A;" onclick="confirmWithdraw()">탈퇴하기</button>
+                <button class="y-btn-secondary mt-2" data-bs-dismiss="modal">그만두기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 장소 정보 모달 (카드의 [정보] 버튼) -->
 <div class="modal fade" id="placeInfoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog bottom-sheet">
@@ -582,6 +730,7 @@
 <script src="js/config.js"></script>
 <!-- 비커밋 로컬 키 파일(있으면 config.js의 빈 키를 덮어씀). 없으면 폴백으로 동작 -->
 <script src="js/config.local.js" onerror="void 0"></script>
+<script src="js/policy-data.js"></script>
 <script src="js/local-places.js"></script>
 <script src="js/barrier-free-data.js"></script>
 <script src="js/state.js"></script>
