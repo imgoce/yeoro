@@ -39,20 +39,48 @@ function tourCatLabel(it) {
     return TOUR_CAT_LABELS[code] || '한국관광공사 제공';
 }
 
-/* 세종시 대략 경계 — 관광공사 데이터에 좌표가 잘못 등록된 항목이 섞여 있어
-   (예: 축제 하나가 수천 km 밖으로 찍힘) 범위를 벗어난 좌표는 버린다.
-   좌표가 null이면 거리 표시가 생략되고 길찾기도 막힌다. */
-const SEJONG_BOUNDS = { minLat: 36.3, maxLat: 36.8, minLng: 126.95, maxLng: 127.55 };
+/* 세종시를 감싸는 사각형 —
+   북쪽 소정면(36.72) · 남쪽 금남면(36.40) · 서쪽 장군면(127.08) · 동쪽 부강면(127.38)에
+   여유를 조금 둔 값이다. 두 곳에 쓴다.
+     ① 관광공사 데이터에 좌표가 잘못 등록된 항목 걸러내기
+        (예: 축제 하나가 수천 km 밖으로 찍힘 — 좌표가 null이면 거리 표시·길찾기가 빠진다)
+     ② 카카오 로컬 검색을 세종시 영역으로 제한하기 (rect 파라미터) */
+const SEJONG_BOUNDS = { minLat: 36.40, maxLat: 36.76, minLng: 127.05, maxLng: 127.42 };
+const SEJONG_RECT = [SEJONG_BOUNDS.minLng, SEJONG_BOUNDS.minLat,
+                     SEJONG_BOUNDS.maxLng, SEJONG_BOUNDS.maxLat].join(',');
+
+function inSejongBox(lat, lng) {
+    return lat >= SEJONG_BOUNDS.minLat && lat <= SEJONG_BOUNDS.maxLat
+        && lng >= SEJONG_BOUNDS.minLng && lng <= SEJONG_BOUNDS.maxLng;
+}
+
 function sejongCoord(mapy, mapx) {
     const lat = parseFloat(mapy), lng = parseFloat(mapx);
     if (!lat || !lng) return { lat: null, lng: null };
-    const inside = lat >= SEJONG_BOUNDS.minLat && lat <= SEJONG_BOUNDS.maxLat
-                && lng >= SEJONG_BOUNDS.minLng && lng <= SEJONG_BOUNDS.maxLng;
-    if (!inside) {
+    if (!inSejongBox(lat, lng)) {
         console.warn(`[좌표오류] 세종 범위 밖 좌표라 무시합니다: ${lat},${lng}`);
         return { lat: null, lng: null };
     }
     return { lat, lng };
+}
+
+/* 주소가 세종시인지 — 관광공사·카카오·심평원 모두 주소 맨 앞에 시도명을 준다.
+   판단할 주소가 없으면 null을 돌려 좌표로 판단하게 넘긴다.
+   \b(단어 경계)는 한글에서 동작하지 않으므로 공백/끝으로 직접 끊는다. */
+function isSejongAddress(addr) {
+    const s = String(addr || '').trim();
+    if (!s) return null;
+    return /^세종(특별자치시|시)?(\s|$)/.test(s);
+}
+
+/* 이 장소가 세종시 안에 있는가 — 주소로 먼저 보고, 주소가 없으면 좌표로 본다.
+   세종시 밖은 보여주지 않기로 했으므로 둘 다 없어 확인이 안 되면 뺀다. */
+function isInSejong(place) {
+    const byAddr = isSejongAddress(place && place.addr);
+    if (byAddr !== null) return byAddr;
+    if (place && place.lat && place.lng) return inSejongBox(place.lat, place.lng);
+    console.warn(`[세종 범위] 주소·좌표가 없어 확인 불가라 제외: ${place && place.name}`);
+    return false;
 }
 
 /* 관광공사 item 1건 → 여로 표준 장소 객체로 변환 */
@@ -525,16 +553,19 @@ function kakaoHeaders() {
 /* 카카오맵 로컬 검색 — 카테고리 코드: FD6=음식점, HP8=병원, AT4=관광명소 */
 async function callKakaoCategory(code, size=15, page=1) {
     if (!API_CONFIG.KAKAO_REST_KEY) return null;
+    /* 내 위치 반경으로 찾으면 세종 경계 밖(공주·청주·대전)이 섞여 들어온다.
+       세종시를 감싸는 사각형(rect)으로 찾고, 주소로 한 번 더 거른다.
+       가까운 순 정렬은 places.js가 좌표로 다시 하므로 여기서 필요 없다. */
     const url = 'https://dapi.kakao.com/v2/local/search/category.json?' +
         new URLSearchParams({
             category_group_code: code,
-            x: userLoc.lng, y: userLoc.lat,
-            /* 카카오 로컬 API의 최대 반경은 20km (그 이상은 정책상 불가) */
-            radius: 20000, size: Math.min(size,15), page, sort:'distance',
+            rect: SEJONG_RECT,
+            size: Math.min(size,15), page,
         });
     const json = await safeFetch(url, {headers:kakaoHeaders()});
     if (!json) return null;
-    return (json.documents||[]).map(d=>({
+    return (json.documents||[]).filter(d=>isSejongAddress(d.address_name) !== false)
+                               .map(d=>({
         id:    'kakao-'+d.id,
         name:  d.place_name||'',
         addr:  d.road_address_name||d.address_name||'',
@@ -652,12 +683,14 @@ async function callHospitalInfoApi(rows=15) {
 /* 카카오 키워드 검색 */
 async function callKakaoKeyword(keyword, size=10) {
     if (!API_CONFIG.KAKAO_REST_KEY) return null;
+    /* 키워드 검색도 세종시 영역(rect)으로 제한한다 —
+       "세종 축제"로 찾아도 서울 세종문화회관 같은 곳이 딸려오기 때문이다. */
     const url = 'https://dapi.kakao.com/v2/local/search/keyword.json?' +
-        new URLSearchParams({query:keyword, x:userLoc.lng, y:userLoc.lat,
-            radius:20000, size:Math.min(size,15)});
+        new URLSearchParams({query:keyword, rect:SEJONG_RECT, size:Math.min(size,15)});
     const json = await safeFetch(url, {headers:kakaoHeaders()});
     if (!json) return null;
-    return (json.documents||[]).map(d=>({
+    return (json.documents||[]).filter(d=>isSejongAddress(d.address_name) !== false)
+                               .map(d=>({
         id:'kakao-kw-'+d.id, name:d.place_name||'',
         addr:d.road_address_name||d.address_name||'',
         lat:parseFloat(d.y)||null, lng:parseFloat(d.x)||null,

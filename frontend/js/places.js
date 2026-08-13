@@ -10,8 +10,9 @@ const PLACES_CACHE_TTL = 10 * 60 * 1000;   // 10분
    올리지 않으면 예전에 저장해 둔 목록(최대 10분)이 그대로 보여서,
    앱을 새로 깔아도 "그대로인데?" 하는 상황이 된다.
    v3 — 관광공사 + 카카오맵 합치기(중복 제거) 적용
-   v4 — 직접 고른 장소 목록(local-places.js) 추가 */
-const PLACES_CACHE_VER = 'v4';
+   v4 — 직접 고른 장소 목록(local-places.js) 추가
+   v5 — 세종시 밖(공주·청주·대전 경계) 장소 제외 */
+const PLACES_CACHE_VER = 'v5';
 
 function loadPlacesFromStorage(category) {
     try {
@@ -160,6 +161,17 @@ function updateVisibleDriveLabels(places) {
     });
 }
 
+/* 합쳐진 목록에서 세종시 밖 장소를 뺀다.
+   출처마다 범위가 달라서(카카오는 좌표 기준, 관광공사는 시도 기준) 마지막에 한 번 더 거른다. */
+function onlySejong(list) {
+    const all  = list || [];
+    const kept = all.filter(isInSejong);
+    if (kept.length !== all.length) {
+        console.info(`[세종 범위] ${all.length - kept.length}곳 제외 (세종시 밖)`);
+    }
+    return kept;
+}
+
 async function getPlaces(category, options = {}) {
     /* withDrive: 자동차 소요시간까지 계산할지. 화면에 목록을 보여줄 때만 true.
        (미리받기처럼 화면에 안 쓰는 호출은 false로 두어 API 호출을 아낀다) */
@@ -206,8 +218,8 @@ async function getPlaces(category, options = {}) {
             });
             /* 관광공사 → 카카오맵 → 직접 고른 목록 순으로 붙이면서
                같은 장소는 하나로 합친다 (앞쪽 출처가 우선) */
-            const deduped = mergePlaceSources(tourAll, kakaoSpot||[], kakaoCulture||[],
-                                              curatedPlaces('관광명소'));
+            const deduped = onlySejong(mergePlaceSources(tourAll, kakaoSpot||[], kakaoCulture||[],
+                                                         curatedPlaces('관광명소')));
             attachBarrierFree(deduped, barrierFree);
             if (deduped.length > 0) places = deduped;
         }
@@ -226,8 +238,8 @@ async function getPlaces(category, options = {}) {
             const localCafes = [...(cafe1||[]), ...(cafe2||[])].filter(p => !isFranchiseCafe(p));
             /* 직접 고른 조치원 음식점·개인 카페를 마지막에 붙인다.
                (직접 고른 목록은 프랜차이즈 자동 제외 대상이 아니다 — 넣기로 고른 곳들이다) */
-            const combined = mergePlaceSources(tourFood||[], kakaoFood||[], localCafes,
-                                               curatedPlaces('음식점', '카페'));
+            const combined = onlySejong(mergePlaceSources(tourFood||[], kakaoFood||[], localCafes,
+                                                          curatedPlaces('음식점', '카페')));
             attachBarrierFree(combined, barrierFreeFood);
             if (combined.length > 0) places = combined;
         }
@@ -252,7 +264,7 @@ async function getPlaces(category, options = {}) {
             if (!base || base.length === 0) {
                 base = ((await callTourApi('15', 100)) || []).filter(p => isThisYearEvent(p));
             }
-            const combined = mergePlaceSources(base || [], kakaoThisYear);
+            const combined = onlySejong(mergePlaceSources(base || [], kakaoThisYear));
             if (combined.length > 0) places = combined;
         }
         else if (category === '의료기관') {
@@ -265,7 +277,8 @@ async function getPlaces(category, options = {}) {
             ]);
             /* 응급의료기관을 앞쪽에 우선 배치하고, 같은 병원은 하나로 합친다.
                (예: "세종충남대학교병원"과 "세종충남대병원"처럼 표기가 조금씩 다르다) */
-            const deduped = mergePlaceSources(emergency||[], hospital||[], kakaoHosp||[], keyword||[]);
+            const deduped = onlySejong(mergePlaceSources(emergency||[], hospital||[],
+                                                         kakaoHosp||[], keyword||[]));
             if (deduped.length > 0) places = deduped;
         }
     } catch(e) {
