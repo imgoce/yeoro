@@ -1,0 +1,12 @@
+# android/local.properties 로 복사한 뒤 실제 값을 채우세요.
+# local.properties 는 .gitignore 대상이라 커밋되지 않습니다.
+
+# Android SDK 경로 — Android Studio가 최초 동기화 시 자동으로 채워줍니다.
+sdk.dir=/path/to/Android/sdk
+
+# Kakao Developers(https://developers.kakao.com) > 내 애플리케이션 > 앱 키 > 네이티브 앱 키
+KAKAO_NATIVE_APP_KEY=여기에_네이티브_앱_키_입력
+
+# 카카오 개발자 콘솔 > 내 애플리케이션 > 플랫폼 > Android 플랫폼 등록 시 아래 값이 필요합니다.
+#   패키지명: com.yeoro.app
+#   키 해시: android/README.md의 "키 해시 등록" 항목 참고

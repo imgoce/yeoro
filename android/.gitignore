@@ -1,0 +1,16 @@
+*.iml
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+/app/build
+/app/release
+
+# frontend/에서 빌드 시점에 자동 동기화되는 산출물 (app/build.gradle.kts의 syncWebAssets 참고)
+/app/src/main/assets/www
